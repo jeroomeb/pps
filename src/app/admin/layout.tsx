@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: '/admin/checklists', label: 'Checklists' },
   { href: '/admin/team', label: 'Team' },
   { href: '/admin/reports', label: 'Reports' },
+  { href: '/inspector', label: 'My Inspections' },
 ]
 
 export default async function AdminLayout({

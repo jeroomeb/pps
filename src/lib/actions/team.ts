@@ -3,26 +3,28 @@
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/dal'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient, createClient } from '@/lib/supabase/server'
 
-const inspectorSchema = z.object({
+const teamMemberSchema = z.object({
   full_name: z.string().trim().min(1, 'Name is required'),
   email: z.string().trim().email('Enter a valid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  role: z.enum(['admin', 'inspector']),
 })
 
-export type InspectorFormState = { error?: string } | undefined
+export type TeamMemberFormState = { error?: string } | undefined
 
-export async function createInspector(
-  _prevState: InspectorFormState,
+export async function createTeamMember(
+  _prevState: TeamMemberFormState,
   formData: FormData
-): Promise<InspectorFormState> {
+): Promise<TeamMemberFormState> {
   await requireRole('admin')
 
-  const parsed = inspectorSchema.safeParse({
+  const parsed = teamMemberSchema.safeParse({
     full_name: formData.get('full_name'),
     email: formData.get('email'),
     password: formData.get('password'),
+    role: formData.get('role'),
   })
 
   if (!parsed.success) {
@@ -36,7 +38,7 @@ export async function createInspector(
     email_confirm: true,
     user_metadata: {
       full_name: parsed.data.full_name,
-      role: 'inspector',
+      role: parsed.data.role,
     },
   })
 
@@ -44,5 +46,12 @@ export async function createInspector(
     return { error: error.message }
   }
 
+  revalidatePath('/admin/team')
+}
+
+export async function setTeamMemberRole(profileId: string, role: 'admin' | 'inspector') {
+  await requireRole('admin')
+  const supabase = await createClient()
+  await supabase.from('profiles').update({ role }).eq('id', profileId)
   revalidatePath('/admin/team')
 }

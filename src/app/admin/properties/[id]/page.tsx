@@ -18,8 +18,7 @@ export default async function PropertyDetailPage({
       supabase.from('checklist_templates').select('id, name').order('name'),
       supabase
         .from('profiles')
-        .select('id, full_name')
-        .eq('role', 'inspector')
+        .select('id, full_name, role')
         .order('full_name'),
       supabase
         .from('inspections')

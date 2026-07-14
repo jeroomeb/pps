@@ -11,7 +11,7 @@ export function NewInspectionForm({
 }: {
   propertyId: string
   templates: { id: string; name: string }[]
-  inspectors: { id: string; full_name: string }[]
+  inspectors: { id: string; full_name: string; role: 'admin' | 'inspector' }[]
 }) {
   const [state, formAction] = useActionState<InspectionFormState, FormData>(
     createInspection,
@@ -64,6 +64,7 @@ export function NewInspectionForm({
           {inspectors.map((i) => (
             <option key={i.id} value={i.id}>
               {i.full_name}
+              {i.role === 'admin' ? ' (Admin)' : ''}
             </option>
           ))}
         </select>

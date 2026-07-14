@@ -117,13 +117,12 @@ Stitch wireframes + checklist CSV:
 - PDF generation (`@react-pdf/renderer`) + branded Resend email (logo inline via CID, PDF attached)
 - `npx tsc --noEmit`, `eslint`, and `npm run build` all pass clean
 
-**Not yet done this session:** an actual Supabase project has not been
-created/connected yet (no `.env.local` exists) — the schema has never been
-run against a real database, so nothing has been tested end-to-end against
-live data. No Vercel deployment yet. No first admin user exists.
+### 2026-07-14 — Supabase connected, roles generalized (session 2)
+- Real Supabase project connected (`lxihknznkiarqyqfulgm.supabase.co`), `supabase/schema.sql` run successfully, `npm run seed` loaded all 124 checklist items across the 3 templates.
+- First admin created (`hassan.nadeemq@gmail.com` / temp password given by Jerome) via `scripts/create-first-admin.mjs` — one-off Auth Admin API call, not exposed in the UI.
+- **New client requirements implemented:** admins can create *either* admins or inspectors from `/admin/team` (role dropdown + a per-member role-toggle button); an admin can also be assigned as an inspector on inspections (the "Assign Inspector" dropdown now lists all profiles, admin or inspector, labeled accordingly), and `/inspector/*` routes now accept any authenticated profile rather than being locked to `role === 'inspector'`. Admin bottom nav gained a 5th "My Inspections" tab linking to `/inspector` for this reason. See `src/lib/actions/team.ts` (`createTeamMember`, `setTeamMemberRole`).
+- **Verified:** admin login + `handle_new_user` trigger (auth user → profiles row) work against the live DB; unauthenticated `/admin` correctly redirects to `/login` via proxy; PDF generation (`@react-pdf/renderer`) produces a correct multi-item report with embedded photo + logo via `scripts/test-pdf-email.mts`.
+- **Known limitation — Resend account ownership:** the `RESEND_API_KEY` currently in `.env.local` belongs to the account `hello@wedontcode.com` (looks like the original Fiverr contractor's own Resend account, not Jerome's/Hassan's). Resend's sandbox mode only delivers to the account owner's own address until a domain is verified — so **real property emails will silently fail (403) until either (a) a domain is verified on that Resend account, or (b) Jerome creates his own Resend account and the key is swapped**. Jerome was asked and chose to keep the current key for now. Revisit this before going live.
+- **Not yet tested:** the actual submit flow through the browser (create property → assign inspection → complete as inspector → confirm PDF upload + email) — no browser-automation tool is available in this environment, so this needs a manual click-through once deployed or run locally with `npm run dev`.
 
-**Next session should:** create the Supabase project, run
-`supabase/schema.sql`, create the first admin user, run `npm run seed`, test
-the full flow locally (`npm run dev`), then deploy to Vercel and wire up env
-vars there, then do one real end-to-end pass (create property → create
-inspection → complete as inspector → confirm PDF + email).
+**Next session should:** deploy to Vercel (needs Jerome's/the user's own Vercel account — cannot be done headlessly with a token that wasn't provided), set the same env vars there, then do one real manual end-to-end pass in a browser.
