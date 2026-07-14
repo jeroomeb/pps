@@ -1,0 +1,125 @@
+Main,Service Category,Item Name,Hover Note
+55+ Community Checklist Master,Common Area Fire & Life Safety,Path Obstructions,"Individual physical blockages (welcome mats, delivered boxes, mobility scooters) reducing corridor width below the mandatory 36-inch continuous minimum."
+55+ Community Checklist Master,Common Area Fire & Life Safety,Floor Trip Anomalies,"Physical floor damage including buckled carpeting, loose transition strips, or pooled water on slick stone/tile surfaces."
+55+ Community Checklist Master,Common Area Fire & Life Safety,Sudden Elevation Changes,Unmarked interior thresholds or single steps lacking contrasting safety tape or senior-visibility strips.
+55+ Community Checklist Master,Common Area Fire & Life Safety,Light Fixture Failures,"Expired bulbs, burnt-out ballasts, or severe flickering in primary corridors causing low-light senior navigation strain."
+55+ Community Checklist Master,Common Area Fire & Life Safety,Door Latching Failures,"Fire-rated doors that fail to fully close and self-latch automatically, which allows smoke migration during a crisis."
+55+ Community Checklist Master,Common Area Fire & Life Safety,Hardware Mechanical Lockouts,"Panic bars or door handles that catch, jam, or require specialized knowledge/excessive force to operate."
+55+ Community Checklist Master,Common Area Fire & Life Safety,Stair Landing Clutter,"Maintenance gear, resident storage, or uncollected trash bags left temporarily inside emergency exit stairs."
+55+ Community Checklist Master,Common Area Fire & Life Safety,Exit Sign Deficiencies,"Unlit, broken, or heavily obscured emergency ""EXIT"" signage along the main pathway."
+55+ Community Checklist Master,Common Area Fire & Life Safety,Emergency Lighting Failures,"Visible battery-backup status indicators flashing red, signaling a failure to activate during a power outage."
+55+ Community Checklist Master,Common Area Fire & Life Safety,Handrail Structural Weakness,"Wall-mounted emergency rails that shake, exhibit loose anchoring hardware, or feature sharp splinters."
+55+ Community Checklist Master,Common Area Fire & Life Safety,Extinguisher Access Blockages,"Physical objects blocking immediate, line-of-sight access to wall-mounted fire extinguishers."
+55+ Community Checklist Master,Common Area Fire & Life Safety,Extinguisher Operational Failure,Pressure gauge needle pointing outside the normal green operational zone or missing a security tamper pin.
+55+ Community Checklist Master,Common Area Fire & Life Safety,Low Sprinkler Head Clearances,Items stacked or stored within 18 inches directly below a fire sprinkler head line.
+55+ Community Checklist Master,Common Area Fire & Life Safety,Pull Station Jams,Structural layout decorations or package deliveries blocking visibility of a red manual fire alarm pull box.
+55+ Community Checklist Master,Common Area Fire & Life Safety,Main FACP Trouble Flags,"Visual yellow or red ""Trouble/Supervisory"" LED lights illuminated on the property's auxiliary fire alarm panel."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Terrain Ice Formations,"Undetected black ice patches, frost buildup, or slick packed snow running down residential driveways."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Loose Surface Debris,"Significant build-ups of loose landscaping stone, pine needles, or wet leaves on steep slopes that easily slip under a senior's foot."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Pavement Structural Fractures,"Severe concrete lips, deep potholes, or uneven sidewalk transitions exceeding 0.25 inches along the wheel path."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Steep Slope Grade Changes,"Driveway inclines surpassing standard safety limits, demanding excessive physical holding force on a heavy bin."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Exterior Path Darkness,"Dark, non-functional streetlights or missing garage-wall sconces along the rolling path."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Wheel Axis Imbalances,"Cracked, stuck, or missing rolling wheels that force the handler to drag or awkwardly lift the bin weight."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Handle Structural Splits,Fractured or loose plastic pulling handles liable to snap entirely under heavy weight loads.
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Exposed Sharp Trash Objects,"Broken glass shards, construction nails, or razor-sharp aluminum edges piercing through plastic bag layers."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Hazardous Medical Remnants,"Improperly bagged biohazards, medical needles, or volatile automotive fluids left inside standard domestic bins."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Overweight Structural Volume,"Bins crammed with dense building materials (concrete chunks, dirt) exceeding the safe physical rolling capacity."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Uncontained Overflowing Refuse,"Trash piled high over the rim, preventing lids from completely closing down and attracting scavengers."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Non-Compliant Staging Windows,Bins rolled out to the curb hours prior to the allowed HOA community timeframe.
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Loose Wind-Blown Garbage,"Stray plastic wrap, loose papers, or unbagged boxes scattered across the driveway landscape."
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Unapproved Container Usage,Loose retail shopping bags or non-HOA standard generic tubs left out on paths.
+55+ Community Checklist Master,Aesthetic Compliance & Waste,Right-of-Way Blockages,"Staged bins blocking standard US Mail truck paths, fire hydrant connections, or senior car access doors."
+55+ Community Checklist Master,Clubhouse Safety & Lockdown,Kitchen Cooking Lines,"Ovens, range burners, warmers, or toaster ovens retaining active high-heat signatures post-closing."
+55+ Community Checklist Master,Clubhouse Safety & Lockdown,Outdoor Community Grills,Active propane lines left un-isolated or automated timer dials bypassed to leave burners burning.
+55+ Community Checklist Master,Clubhouse Safety & Lockdown,Electric Fireplace Overheats,Clubhouse fireplace units running continuously due to stuck mechanical shut-off timers.
+55+ Community Checklist Master,Clubhouse Safety & Lockdown,Coffee Station Ignitions,"Commercial hot-plate elements left powered on under empty, dry glass pots, risking a thermal burst fire."
+55+ Community Checklist Master,Clubhouse Safety & Lockdown,Mechanical Closet Spikes,"Anomaly heat readings over 120°F emitting from circulating pumps, elevator control blocks, or electrical breakers."
+55+ Community Checklist Master,Clubhouse Safety & Lockdown,Exterior Deadbolt Failures,"Primary double doors, side service exits, or patio sliders failing to catch or lock."
+55+ Community Checklist Master,Clubhouse Safety & Lockdown,Window Latch Vulnerabilities,Ground-level slider panels left completely unlatched by residents during evening ventilation.
+55+ Community Checklist Master,Clubhouse Safety & Lockdown,Key Fob Reader Overrides,"Access-control doors jammed open with rocks, mats, or tape to allow unauthorized re-entry."
+55+ Community Checklist Master,Clubhouse Safety & Lockdown,Security System Faults,Alarm keypads displaying a sensor bypass error or failing to communicate with the central station.
+55+ Community Checklist Master,Clubhouse Safety & Lockdown,Pool Security Gate Gaps,"Self-closing pool safety gates that bounce open instead of latching, risking accidental child or senior entry."
+Luxury Condominium Checklist Master,Delivery Room Access & Overflows,Door Propping Violations,Delivery lockers or parcel room entry doors physically propped open with delivery boxes or wedges.
+Luxury Condominium Checklist Master,Delivery Room Access & Overflows,Lobby Hallway Dump Zones,Courier packages left loosely on floor tiles outside designated storage lockers or secure rooms.
+Luxury Condominium Checklist Master,Delivery Room Access & Overflows,Over-Capacity Storage Racks,Mailroom structural shelves sagging or overloaded past logical volume constraints.
+Luxury Condominium Checklist Master,Delivery Room Access & Overflows,Hidden Pathway Obstructions,Heavy freight or bulk boxes blocking clear path visibility or fire extinguisher panels inside mail areas.
+Luxury Condominium Checklist Master,Chain-of-Custody & Visibility,Unlocked Courier Drop Boxes,Multi-tenant delivery bins left completely unlatched by couriers.
+Luxury Condominium Checklist Master,Chain-of-Custody & Visibility,Unscanned Carrier Stacks,Piles of parcels dropped in common zones without being checked into the building’s local logging app.
+Luxury Condominium Checklist Master,Chain-of-Custody & Visibility,High-Value Visibility Exposure,"Explicitly labeled high-value boxes (e.g., electronics, prescriptions) left visible from exterior public windows."
+Luxury Condominium Checklist Master,Chain-of-Custody & Visibility,Open Master Lockboxes,Building entry lockboxes (Knox boxes or key keepers) left open or exposed by delivery drivers.
+Luxury Condominium Checklist Master,Chain-of-Custody & Visibility,Blind Spot Package Dropping,Deliveries stacked in areas completely blocked from security camera lines of sight.
+Luxury Condominium Checklist Master,Discrepancy & Damage Controls,Compromised Box Seals,"Packages showing torn security tape, deep slits, or crushing indicative of theft or damage."
+Luxury Condominium Checklist Master,Discrepancy & Damage Controls,Abandoned Resident Items,Packages sitting unclaimed in common spaces for longer than the property's maximum allowance window.
+Luxury Condominium Checklist Master,Discrepancy & Damage Controls,Perishable Lax Controls,Grocery or medication ice boxes left outside refrigerated spaces past stable timelines.
+Luxury Condominium Checklist Master,Discrepancy & Damage Controls,Mislabeled Delivery Fields,Freight lacking unit numbers or legible recipient names.
+Luxury Condominium Checklist Master,Discrepancy & Damage Controls,Digital System System Offline,Electronic parcel lockers exhibiting frozen touchscreens or main power failure flags.
+Luxury Condominium Checklist Master,Discrepancy & Damage Controls,Restricted Item Intrusions,"Leaking, smelling, or hazardous car parts/batteries improperly dropped in common mail areas."
+Luxury Condominium Checklist Master,Aesthetic Compliance & Waste Logistics,Night Pavement Ice Patches,Frost accumulations or hidden water runoff slick spots freezing across collection zones.
+Luxury Condominium Checklist Master,Aesthetic Compliance & Waste Logistics,Loose Landscaping Obstacles,"Built-up wet leaves, stray mulch, or rolling stones on concrete paths."
+Luxury Condominium Checklist Master,Aesthetic Compliance & Waste Logistics,Lighting Infrastructure Failures,"Dark, non-functional light fixtures along the designated nightly waste collection line."
+Luxury Condominium Checklist Master,Aesthetic Compliance & Waste Logistics,Grade Stability Shifts,"Steep, dark paths where heavy, filled bins require excessive physical handling braking force."
+Luxury Condominium Checklist Master,Aesthetic Compliance & Waste Logistics,Unmarked Ground Breaks,Pavement sidewalk lips or deep potholes exceeding standard code allowances across wheel paths.
+Luxury Condominium Checklist Master,Container Structural Issues,Fractured Pulling Handles,Split or compromised bin handles likely to fail under loaded strain.
+Luxury Condominium Checklist Master,Container Structural Issues,Seized Rolling Mechanisms,Stuck or missing rolling wheels forcing handlers to drag bins awkwardly across pavement.
+Luxury Condominium Checklist Master,Container Structural Issues,Exposed Splinters or Glass,"Piercing items poking through trash bags, presenting a hazard to handlers and residents."
+Luxury Condominium Checklist Master,Container Structural Issues,Prohibited Waste Disposals,"Electronic waste, building tiles, or hazardous chemicals dropped into standard bins."
+Luxury Condominium Checklist Master,Container Structural Issues,Overweight Storage Constraints,Bins crammed with dense material (dirt/rocks) exceeding safe weight parameters.
+Luxury Condominium Checklist Master,Code & Aesthetic Enforcements,Uncontained Refuse Piles,"Garbage bags loosely piled outside bins, attracting local scavenger pests."
+Luxury Condominium Checklist Master,Code & Aesthetic Enforcements,Non-Compliant Staging Hours,Valet bins rolled out to the curb well before local community ordinance permission hours.
+Luxury Condominium Checklist Master,Code & Aesthetic Enforcements,Trash Container Lid Gaps,"Overflowing containers where lids cannot seal flat, creating aesthetic and odor issues."
+Luxury Condominium Checklist Master,Code & Aesthetic Enforcements,Unapproved Storage Tubs,Retail shopping bags or unbranded boxes left out on paths rather than compliant bins.
+Luxury Condominium Checklist Master,Code & Aesthetic Enforcements,Blocked Service Points,"Bins blocking fire hydrants, mailbox columns, or senior vehicle egress areas."
+Luxury Condominium Checklist Master,Building Envelope Integrity,Unlatched Exterior Deadbolts,"Main entryway doors, fire exits, or side garage doors failing to click lock."
+Luxury Condominium Checklist Master,Building Envelope Integrity,Window Latch Breaches,Common room slider panels left unlatched by residents during evening hours.
+Luxury Condominium Checklist Master,Building Envelope Integrity,Card Reader System Taping,Access-control strike plates taped down or jammed open with floor mats.
+Luxury Condominium Checklist Master,Building Envelope Integrity,Fire Exit Pathway Blockages,"Items stacked inside building paths, restricting immediate evacuation."
+Luxury Condominium Checklist Master,Building Envelope Integrity,Mechanical Drive Drive Gate Failures,Vehicular security gates jammed or manually set to remain wide open.
+Luxury Condominium Checklist Master,Utility & Environmental Hotspots,Ambient Thermal Appliance Spikes,"Common area stovetops, ovens, or community grills left burning after closing."
+Luxury Condominium Checklist Master,Utility & Environmental Hotspots,Electric Heater Overruns,Clubroom amenity fireplaces running past standard hours due to timer mechanism failure.
+Luxury Condominium Checklist Master,Utility & Environmental Hotspots,Active Plumbing Breaks,"Running restroom lines, dripping pump seals, or dark moisture stains spreading on drywalls."
+Luxury Condominium Checklist Master,Utility & Environmental Hotspots,HVAC Operational Swings,Amenity systems operating away from energy-saving nighttime baselines.
+Luxury Condominium Checklist Master,Utility & Environmental Hotspots,Mechanical Equipment Noise,Shaking pumps or loud grinding noises emanating from locked utility rooms.
+Luxury Condominium Checklist Master,Amenity Space Security,Pool Security Gate Deficiencies,Perimeter pool gates failing to automatically self-close and latch tightly.
+Luxury Condominium Checklist Master,Amenity Space Security,Fitness Equipment Power Overruns,Motorized treadmills or displays running without occupancy.
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Path Obstructions,"Staged vendor pallets, janitorial carts, or deliveries left in main corridors reducing clear width below the 36-inch minimum."
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Exit Door Obstacles,"Furniture, storage boxes, or loose debris stacked directly in front of interior or exterior exit doors."
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Propped Fire Barriers,"Self-closing fire doors wedged or taped open, which allows lethal smoke migration during a fire."
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Latching Failures,Fire-rated doors that fail to fully self-close and latch automatically when released.
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Corridor Darkness,Expired bulbs or dark zones in escape hallways that impair navigation under low-light conditions.
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Stairwell Storage,"Leftover building materials, trash bags, or old signage stowed inside emergency exit stairwells."
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Exit Sign Failures,"Unlit, broken, or severely obscured emergency ""EXIT"" signs along primary evacuation routes."
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Backup System Faults,"Emergency wall pack battery indicators flashing red, signaling a failure to hold an emergency charge."
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Unlocked Panic Hardware,"External egress gates or panic bars jammed, rusted, or padlocked shut after hours."
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Shaking Handrails,"Emergency stairway handrails with loose anchoring bolts, introducing immediate senior falls risk."
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Extinguisher Blockages,"Storage arrays, displays, or plants blocking rapid, line-of-sight access to fire extinguishers."
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Extinguisher Depressurization,Pressure gauges showing needles dropped below the operational green zone.
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Sprinkler Infringements,Items stacked or mounted within 18 inches vertically of any ceiling fire sprinkler head.
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Panel Alarm Flags,"Visual yellow ""Trouble"" or red ""Supervisory"" LED lights illuminated on the main fire alarm control panel."
+Commercial Multi-Tenant Checklist Master,After-Hours Egress & Fire Marshal Sweep,Hazardous Combustibles,Cardboard box stacks or chemical canisters stored inside building electrical/mechanical rooms.
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Pavement Ice Strips,Hidden freeze patches or water runoff sheets slicking paths where heavy dumpsters are rolled.
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Loose Ground Litter,"Wet leaves, loose mulch, or landscape rock spills along concrete service paths."
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Route Blind Zones,Non-functional exterior security lights leaving night-shift dumpster transit corridors pitch black.
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Concrete Trip Lips,Sidewalk slab vertical shifts or potholes exceeding 0.25 inches across wheel travel lanes.
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Steep Incline Handling,Heavy bins requiring excessive manual physical braking force down steep grades.
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Snapped Pulling Handles,Split or fractured plastic bin components liable to break under full loads.
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Broken Rolling Casters,"Seized, flat, or missing wheels forcing workers to drag heavy weight."
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Sharp Structural Refuse,Shattered glass or exposed metal bands piercing through trash bag skins.
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Prohibited Materials,"E-waste, industrial liquids, or batteries abandoned in standard property dumpsters."
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Overweight Volume Loads,"Bins overfilled with heavy scrap (tile, dirt) exceeding structural weight safety guidelines."
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Loose Waste Piles,"Overflow bags left directly on the ground, creating immediate pest attractions."
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Timing Window Breaches,Commercial or tenant bins staged hours before local municipal ordinance codes allow.
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Open Container Lids,"Bins stuffed past the rim, preventing lids from sealing flat and allowing rain filling."
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Non-Standard Containers,Cardboard grocery boxes or shopping bags deployed as raw outdoor waste vessels.
+Commercial Multi-Tenant Checklist Master,Aesthetic Compliance & Waste Logistics,Fire Hydrant Encroachment,Staged trash arrays physically blocking municipal water hookups or mailbox bays.
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Kitchen Thermal Ignition,"Ovens, range burners, or commercial warming trays showing active heat signatures on FLIR scans."
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Open Gas Line Valves,Outdoor conference patio barbecue pits left burning or with manual timers bypassed.
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Fireplace Runaway Timers,Amenity room gas fireplaces cycling continuously due to stuck mechanical toggle timers.
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Coffee Station Burners,"Lounge heating plates left powered on under empty carafes, causing structural glass fractures."
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Perimeter Latch Breaches,Main double glass doors or patio sliders failing to catch or locking deadbolts.
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Ground Window Failures,Conference center ground-level glass panels left unlatched after tenant meetings.
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Reader Strike Tampering,Electronic door frames taped down or propped with doorstops by clean-up crews.
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Active Plumbing Breaks,"Running restroom lines, dripping water fountain blocks, or fresh ceiling dry-wall rings."
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Climate Boundary Deviations,Conference spaces operating away from midnight energy baselines.
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Mechanical Audio Whines,"High-friction squealing, grinding, or rattling emerging from locked utility closets."
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Pool Latch Insecurities,"Perimeter self-closing pool gates failing to swing fully closed, risking drowning liabilities."
+Commercial Multi-Tenant Checklist Master,Post-Closing Lockdown Audit,Unattended Active Screens ,Motorized running machines or media lounge screens left spinning with empty rooms
