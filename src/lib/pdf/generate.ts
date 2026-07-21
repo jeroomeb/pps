@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { renderToBuffer } from '@react-pdf/renderer'
+import sharp from 'sharp'
 import { createAdminClient } from '@/lib/supabase/server'
 import { InspectionReport } from '@/lib/pdf/InspectionReport'
 
@@ -20,27 +21,45 @@ const MIME_BY_EXT: Record<string, string> = {
 }
 
 /**
- * Downloads a stored photo and returns it as a base64 data URI.
+ * Downloads a stored photo and returns it as a base64 data URI ready for
+ * `@react-pdf`'s `<Image>`.
  *
- * `@react-pdf/renderer` renders on the Node server and, given a remote URL,
- * fetches it itself — but that fetch fails silently against Supabase signed
- * URLs (redirects / auth quirks), which is why photos were missing from PDFs.
- * Embedding the raw bytes as a data URI (same as the logo) makes them render
- * deterministically. `@react-pdf` only decodes JPEG/PNG, so anything else is
- * skipped rather than producing a broken image.
+ * Two things were breaking PDF photos:
+ *   1. Passing Supabase *signed URLs* to `<Image>` — @react-pdf fetches those
+ *      itself on the Node server and the fetch fails silently. Embedding the
+ *      bytes inline (like the logo) fixes that.
+ *   2. Phone/browser captures are frequently **WebP** (and sometimes HEIC),
+ *      which @react-pdf cannot decode at all — so those photos rendered as
+ *      nothing even once inlined.
+ *
+ * So every image is normalized through sharp to a **JPEG** (a format @react-pdf
+ * reliably renders), which also auto-applies EXIF rotation and downsizes to
+ * keep the PDF small. If sharp can't decode it (e.g. HEIC without heif
+ * support), we fall back to embedding the original only when it's already a
+ * JPEG/PNG; otherwise we skip it rather than emit a broken image.
  */
 export async function photoDataUri(
   admin: ReturnType<typeof createAdminClient>,
   photoPath: string | null
 ): Promise<string | null> {
   if (!photoPath) return null
-  const ext = photoPath.split('.').pop()?.toLowerCase() ?? ''
-  const mime = MIME_BY_EXT[ext]
-  if (!mime) return null
   const { data, error } = await admin.storage.from('photos').download(photoPath)
   if (error || !data) return null
   const buffer = Buffer.from(await data.arrayBuffer())
-  return `data:${mime};base64,${buffer.toString('base64')}`
+
+  try {
+    const jpeg = await sharp(buffer)
+      .rotate() // honor EXIF orientation so phone photos aren't sideways
+      .resize({ width: 1600, withoutEnlargement: true })
+      .jpeg({ quality: 78 })
+      .toBuffer()
+    return `data:image/jpeg;base64,${jpeg.toString('base64')}`
+  } catch {
+    const ext = photoPath.split('.').pop()?.toLowerCase() ?? ''
+    const mime = MIME_BY_EXT[ext]
+    if (!mime) return null
+    return `data:${mime};base64,${buffer.toString('base64')}`
+  }
 }
 
 let cachedLogoDataUri: string | null = null
