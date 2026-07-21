@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { requireRole } from '@/lib/auth/dal'
 import { Card } from '@/components/ui/Card'
 import { ResendEmailButton } from '@/components/ResendEmailButton'
+import { ZoomableImage } from '@/components/ZoomableImage'
 
 export default async function ReportViewPage({
   params,
@@ -160,12 +161,10 @@ export default async function ReportViewPage({
                       )}
                     </div>
                     {item.photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <ZoomableImage
                         src={item.photoUrl}
                         alt={`Photo evidence for ${item.item_name}`}
-                        loading="lazy"
-                        className="h-40 w-full rounded object-cover sm:h-28 sm:w-40 sm:shrink-0"
+                        thumbClassName="h-40 w-full sm:h-28 sm:w-40 sm:shrink-0"
                       />
                     ) : item.photo_path ? (
                       <p className="text-xs text-on-surface-variant sm:self-center">

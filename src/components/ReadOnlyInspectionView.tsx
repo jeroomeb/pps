@@ -1,5 +1,6 @@
 import { CheckCircle2, Lock } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import { ZoomableImage } from '@/components/ZoomableImage'
 
 type ReadOnlyItem = {
   id: string
@@ -111,13 +112,13 @@ export function ReadOnlyInspectionView({
                         </p>
                       )}
                       {item.photoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={item.photoUrl}
-                          alt={`Photo for ${item.item_name}`}
-                          loading="lazy"
-                          className="mt-2 h-40 w-full max-w-xs rounded object-cover"
-                        />
+                        <div className="mt-2">
+                          <ZoomableImage
+                            src={item.photoUrl}
+                            alt={`Photo for ${item.item_name}`}
+                            thumbClassName="h-40 w-full max-w-xs"
+                          />
+                        </div>
                       ) : item.photo_path ? (
                         <p className="mt-2 text-xs text-on-surface-variant">
                           Photo attached — preview unavailable.
