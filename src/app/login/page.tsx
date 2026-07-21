@@ -15,7 +15,7 @@ export default function LoginPage() {
     <div className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <Image src="/logo.png" alt="PPS Inspections" width={64} height={64} className="rounded-md" />
+          <Image src="/logo-sm.png" alt="PPS Inspections" width={64} height={64} className="rounded-md" />
           <h1 className="font-headline text-2xl font-bold">PPS Inspections</h1>
           <p className="text-sm text-on-surface-variant">
             Property Preservation Solutions LLC

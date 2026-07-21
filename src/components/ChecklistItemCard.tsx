@@ -1,8 +1,11 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
+import { Camera, ImageOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { saveInspectionItem } from '@/lib/actions/inspections'
+import { Card } from '@/components/ui/Card'
+import { useToast } from '@/components/ui/Toast'
 
 type ItemStatus = 'pass' | 'fail' | 'na'
 
@@ -33,21 +36,44 @@ export function ChecklistItemCard({
   inspectionId: string
   onSaved: (itemId: string, patch: Partial<ChecklistItemData>) => void
 }) {
+  const showToast = useToast()
   const [status, setStatus] = useState(item.status)
   const [comment, setComment] = useState(item.comment ?? '')
   const [photoUrl, setPhotoUrl] = useState(item.photoUrl)
+  const [photoSavedNoPreview, setPhotoSavedNoPreview] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [, startTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function persist(patch: { status?: ItemStatus | null; comment?: string; photo_path?: string | null }) {
     startTransition(async () => {
-      await saveInspectionItem(item.id, inspectionId, {
-        status: patch.status ?? status,
-        comment: patch.comment ?? comment,
-        photo_path: patch.photo_path,
-      })
-      onSaved(item.id, patch)
+      let errorMessage: string | null = null
+      try {
+        const result = await saveInspectionItem(item.id, inspectionId, {
+          status: patch.status ?? status,
+          comment: patch.comment ?? comment,
+          photo_path: patch.photo_path,
+        })
+        if (result?.error) errorMessage = result.error
+      } catch {
+        errorMessage = 'Could not save — check your connection and try again.'
+      }
+
+      if (errorMessage === null) {
+        onSaved(item.id, patch)
+        return
+      }
+
+      // Revert to the last successfully saved values (the parent only
+      // updates `item` after a confirmed save) so the UI never shows an
+      // unsaved answer as saved.
+      setStatus(item.status)
+      setComment(item.comment ?? '')
+      if (patch.photo_path !== undefined) {
+        setPhotoUrl(item.photoUrl)
+        setPhotoSavedNoPreview(false)
+      }
+      showToast('error', errorMessage)
     })
   }
 
@@ -65,6 +91,7 @@ export function ChecklistItemCard({
     if (!file) return
 
     setUploading(true)
+    setPhotoSavedNoPreview(false)
     const supabase = createClient()
     const ext = file.name.split('.').pop() || 'jpg'
     const objectPath = `${inspectionId}/${item.id}-${Date.now()}.${ext}`
@@ -74,7 +101,7 @@ export function ChecklistItemCard({
       .upload(objectPath, file, { upsert: true })
 
     if (uploadError) {
-      alert(`Photo upload failed: ${uploadError.message}`)
+      showToast('error', `Photo upload failed: ${uploadError.message}`)
       setUploading(false)
       return
     }
@@ -83,41 +110,56 @@ export function ChecklistItemCard({
       .from('photos')
       .createSignedUrl(objectPath, 3600)
 
-    setPhotoUrl(signed?.signedUrl ?? null)
+    if (signed?.signedUrl) {
+      setPhotoUrl(signed.signedUrl)
+    } else {
+      setPhotoSavedNoPreview(true)
+      showToast('info', 'Photo saved, but the preview could not load.')
+    }
     setUploading(false)
     persist({ photo_path: objectPath })
   }
 
-  const needsPhoto = status === 'fail' && !photoUrl
+  const hasPhoto = Boolean(photoUrl || photoSavedNoPreview)
+  const needsPhoto = status === 'fail' && !hasPhoto
 
   return (
-    <div className="rounded border border-outline-variant bg-surface-container-lowest p-4">
-      <p className="mb-1 font-headline font-semibold">
-        {index}. {item.item_name}
-      </p>
-      {item.description && (
-        <p className="mb-3 text-sm text-on-surface-variant">{item.description}</p>
-      )}
+    <Card
+      className={
+        status === 'fail' ? 'border-error/50' : status === 'pass' ? 'border-success/40' : ''
+      }
+    >
+      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="font-headline font-semibold">
+            {index}. {item.item_name}
+          </p>
+          {item.description && (
+            <p className="mt-1 text-sm text-on-surface-variant">{item.description}</p>
+          )}
+        </div>
 
-      <div className="mb-3 grid grid-cols-3 gap-2">
-        {STATUS_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => handleStatusChange(option.value)}
-            className={`min-h-12 rounded border-2 font-headline text-sm font-semibold uppercase tracking-wide ${
-              status === option.value
-                ? option.value === 'pass'
-                  ? 'border-success bg-success-container text-on-success-container'
-                  : option.value === 'fail'
-                    ? 'border-error bg-error-container text-on-error-container'
-                    : 'border-na bg-na-container text-on-surface'
-                : 'border-outline-variant text-on-surface-variant'
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
+        <div className="grid shrink-0 grid-cols-3 gap-2 lg:w-64">
+          {STATUS_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={status === option.value}
+              onClick={() => handleStatusChange(option.value)}
+              className={`min-h-11 rounded-lg border-2 font-headline text-xs font-semibold uppercase tracking-wide transition ${
+                status === option.value
+                  ? option.value === 'pass'
+                    ? 'border-success bg-success-container text-on-success-container'
+                    : option.value === 'fail'
+                      ? 'border-error bg-error-container text-on-error-container'
+                      : 'border-na bg-na-container text-on-surface'
+                  : 'border-outline-variant text-on-surface-variant hover:bg-surface-container'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
@@ -140,23 +182,51 @@ export function ChecklistItemCard({
         onChange={handlePhotoChange}
         className="hidden"
       />
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={uploading}
-        className={`min-h-12 w-full rounded border-2 font-headline text-sm font-semibold uppercase tracking-wide ${
-          needsPhoto ? 'border-error text-error' : 'border-on-surface text-on-surface'
-        }`}
-      >
-        {uploading ? 'Uploading…' : photoUrl ? 'Replace Photo' : 'Capture Photo'}
-      </button>
+
+      {photoUrl ? (
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photoUrl}
+            alt={`Photo for ${item.item_name}`}
+            loading="lazy"
+            className="h-40 w-full rounded-lg object-cover"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="absolute bottom-2 right-2 rounded-lg bg-surface-container-lowest/90 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide shadow"
+          >
+            {uploading ? 'Uploading…' : 'Replace Photo'}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className={`flex min-h-24 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-sm font-semibold ${
+            needsPhoto
+              ? 'border-error text-error'
+              : photoSavedNoPreview
+                ? 'border-outline-variant text-on-surface-variant'
+                : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
+          }`}
+        >
+          {photoSavedNoPreview ? <ImageOff size={20} /> : <Camera size={20} />}
+          {uploading
+            ? 'Uploading…'
+            : photoSavedNoPreview
+              ? 'Photo saved (preview unavailable) — Tap to replace'
+              : 'Tap to Capture or Upload'}
+        </button>
+      )}
       {needsPhoto && (
-        <p className="mt-1 text-xs font-semibold text-error">A photo is required for Fail items.</p>
+        <p className="mt-1 text-xs font-semibold text-error">
+          Photo documentation required for failures.
+        </p>
       )}
-      {photoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={photoUrl} alt="" className="mt-3 h-32 w-full rounded object-cover" />
-      )}
-    </div>
+    </Card>
   )
 }

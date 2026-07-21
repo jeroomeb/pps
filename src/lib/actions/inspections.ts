@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { requireRole, getProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
+import { cleanupInspectionStorage } from '@/lib/supabase/storage-cleanup'
 
 const newInspectionSchema = z.object({
   property_id: z.string().uuid(),
@@ -18,7 +19,7 @@ export async function createInspection(
   _prevState: InspectionFormState,
   formData: FormData
 ): Promise<InspectionFormState> {
-  await requireRole('admin')
+  const profile = await requireRole('admin')
 
   const parsed = newInspectionSchema.safeParse({
     property_id: formData.get('property_id'),
@@ -70,7 +71,31 @@ export async function createInspection(
   }
 
   revalidatePath(`/admin/properties/${parsed.data.property_id}`)
+  revalidatePath('/inspector')
+
+  // Self-assigned inspections go straight into the checklist — no extra clicks.
+  if (parsed.data.inspector_id === profile.id) {
+    redirect(`/inspector/inspections/${inspection.id}`)
+  }
   redirect(`/admin/properties/${parsed.data.property_id}`)
+}
+
+export async function deleteInspection(
+  inspectionId: string
+): Promise<{ error?: string } | void> {
+  await requireRole('admin')
+  const supabase = await createClient()
+
+  await cleanupInspectionStorage([inspectionId])
+
+  const { error } = await supabase.from('inspections').delete().eq('id', inspectionId)
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/reports')
+  revalidatePath('/inspector')
 }
 
 const itemUpdateSchema = z.object({
@@ -87,23 +112,45 @@ export async function saveInspectionItem(
     comment?: string
     photo_path?: string | null
   }
-) {
-  await getProfile()
+): Promise<{ error?: string } | void> {
+  // Returns { error } instead of throwing: server-action throw messages are
+  // masked in production, and the autosave UI needs the real reason.
+  const profile = await getProfile()
 
-  const parsed = itemUpdateSchema.parse(input)
+  const parsed = itemUpdateSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: 'Invalid input.' }
+  }
   const supabase = await createClient()
+
+  const { data: inspection } = await supabase
+    .from('inspections')
+    .select('status, inspector_id')
+    .eq('id', inspectionId)
+    .single()
+
+  if (!inspection) {
+    return { error: 'Inspection not found.' }
+  }
+  if (profile.role !== 'admin' && inspection.inspector_id !== profile.id) {
+    return { error: 'You are not assigned to this inspection.' }
+  }
+  if (inspection.status === 'completed') {
+    return { error: 'This inspection has already been submitted and can no longer be edited.' }
+  }
 
   const { error } = await supabase
     .from('inspection_items')
     .update({
-      status: parsed.status,
-      comment: parsed.comment || null,
-      photo_path: parsed.photo_path ?? undefined,
+      status: parsed.data.status,
+      comment: parsed.data.comment || null,
+      // undefined = leave untouched; explicit null clears the photo
+      photo_path: parsed.data.photo_path,
     })
     .eq('id', itemId)
 
   if (error) {
-    throw new Error(error.message)
+    return { error: error.message }
   }
 
   await supabase

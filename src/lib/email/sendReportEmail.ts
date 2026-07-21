@@ -21,13 +21,16 @@ export async function sendReportEmail({
   pdfFilename: string
 }) {
   const resend = new Resend(process.env.RESEND_API_KEY)
-  const logoBuffer = readFileSync(path.join(process.cwd(), 'public', 'logo.png'))
+  const logoBuffer = readFileSync(path.join(process.cwd(), 'public', 'logo-sm.png'))
   const logoCid = 'pps-logo'
 
   const from = process.env.EMAIL_FROM || 'PPS Inspections <onboarding@resend.dev>'
   const cc = process.env.ADMIN_EMAIL ? [process.env.ADMIN_EMAIL] : undefined
 
-  return resend.emails.send({
+  // Resend's SDK resolves with { data, error } instead of throwing on API
+  // errors (e.g. the sandbox-mode 403) — turn those into real exceptions so
+  // callers' try/catch actually fires.
+  const result = await resend.emails.send({
     from,
     to,
     cc,
@@ -45,4 +48,10 @@ export async function sendReportEmail({
       },
     ],
   })
+
+  if (result.error) {
+    throw new Error(`Resend rejected the email: ${result.error.message}`)
+  }
+
+  return result
 }

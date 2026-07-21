@@ -1,8 +1,13 @@
 'use client'
 
-import { useActionState, useRef } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import { SubmitButton } from '@/components/SubmitButton'
+import { Card } from '@/components/ui/Card'
 import { createTeamMember, type TeamMemberFormState } from '@/lib/actions/team'
+
+const INPUT_CLASSES =
+  'min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none'
+const LABEL_CLASSES = 'text-sm font-semibold uppercase tracking-wide'
 
 export function InspectorForm() {
   const [state, formAction] = useActionState<TeamMemberFormState, FormData>(
@@ -11,39 +16,56 @@ export function InspectorForm() {
   )
   const formRef = useRef<HTMLFormElement>(null)
 
+  // Only clear the form on a confirmed success — never wipe the user's
+  // input out from under a validation error.
+  useEffect(() => {
+    if (state?.success) formRef.current?.reset()
+  }, [state])
+
   return (
+    <Card>
     <form
       ref={formRef}
-      action={async (formData) => {
-        await formAction(formData)
-        formRef.current?.reset()
-      }}
-      className="flex flex-col gap-4 rounded border border-outline-variant bg-surface-container-lowest p-4"
+      action={formAction}
+      className="flex flex-col gap-4"
     >
-      <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-        Add Team Member
-      </p>
-      <input
-        name="full_name"
-        placeholder="Full Name"
-        required
-        className="min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none"
-      />
-      <input
-        name="email"
-        type="email"
-        placeholder="Email"
-        required
-        className="min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none"
-      />
-      <input
-        name="password"
-        type="password"
-        placeholder="Temporary Password"
-        required
-        minLength={8}
-        className="min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none"
-      />
+      <div className="flex flex-col gap-1">
+        <label htmlFor="member_full_name" className={LABEL_CLASSES}>
+          Full Name
+        </label>
+        <input
+          id="member_full_name"
+          name="full_name"
+          required
+          className={INPUT_CLASSES}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="member_email" className={LABEL_CLASSES}>
+          Email
+        </label>
+        <input
+          id="member_email"
+          name="email"
+          type="email"
+          required
+          className={INPUT_CLASSES}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="member_password" className={LABEL_CLASSES}>
+          Temporary Password
+        </label>
+        <input
+          id="member_password"
+          name="password"
+          type="password"
+          required
+          minLength={8}
+          autoComplete="new-password"
+          className={INPUT_CLASSES}
+        />
+      </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="role" className="text-sm font-semibold uppercase tracking-wide">
           Role
@@ -68,5 +90,6 @@ export function InspectorForm() {
       )}
       <SubmitButton pendingText="Creating…">+ Add Team Member</SubmitButton>
     </form>
+    </Card>
   )
 }

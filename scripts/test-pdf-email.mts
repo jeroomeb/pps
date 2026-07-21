@@ -32,7 +32,7 @@ async function main() {
     process.exit(1)
   }
 
-  const logoBuffer = readFileSync(path.join(process.cwd(), 'public', 'logo.png'))
+  const logoBuffer = readFileSync(path.join(process.cwd(), 'public', 'logo-sm.png'))
   const logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`
 
   console.log('Rendering PDF...')

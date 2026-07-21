@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PropertyForm } from '@/components/PropertyForm'
 import { updateProperty } from '@/lib/actions/properties'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 export default async function EditPropertyPage({
   params,
@@ -21,11 +22,8 @@ export default async function EditPropertyPage({
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-        Properties
-      </p>
-      <h1 className="mb-6 font-headline text-2xl font-bold">Edit Property</h1>
+    <div className="max-w-2xl">
+      <PageHeader eyebrow="Properties" title="Edit Property" />
       <PropertyForm
         action={updateProperty.bind(null, id)}
         defaultValues={property}

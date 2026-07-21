@@ -2,30 +2,30 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { ADMIN_NAV_ITEMS, INSPECTOR_NAV_ITEMS, isNavItemActive } from '@/lib/nav-items'
 
-export function BottomNav({
-  items,
-}: {
-  items: { href: string; label: string }[]
-}) {
+export function BottomNav({ role }: { role: 'admin' | 'inspector' }) {
   const pathname = usePathname()
+  const items = role === 'admin' ? ADMIN_NAV_ITEMS : INSPECTOR_NAV_ITEMS
 
   return (
-    <nav className="sticky bottom-0 z-10 flex border-t border-outline-variant bg-surface-container-lowest">
+    <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-outline-variant bg-surface-container-lowest lg:hidden">
       {items.map((item) => {
-        const active =
-          pathname === item.href || pathname.startsWith(`${item.href}/`)
+        const active = isNavItemActive(pathname, item)
+        const Icon = item.icon
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-semibold uppercase tracking-wide ${
+            aria-label={item.label}
+            title={item.label}
+            className={`flex flex-1 items-center justify-center py-3 ${
               active
                 ? 'border-t-2 border-primary-container text-on-primary-container'
                 : 'border-t-2 border-transparent text-on-surface-variant'
             }`}
           >
-            {item.label}
+            <Icon size={22} />
           </Link>
         )
       })}

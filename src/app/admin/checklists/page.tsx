@@ -1,5 +1,9 @@
 import Link from 'next/link'
+import { ClipboardList, ChevronRight, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 export default async function ChecklistsPage() {
   const supabase = await createClient()
@@ -9,42 +13,42 @@ export default async function ChecklistsPage() {
     .order('name')
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-            Checklist Types
-          </p>
-          <h1 className="font-headline text-2xl font-bold">Checklists</h1>
-        </div>
-        <Link
-          href="/admin/checklists/new"
-          className="min-h-12 rounded bg-primary-container px-4 flex items-center font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container"
-        >
-          + New Checklist
-        </Link>
-      </div>
+    <div>
+      <PageHeader
+        eyebrow="Checklist Types"
+        title="Checklists"
+        action={
+          <Link
+            href="/admin/checklists/new"
+            className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary-container px-4 font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95"
+          >
+            <Plus size={16} />
+            New Checklist
+          </Link>
+        }
+      />
 
-      <div className="flex flex-col gap-3">
-        {templates?.length ? (
-          templates.map((template) => (
-            <Link
-              key={template.id}
-              href={`/admin/checklists/${template.id}`}
-              className="rounded border border-outline-variant bg-surface-container-lowest p-4 hover:border-outline"
-            >
-              <p className="font-headline text-lg font-semibold">{template.name}</p>
-              <p className="text-sm text-on-surface-variant">
-                {(template.checklist_template_items as unknown as { count: number }[])[0]
-                  ?.count ?? 0}{' '}
-                items
-              </p>
+      {templates?.length ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {templates.map((template) => (
+            <Link key={template.id} href={`/admin/checklists/${template.id}`}>
+              <Card className="flex items-center justify-between hover:border-outline">
+                <div>
+                  <p className="font-headline text-lg font-semibold">{template.name}</p>
+                  <p className="text-sm text-on-surface-variant">
+                    {(template.checklist_template_items as unknown as { count: number }[])[0]
+                      ?.count ?? 0}{' '}
+                    items
+                  </p>
+                </div>
+                <ChevronRight size={18} className="text-on-surface-variant" />
+              </Card>
             </Link>
-          ))
-        ) : (
-          <p className="text-sm text-on-surface-variant">No checklist types yet.</p>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState icon={ClipboardList} title="No checklist types yet" />
+      )}
     </div>
   )
 }

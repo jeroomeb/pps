@@ -19,7 +19,10 @@ const templateSchema = z.object({
     .min(1, 'Add at least one checklist item'),
 })
 
-export type TemplateFormState = { error?: string } | undefined
+export type TemplateFormState = { error?: string; success?: boolean } | undefined
+
+const FRIENDLY_DUPLICATE_NAME =
+  'A checklist with that name already exists — pick a different name.'
 
 export async function createTemplate(
   _prevState: TemplateFormState,
@@ -52,7 +55,9 @@ export async function createTemplate(
     .single()
 
   if (templateError) {
-    return { error: templateError.message }
+    return {
+      error: templateError.code === '23505' ? FRIENDLY_DUPLICATE_NAME : templateError.message,
+    }
   }
 
   const { error: itemsError } = await supabase
@@ -68,6 +73,9 @@ export async function createTemplate(
     )
 
   if (itemsError) {
+    // Don't leave an orphan template behind — it would block a retry with
+    // the same name via the unique constraint.
+    await supabase.from('checklist_templates').delete().eq('id', template.id)
     return { error: itemsError.message }
   }
 
@@ -94,17 +102,21 @@ export async function addTemplateItem(
 
   const supabase = await createClient()
 
-  const { count } = await supabase
+  // max+1 (not count) so deletions never produce duplicate sort_orders
+  const { data: lastItem } = await supabase
     .from('checklist_template_items')
-    .select('id', { count: 'exact', head: true })
+    .select('sort_order')
     .eq('template_id', templateId)
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle()
 
   const { error } = await supabase.from('checklist_template_items').insert({
     template_id: templateId,
     service_category: parsed.data.service_category,
     item_name: parsed.data.item_name,
     description: parsed.data.description || null,
-    sort_order: count ?? 0,
+    sort_order: (lastItem?.sort_order ?? -1) + 1,
   })
 
   if (error) {
@@ -112,11 +124,68 @@ export async function addTemplateItem(
   }
 
   revalidatePath(`/admin/checklists/${templateId}`)
+  return { success: true }
 }
 
-export async function deleteTemplateItem(itemId: string, templateId: string) {
+export async function deleteTemplateItem(
+  itemId: string,
+  templateId: string
+): Promise<{ error?: string } | void> {
   await requireRole('admin')
   const supabase = await createClient()
-  await supabase.from('checklist_template_items').delete().eq('id', itemId)
+  const { error } = await supabase.from('checklist_template_items').delete().eq('id', itemId)
+  if (error) {
+    if (error.code === '23503') {
+      return {
+        error:
+          'This item is referenced by existing inspections and can’t be removed. Delete those inspections first.',
+      }
+    }
+    return { error: error.message }
+  }
   revalidatePath(`/admin/checklists/${templateId}`)
+}
+
+export async function renameTemplate(
+  templateId: string,
+  _prevState: TemplateFormState,
+  formData: FormData
+): Promise<TemplateFormState> {
+  await requireRole('admin')
+
+  const name = String(formData.get('name') ?? '').trim()
+  if (!name) {
+    return { error: 'Checklist name is required.' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('checklist_templates')
+    .update({ name })
+    .eq('id', templateId)
+
+  if (error) {
+    return { error: error.code === '23505' ? FRIENDLY_DUPLICATE_NAME : error.message }
+  }
+
+  revalidatePath('/admin/checklists')
+  revalidatePath(`/admin/checklists/${templateId}`)
+}
+
+export async function deleteTemplate(templateId: string): Promise<{ error?: string } | void> {
+  await requireRole('admin')
+  const supabase = await createClient()
+
+  const { error } = await supabase.from('checklist_templates').delete().eq('id', templateId)
+  if (error) {
+    if (error.code === '23503') {
+      return {
+        error:
+          'This checklist is used by existing inspections and can’t be deleted. Delete those inspections first.',
+      }
+    }
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/checklists')
 }

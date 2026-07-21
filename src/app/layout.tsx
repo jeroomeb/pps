@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Hanken_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/components/ui/Toast";
+import { SwRegister } from "@/components/SwRegister";
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-hanken-grotesk",
@@ -16,6 +18,22 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "PPS Inspections",
   description: "Property Preservation Solutions LLC — inspection & audit app",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PPS Inspections",
+  },
+  icons: {
+    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#f8f9fa",
 };
 
 export default function RootLayout({
@@ -28,7 +46,10 @@ export default function RootLayout({
       lang="en"
       className={`${hankenGrotesk.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-surface text-on-surface">{children}</body>
+      <body className="min-h-full flex flex-col bg-surface text-on-surface">
+        <ToastProvider>{children}</ToastProvider>
+        <SwRegister />
+      </body>
     </html>
   );
 }

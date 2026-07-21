@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { ActiveInspectionChecklist } from '@/components/ActiveInspectionChecklist'
+import { ReadOnlyInspectionView } from '@/components/ReadOnlyInspectionView'
 
 export default async function InspectionDetailPage({
   params,
@@ -15,7 +16,7 @@ export default async function InspectionDetailPage({
   const { data: inspection } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, properties(name), checklist_templates(name)'
+      'id, status, inspector_id, created_at, completed_at, properties(name), checklist_templates(name), profiles(full_name)'
     )
     .eq('id', id)
     .single()
@@ -28,8 +29,11 @@ export default async function InspectionDetailPage({
     redirect('/inspector')
   }
 
-  if (inspection.status === 'completed') {
-    redirect('/inspector')
+  // Admins get the full report (download/resend/email). Inspectors can still
+  // *see* their own completed inspection below — just read-only, since it's
+  // frozen once submitted.
+  if (inspection.status === 'completed' && profile.role === 'admin') {
+    redirect(`/admin/reports/${id}`)
   }
 
   const { data: items } = await supabase
@@ -53,12 +57,27 @@ export default async function InspectionDetailPage({
 
   const property = inspection.properties as unknown as { name: string }
   const template = inspection.checklist_templates as unknown as { name: string }
+  const inspector = inspection.profiles as unknown as { full_name: string }
+
+  if (inspection.status === 'completed') {
+    return (
+      <ReadOnlyInspectionView
+        propertyName={property.name}
+        checklistName={template.name}
+        inspectorName={inspector.full_name}
+        completedAt={inspection.completed_at}
+        items={itemsWithUrls}
+      />
+    )
+  }
 
   return (
     <ActiveInspectionChecklist
       inspectionId={id}
       propertyName={property.name}
       checklistName={template.name}
+      inspectorName={inspector.full_name}
+      startedAt={inspection.created_at}
       initialItems={itemsWithUrls}
     />
   )

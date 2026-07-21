@@ -7,8 +7,12 @@ export function ResendEmailButton({ inspectionId }: { inspectionId: string }) {
 
   async function handleClick() {
     setStatus('sending')
-    const res = await fetch(`/api/inspections/${inspectionId}/resend`, { method: 'POST' })
-    setStatus(res.ok ? 'sent' : 'error')
+    try {
+      const res = await fetch(`/api/inspections/${inspectionId}/resend`, { method: 'POST' })
+      setStatus(res.ok ? 'sent' : 'error')
+    } catch {
+      setStatus('error')
+    }
   }
 
   return (

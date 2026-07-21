@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
+import { cleanupInspectionStorage } from '@/lib/supabase/storage-cleanup'
 
 const propertySchema = z.object({
   name: z.string().trim().min(1, 'Property name is required'),
@@ -75,4 +76,24 @@ export async function updateProperty(
   revalidatePath('/admin/properties')
   revalidatePath(`/admin/properties/${propertyId}`)
   redirect(`/admin/properties/${propertyId}`)
+}
+
+export async function deleteProperty(propertyId: string): Promise<{ error?: string } | void> {
+  await requireRole('admin')
+  const supabase = await createClient()
+
+  const { data: inspections } = await supabase
+    .from('inspections')
+    .select('id')
+    .eq('property_id', propertyId)
+
+  await cleanupInspectionStorage((inspections ?? []).map((i) => i.id))
+
+  const { error } = await supabase.from('properties').delete().eq('id', propertyId)
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/properties')
+  revalidatePath('/admin')
 }

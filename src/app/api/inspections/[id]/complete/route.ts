@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { renderToBuffer } from '@react-pdf/renderer'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/auth/dal'
-import { InspectionReport } from '@/lib/pdf/InspectionReport'
+import { renderInspectionPdf, photoDataUri } from '@/lib/pdf/generate'
 import { sendReportEmail } from '@/lib/email/sendReportEmail'
+
+export const runtime = 'nodejs'
 
 export async function POST(
   _request: Request,
@@ -29,6 +28,13 @@ export async function POST(
 
   if (profile.role !== 'admin' && inspection.inspector_id !== profile.id) {
     return NextResponse.json({ error: 'Not authorized.' }, { status: 403 })
+  }
+
+  if (inspection.status === 'completed') {
+    return NextResponse.json(
+      { error: 'This inspection has already been submitted.' },
+      { status: 409 }
+    )
   }
 
   const { data: items, error: itemsError } = await supabase
@@ -60,16 +66,10 @@ export async function POST(
   const admin = createAdminClient()
 
   const itemsWithPhotoUrls = await Promise.all(
-    items.map(async (item) => {
-      let photoUrl: string | null = null
-      if (item.photo_path) {
-        const { data } = await admin.storage
-          .from('photos')
-          .createSignedUrl(item.photo_path, 300)
-        photoUrl = data?.signedUrl ?? null
-      }
-      return { ...item, photoUrl }
-    })
+    items.map(async (item) => ({
+      ...item,
+      photoUrl: await photoDataUri(admin, item.photo_path),
+    }))
   )
 
   const property = inspection.properties as unknown as {
@@ -86,20 +86,15 @@ export async function POST(
     timeStyle: 'short',
   })
 
-  const logoBuffer = readFileSync(path.join(process.cwd(), 'public', 'logo.png'))
-  const logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`
-
-  const pdfBuffer = await renderToBuffer(
-    InspectionReport({
-      logoUrl: logoDataUri,
-      propertyName: property.name,
-      propertyAddress: property.address,
-      checklistName: template.name,
-      inspectorName: inspectorProfile.full_name,
-      completedAt: completedAtLabel,
-      items: itemsWithPhotoUrls,
-    })
-  )
+  const pdfBuffer = await renderInspectionPdf({
+    reportId: inspectionId.slice(0, 8).toUpperCase(),
+    propertyName: property.name,
+    propertyAddress: property.address,
+    checklistName: template.name,
+    inspectorName: inspectorProfile.full_name,
+    completedAt: completedAtLabel,
+    items: itemsWithPhotoUrls,
+  })
 
   const pdfPath = `${inspectionId}.pdf`
   const { error: uploadError } = await admin.storage
@@ -110,13 +105,23 @@ export async function POST(
     return NextResponse.json({ error: uploadError.message }, { status: 500 })
   }
 
-  const { error: updateError } = await admin
+  // Compare-and-set: if a concurrent submit already completed it, bail before
+  // sending a duplicate email.
+  const { data: updatedRows, error: updateError } = await admin
     .from('inspections')
     .update({ status: 'completed', completed_at: completedAt.toISOString(), pdf_path: pdfPath })
     .eq('id', inspectionId)
+    .neq('status', 'completed')
+    .select('id')
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 })
+  }
+  if (!updatedRows?.length) {
+    return NextResponse.json(
+      { error: 'This inspection has already been submitted.' },
+      { status: 409 }
+    )
   }
 
   try {

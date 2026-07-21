@@ -9,9 +9,9 @@ export function Header({
   fullName: string
 }) {
   return (
-    <header className="flex items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-4 py-3">
+    <header className="flex items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-4 py-3 lg:hidden">
       <div className="flex items-center gap-3">
-        <Image src="/logo.png" alt="" width={32} height={32} className="rounded" />
+        <Image src="/logo-sm.png" alt="" width={32} height={32} className="rounded" />
         <div>
           <p className="font-headline text-lg font-bold leading-tight">{title}</p>
           <p className="text-xs text-on-surface-variant">{fullName}</p>

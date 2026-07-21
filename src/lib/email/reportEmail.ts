@@ -1,8 +1,17 @@
+function esc(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
 export function reportEmailHtml({
-  propertyName,
-  checklistName,
-  inspectorName,
-  completedAt,
+  propertyName: rawPropertyName,
+  checklistName: rawChecklistName,
+  inspectorName: rawInspectorName,
+  completedAt: rawCompletedAt,
   logoCid,
 }: {
   propertyName: string
@@ -11,6 +20,10 @@ export function reportEmailHtml({
   completedAt: string
   logoCid: string
 }) {
+  const propertyName = esc(rawPropertyName)
+  const checklistName = esc(rawChecklistName)
+  const inspectorName = esc(rawInspectorName)
+  const completedAt = esc(rawCompletedAt)
   return `
   <div style="font-family: Inter, Arial, sans-serif; background:#f8f9fa; padding:32px;">
     <table role="presentation" width="100%" style="max-width:520px; margin:0 auto; background:#ffffff; border-radius:8px; overflow:hidden; border:1px solid #e0e0e0;">

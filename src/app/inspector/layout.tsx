@@ -1,5 +1,8 @@
 import { getProfile } from '@/lib/auth/dal'
 import { Header } from '@/components/Header'
+import { BottomNav } from '@/components/BottomNav'
+import { AppShell } from '@/components/AppShell'
+import { signOut } from '@/lib/actions/auth'
 
 export default async function InspectorLayout({
   children,
@@ -11,9 +14,17 @@ export default async function InspectorLayout({
   const profile = await getProfile()
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <>
       <Header title="PPS Inspections" fullName={profile.full_name} />
-      <main className="flex-1 overflow-y-auto bg-surface pb-8">{children}</main>
-    </div>
+      <AppShell
+        role={profile.role}
+        fullName={profile.full_name}
+        showStartAudit={profile.role === 'admin'}
+        signOutAction={signOut}
+      >
+        {children}
+      </AppShell>
+      <BottomNav role={profile.role} />
+    </>
   )
 }

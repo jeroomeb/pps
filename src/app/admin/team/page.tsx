@@ -1,7 +1,13 @@
+import { Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { InspectorForm } from '@/components/InspectorForm'
 import { RoleToggleButton } from '@/components/RoleToggleButton'
 import { getProfile } from '@/lib/auth/dal'
+import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
+import { deleteTeamMember } from '@/lib/actions/team'
 
 export default async function TeamPage() {
   const currentProfile = await getProfile()
@@ -12,36 +18,52 @@ export default async function TeamPage() {
     .order('full_name')
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-        Team
-      </p>
-      <h1 className="mb-6 font-headline text-2xl font-bold">Team Members</h1>
+    <div>
+      <PageHeader eyebrow="Team" title="Team Members" />
 
-      <div className="mb-8 flex flex-col gap-3">
-        {members?.length ? (
-          members.map((member) => (
-            <div
-              key={member.id}
-              className="flex items-center justify-between rounded border border-outline-variant bg-surface-container-lowest p-4"
-            >
-              <div>
-                <p className="font-semibold">{member.full_name}</p>
-                <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                  {member.role}
-                </p>
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1.3fr_1fr]">
+        <section>
+          <h2 className="mb-3 font-headline text-lg font-semibold">Current Members</h2>
+          {members?.length ? (
+            <Card padded={false}>
+              <div className="flex flex-col divide-y divide-outline-variant">
+                {members.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between gap-3 p-4"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{member.full_name}</p>
+                      <p className="label-tracked text-on-surface-variant">{member.role}</p>
+                    </div>
+                    {member.id !== currentProfile.id ? (
+                      <div className="flex shrink-0 items-center gap-2">
+                        <RoleToggleButton profileId={member.id} role={member.role} />
+                        <ConfirmDeleteButton
+                          action={deleteTeamMember.bind(null, member.id)}
+                          confirmMessage="Delete this team member?"
+                          iconOnly
+                        />
+                      </div>
+                    ) : (
+                      <span className="shrink-0 rounded-full bg-secondary-container px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
+                        You
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
-              {member.id !== currentProfile.id && (
-                <RoleToggleButton profileId={member.id} role={member.role} />
-              )}
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-on-surface-variant">No team members yet.</p>
-        )}
-      </div>
+            </Card>
+          ) : (
+            <EmptyState icon={Users} title="No team members yet" />
+          )}
+        </section>
 
-      <InspectorForm />
+        <section>
+          <h2 className="mb-3 font-headline text-lg font-semibold">Add Team Member</h2>
+          <InspectorForm />
+        </section>
+      </div>
     </div>
   )
 }

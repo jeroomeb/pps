@@ -58,13 +58,16 @@ create table if not exists inspection_items (
   sort_order int not null default 0,
   status text check (status in ('pass', 'fail', 'na')),
   comment text,
-  photo_path text
+  photo_path text,
+  unique (inspection_id, template_item_id)
 );
 
 create index if not exists inspections_property_id_idx on inspections (property_id);
 create index if not exists inspections_inspector_id_idx on inspections (inspector_id);
 create index if not exists inspection_items_inspection_id_idx on inspection_items (inspection_id);
 create index if not exists checklist_template_items_template_id_idx on checklist_template_items (template_id);
+create index if not exists inspections_template_id_idx on inspections (template_id);
+create index if not exists inspection_items_template_item_id_idx on inspection_items (template_item_id);
 
 -- ============================================================
 -- Helper function: current user's role (avoids RLS recursion)
@@ -141,9 +144,15 @@ drop policy if exists "inspections_admin_delete" on inspections;
 create policy "inspections_admin_delete" on inspections
   for delete using (current_role_is_admin());
 
+-- Completed inspections are frozen: the emailed report is the record of
+-- truth, so nobody edits them through the app's user-scoped client.
+-- (The submit pipeline itself runs on the service role and is unaffected.)
 drop policy if exists "inspections_update" on inspections;
 create policy "inspections_update" on inspections
-  for update using (inspector_id = auth.uid() or current_role_is_admin())
+  for update using (
+    (inspector_id = auth.uid() or current_role_is_admin())
+    and status <> 'completed'
+  )
   with check (inspector_id = auth.uid() or current_role_is_admin());
 
 -- inspection_items: visible/editable only through owning inspection
@@ -174,12 +183,14 @@ create policy "inspection_items_update" on inspection_items
       select 1 from inspections i
       where i.id = inspection_items.inspection_id
         and (i.inspector_id = auth.uid() or current_role_is_admin())
+        and i.status <> 'completed'
     )
   ) with check (
     exists (
       select 1 from inspections i
       where i.id = inspection_items.inspection_id
         and (i.inspector_id = auth.uid() or current_role_is_admin())
+        and i.status <> 'completed'
     )
   );
 
@@ -187,6 +198,11 @@ create policy "inspection_items_update" on inspection_items
 -- New auth user -> profile row (defaults to inspector; promote admins manually)
 -- ============================================================
 
+-- SECURITY: always 'inspector'. Never trust raw_user_meta_data for the role —
+-- it is client-supplied at signup, so honoring it would let anyone who can
+-- reach the public signup endpoint mint themselves an admin account.
+-- Admin-created team members are promoted explicitly by the createTeamMember
+-- server action (service role) after the user is created.
 create or replace function handle_new_user()
 returns trigger
 language plpgsql
@@ -197,7 +213,7 @@ begin
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', new.email),
-    coalesce(new.raw_user_meta_data->>'role', 'inspector')
+    'inspector'
   );
   return new;
 end;

@@ -1,5 +1,9 @@
 import Link from 'next/link'
+import { Building2, ChevronRight, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 export default async function PropertiesPage() {
   const supabase = await createClient()
@@ -9,41 +13,84 @@ export default async function PropertiesPage() {
     .order('name')
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-            Portfolio
-          </p>
-          <h1 className="font-headline text-2xl font-bold">Properties</h1>
-        </div>
-        <Link
-          href="/admin/properties/new"
-          className="min-h-12 rounded bg-primary-container px-4 flex items-center font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container"
-        >
-          + New Property
-        </Link>
-      </div>
+    <div>
+      <PageHeader
+        eyebrow="Portfolio"
+        title="Properties"
+        action={
+          <Link
+            href="/admin/properties/new"
+            className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary-container px-4 font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95"
+          >
+            <Plus size={16} />
+            New Property
+          </Link>
+        }
+      />
 
-      <div className="flex flex-col gap-3">
-        {properties?.length ? (
-          properties.map((property) => (
-            <Link
-              key={property.id}
-              href={`/admin/properties/${property.id}`}
-              className="rounded border border-outline-variant bg-surface-container-lowest p-4 hover:border-outline"
-            >
-              <p className="font-headline text-lg font-semibold">{property.name}</p>
-              <p className="text-sm text-on-surface-variant">{property.address}</p>
-              <p className="text-sm text-on-surface-variant">{property.email}</p>
-            </Link>
-          ))
-        ) : (
-          <p className="text-sm text-on-surface-variant">
-            No properties yet. Create your first one to get started.
-          </p>
-        )}
-      </div>
+      {properties?.length ? (
+        <Card padded={false}>
+          <table className="hidden w-full text-sm lg:table">
+            <thead>
+              <tr className="border-b border-outline-variant text-left label-tracked text-on-surface-variant">
+                <th className="px-4 py-3 font-semibold">Name</th>
+                <th className="px-4 py-3 font-semibold">Address</th>
+                <th className="px-4 py-3 font-semibold">Email</th>
+                <th className="w-10 px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {properties.map((property) => {
+                const href = `/admin/properties/${property.id}`
+                const cell = 'block px-4 py-3'
+                return (
+                  <tr
+                    key={property.id}
+                    className="border-b border-outline-variant transition last:border-0 hover:bg-surface-container-low"
+                  >
+                    <td className="p-0 font-semibold">
+                      <Link href={href} className={cell}>{property.name}</Link>
+                    </td>
+                    <td className="p-0 text-on-surface-variant">
+                      <Link href={href} className={cell}>{property.address}</Link>
+                    </td>
+                    <td className="p-0 text-on-surface-variant">
+                      <Link href={href} className={cell}>{property.email}</Link>
+                    </td>
+                    <td className="p-0">
+                      <Link href={href} className={cell}>
+                        <ChevronRight size={16} className="text-on-surface-variant" />
+                      </Link>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+
+          <div className="flex flex-col divide-y divide-outline-variant lg:hidden">
+            {properties.map((property) => (
+              <Link
+                key={property.id}
+                href={`/admin/properties/${property.id}`}
+                className="flex items-center justify-between p-4"
+              >
+                <div>
+                  <p className="font-headline font-semibold">{property.name}</p>
+                  <p className="text-sm text-on-surface-variant">{property.address}</p>
+                </div>
+                <ChevronRight size={18} className="text-on-surface-variant" />
+              </Link>
+            ))}
+          </div>
+        </Card>
+      ) : (
+        <EmptyState
+          icon={Building2}
+          title="No properties yet"
+          description="Create your first one to get started."
+        />
+      )}
     </div>
   )
 }

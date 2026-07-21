@@ -1,7 +1,13 @@
 import { notFound } from 'next/navigation'
+import { ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { AddChecklistItemForm } from '@/components/AddChecklistItemForm'
 import { DeleteItemButton } from '@/components/DeleteItemButton'
+import { Card } from '@/components/ui/Card'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { RenameTemplateForm } from '@/components/RenameTemplateForm'
+import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
+import { deleteTemplate } from '@/lib/actions/checklists'
 
 export default async function ChecklistDetailPage({
   params,
@@ -31,24 +37,42 @@ export default async function ChecklistDetailPage({
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-        Checklists
-      </p>
-      <h1 className="mb-6 font-headline text-2xl font-bold">{template.name}</h1>
+    <div className="max-w-3xl">
+      <PageHeader
+        eyebrow="Checklists"
+        title={template.name}
+        action={
+          <>
+            <RenameTemplateForm templateId={id} currentName={template.name} />
+            <ConfirmDeleteButton
+              action={deleteTemplate.bind(null, id)}
+              confirmMessage="Delete this checklist type?"
+              redirectTo="/admin/checklists"
+            />
+          </>
+        }
+      />
 
-      <section className="mb-8 flex flex-col gap-4">
+      <section className="mb-8">
+        <h2 className="mb-3 font-headline text-lg font-semibold">Add Item</h2>
+        <AddChecklistItemForm templateId={id} />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-headline text-lg font-semibold">
+          Checklist Items ({items?.length ?? 0})
+        </h2>
         {[...grouped.entries()].map(([category, categoryItems]) => (
-          <div key={category}>
-            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-on-surface-variant">
-              {category}
-            </h2>
-            <div className="flex flex-col gap-2">
+          <details key={category} className="group" open={grouped.size <= 3}>
+            <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3">
+              <span className="label-tracked">
+                {category} ({categoryItems!.length})
+              </span>
+              <ChevronDown size={16} className="transition group-open:rotate-180" />
+            </summary>
+            <div className="flex flex-col gap-2 py-3">
               {categoryItems!.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-start justify-between rounded border border-outline-variant bg-surface-container-lowest p-3"
-                >
+                <Card key={item.id} className="flex items-start justify-between">
                   <div>
                     <p className="font-semibold">{item.item_name}</p>
                     {item.description && (
@@ -56,17 +80,15 @@ export default async function ChecklistDetailPage({
                     )}
                   </div>
                   <DeleteItemButton itemId={item.id} templateId={id} />
-                </div>
+                </Card>
               ))}
             </div>
-          </div>
+          </details>
         ))}
         {!items?.length && (
-          <p className="text-sm text-on-surface-variant">No items yet — add the first one below.</p>
+          <p className="text-sm text-on-surface-variant">No items yet — add the first one above.</p>
         )}
       </section>
-
-      <AddChecklistItemForm templateId={id} />
     </div>
   )
 }
