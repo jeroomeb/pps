@@ -95,15 +95,17 @@ passed to Client Components from Server Components."
   Sign In / Up) as of session 6 — verified live via a real signup attempt
   returning `422 signup_disabled`. Team members are created only from
   `/admin/team` (Auth Admin API), which is unaffected by this toggle.
-- **Temporary demo deployment**: `https://ppsdemo.vercel.app`, Vercel project
-  `hassan-wedontcode/pps` (Hassan's personal Vercel account — client will
-  redeploy on their own Vercel account for real production). Same live
+- **Temporary demo deployment**: `https://ppsinspections.vercel.app`, Vercel
+  project `hassan-wedontcode/pps` (Hassan's personal Vercel account — client
+  will redeploy on their own Vercel account for real production). Same live
   Supabase project as local dev — this is not a separate sandbox. Deployment
   Protection (SSO wall) was disabled on this project via the Vercel API so the
   link is openly shareable (`ssoProtection: null`); re-enable if the link
-  needs to stop being public. A manually-added alias like `ppsdemo.vercel.app`
-  does **not** move automatically on redeploy — after `vercel --prod`, re-run
-  `vercel alias set <new-deployment-url> ppsdemo.vercel.app`.
+  needs to stop being public. A manually-added alias like
+  `ppsinspections.vercel.app` does **not** move automatically on redeploy —
+  after `vercel --prod`, re-run
+  `vercel alias set <new-deployment-url> ppsinspections.vercel.app`. (The old
+  `ppsdemo.vercel.app` alias was retired on 2026-07-21 in favor of this one.)
 - Seed checklists: `npm run seed` (reads `supabase/seed/checklists.csv`,
   requires `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` +
   `SUPABASE_SERVICE_ROLE_KEY`). Safe to re-run — upserts templates, replaces
