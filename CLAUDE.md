@@ -200,7 +200,21 @@ warnings remain):
     Supabase Storage before handover, since it depends on `storage.download`
     of real photos.
 
-**Follow-up (same session): inspectors can now view their own completed
+**Follow-up 2 (same session): PDF photos fixed for real + shipped live.** The
+first data-URI fix still didn't show photos because phone/browser captures here
+are frequently **WebP** (confirmed: a real fail item's photo was a 1024×1024
+`.webp`), which `@react-pdf` cannot decode at all. `photoDataUri` now pipes
+every downloaded image through **sharp → JPEG** (also auto-rotates via EXIF and
+downsizes to 1600px), with a JPEG/PNG passthrough fallback. `sharp` promoted to
+a direct dependency (`^0.34.5`). Verified end-to-end: rendered the actual report
+for the WebP-photo inspection and confirmed the image embeds and is visible
+(image XObjects present, Quick Look render checked). Also **removed the
+property-level status badge** ("Critical"/"Healthy") from the dashboard Recent
+Properties table + mobile cards (client request) — the column now shows the
+last checklist run. Everything committed, pushed to `jeroomeb/pps`, and
+deployed to `ppsdemo.vercel.app` (`vercel --prod` + re-alias; `/login` 200).
+
+**Follow-up 1 (same session): inspectors can now view their own completed
 inspections (read-only).** Previously `inspector/inspections/[id]` *redirected
 away* on `status = 'completed'`, so inspectors couldn't see submitted work at
 all. Now: completed + admin → redirect to `/admin/reports/[id]` (full report);
