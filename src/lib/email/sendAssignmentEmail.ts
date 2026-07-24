@@ -30,6 +30,7 @@ export async function sendAssignmentEmail({
     process.env.EMAIL_FROM_ASSIGNMENTS ||
     process.env.EMAIL_FROM ||
     "Amenity Op's <inspections@amenityops.app>"
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://portal.amenityops.app'
 
   const scheduledLabel = scheduledFor
     ? new Date(scheduledFor).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })
@@ -58,6 +59,9 @@ export async function sendAssignmentEmail({
           <p style="font-size:14px; color:#4b5563; margin-top:24px;">
             Log in to Amenity Op&#39;s to view and complete this inspection.
           </p>
+          <a href="${siteUrl}/login" style="display:inline-block; margin-top:8px; background:#ee8a4b; color:#2b3742; text-decoration:none; font-weight:700; font-size:14px; padding:10px 20px; border-radius:8px;">
+            Open Amenity Op&#39;s
+          </a>
         </td>
       </tr>
     </table>

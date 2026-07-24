@@ -47,8 +47,14 @@ export async function requestPasswordReset(
     return { error: 'Enter your email address.' }
   }
 
+  // Prefer the canonical site URL so reset links always point at the primary
+  // domain (portal.amenityops.app), regardless of which host was used to
+  // request the reset. Falls back to the request origin if unset.
   const h = await headers()
-  const origin = h.get('origin') ?? (h.get('host') ? `https://${h.get('host')}` : '')
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    h.get('origin') ||
+    (h.get('host') ? `https://${h.get('host')}` : '')
 
   const supabase = await createClient()
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
