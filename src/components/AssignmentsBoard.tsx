@@ -65,11 +65,19 @@ export function AssignmentsBoard({
     accent: boolean
     filter: Filter
   }[] = [
+    { label: 'Total Assigned', value: inspections.length, icon: ClipboardCheck, accent: false, filter: 'all' },
     { label: 'Pending', value: pending.length, icon: ClipboardList, accent: true, filter: 'pending' },
     { label: 'In Progress', value: inProgress.length, icon: Clock, accent: true, filter: 'in_progress' },
     { label: 'Completed', value: completed.length, icon: CheckCircle2, accent: false, filter: 'completed' },
-    { label: 'Total Assigned', value: inspections.length, icon: ClipboardCheck, accent: false, filter: 'all' },
   ]
+
+  // Empty-state copy for the open list reflects the active filter.
+  const openEmptyTitle =
+    filter === 'pending'
+      ? 'No Pending Inspections'
+      : filter === 'in_progress'
+        ? 'No In-Progress Inspections'
+        : 'No open inspections'
 
   return (
     <div>
@@ -151,7 +159,7 @@ export function AssignmentsBoard({
               })}
             </div>
           ) : (
-            <EmptyState icon={ClipboardCheck} title="No open inspections" description="Nice work!" />
+            <EmptyState icon={ClipboardCheck} title={openEmptyTitle} description="Nice work!" />
           )}
         </section>
       )}
