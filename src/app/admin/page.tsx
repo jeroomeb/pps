@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Building2, ClipboardList, ChevronRight, Plus, CalendarClock } from 'lucide-react'
+import { Building2, ClipboardList, ChevronRight, Plus, CalendarClock, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -25,7 +25,8 @@ export default async function AdminDashboardPage() {
       .order('created_at', { ascending: false }),
   ])
 
-  const pendingCount = (inspections ?? []).filter((i) => i.status !== 'completed').length
+  const pendingCount = (inspections ?? []).filter((i) => i.status === 'pending').length
+  const inProgressCount = (inspections ?? []).filter((i) => i.status === 'in_progress').length
 
   // Properties whose monthly schedule falls due this month with no inspection
   // yet scheduled for that occurrence.
@@ -65,7 +66,7 @@ export default async function AdminDashboardPage() {
         }
       />
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link href="/admin/properties" className="rounded-lg transition hover:brightness-95">
           <Card className="flex items-center justify-between">
             <div>
@@ -75,13 +76,22 @@ export default async function AdminDashboardPage() {
             <Building2 size={28} className="text-primary" />
           </Card>
         </Link>
-        <Link href="/admin/inspections?status=open" className="rounded-lg transition hover:brightness-95">
+        <Link href="/admin/inspections?status=pending" className="rounded-lg transition hover:brightness-95">
           <Card className="flex items-center justify-between">
             <div>
               <p className="label-tracked text-on-surface-variant">Pending Inspections</p>
               <p className="font-headline text-3xl font-bold">{pendingCount}</p>
             </div>
             <ClipboardList size={28} className="text-primary" />
+          </Card>
+        </Link>
+        <Link href="/admin/inspections?status=in_progress" className="rounded-lg transition hover:brightness-95">
+          <Card className="flex items-center justify-between">
+            <div>
+              <p className="label-tracked text-on-surface-variant">In Progress</p>
+              <p className="font-headline text-3xl font-bold">{inProgressCount}</p>
+            </div>
+            <Clock size={28} className="text-primary" />
           </Card>
         </Link>
       </div>

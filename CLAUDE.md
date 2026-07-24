@@ -188,6 +188,28 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-07-25 — Properties invisible: migration 0002 was NOT on the live DB (session 9)
+Client reported "can't see any existing properties" after login. Root-caused via
+read-only diagnostics against the live Supabase project (`lxihknznkiarqyqfulgm`,
+same DB Vercel prod uses): **migration `0002_amenity_punchlist.sql` was not
+applied** — the DB was found in a pre-0002 state (missing `properties.{human_id,
+phone,notes,required_schedule}`, all new `profiles.*` cols, `inspections.
+scheduled_for`, and the `documents` bucket). The properties list query selects
+`phone`/`human_id`, so it errored → null → "No properties yet", even though 2
+properties + 7 inspections exist. **Contradicts the session-8 entry below, which
+claims 0002 was applied** — the DB appears to have been reset/restored since.
+**Fix: re-run `0001` then `0002` in the Supabase SQL editor** (both idempotent);
+no code change needed for the properties bug. Confirm with the client whether the
+prod DB was intentionally restored (possible data loss). Also this session:
+- Dashboard now has 3 stat cards — Total Properties / Pending (`status='pending'`
+  only, was misleadingly "all open") / **In Progress** (`status='in_progress'`),
+  each linking to its exact `/admin/inspections?status=` filter.
+- "My Assignments" (`/inspector`) stat numbers were dead in-page anchors
+  (`#open`/`#completed`) — replaced with **in-place filtering**: `inspector/
+  page.tsx` now passes plain rows to new client component `AssignmentsBoard.tsx`,
+  whose 4 stat cards are filter toggles over the Open/Completed lists.
+- `tsc`/`eslint`/`build` clean.
+
 ### 2026-07-25 — Rebrand to Amenity Op's + punch list #8, live on client's Vercel (session 8)
 Full rebrand + a ~14-item client revision list, all built, pushed to
 `jeroomeb/pps`, and **deployed to the client's own Vercel account** at
