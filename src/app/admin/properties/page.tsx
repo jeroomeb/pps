@@ -9,7 +9,7 @@ export default async function PropertiesPage() {
   const supabase = await createClient()
   const { data: properties } = await supabase
     .from('properties')
-    .select('id, name, address, email')
+    .select('id, name, address, email, phone, human_id')
     .order('name')
 
   return (
@@ -33,8 +33,10 @@ export default async function PropertiesPage() {
           <table className="hidden w-full text-sm lg:table">
             <thead>
               <tr className="border-b border-outline-variant text-left label-tracked text-on-surface-variant">
+                <th className="px-4 py-3 font-semibold">ID</th>
                 <th className="px-4 py-3 font-semibold">Name</th>
                 <th className="px-4 py-3 font-semibold">Address</th>
+                <th className="px-4 py-3 font-semibold">Phone</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="w-10 px-4 py-3" />
               </tr>
@@ -48,11 +50,17 @@ export default async function PropertiesPage() {
                     key={property.id}
                     className="border-b border-outline-variant transition last:border-0 hover:bg-surface-container-low"
                   >
+                    <td className="p-0 font-mono text-xs text-on-surface-variant">
+                      <Link href={href} className={cell}>{property.human_id ?? '—'}</Link>
+                    </td>
                     <td className="p-0 font-semibold">
                       <Link href={href} className={cell}>{property.name}</Link>
                     </td>
                     <td className="p-0 text-on-surface-variant">
                       <Link href={href} className={cell}>{property.address}</Link>
+                    </td>
+                    <td className="p-0 text-on-surface-variant">
+                      <Link href={href} className={cell}>{property.phone ?? '—'}</Link>
                     </td>
                     <td className="p-0 text-on-surface-variant">
                       <Link href={href} className={cell}>{property.email}</Link>
@@ -78,6 +86,7 @@ export default async function PropertiesPage() {
                 <div>
                   <p className="font-headline font-semibold">{property.name}</p>
                   <p className="text-sm text-on-surface-variant">{property.address}</p>
+                  <p className="font-mono text-xs text-on-surface-variant">{property.human_id ?? ''}</p>
                 </div>
                 <ChevronRight size={18} className="text-on-surface-variant" />
               </Link>

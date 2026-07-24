@@ -5,6 +5,8 @@ import {
   ClipboardList,
   MapPin,
   Mail,
+  Phone,
+  CalendarDays,
   ChevronRight,
   ClipboardCheck,
   Clock,
@@ -17,6 +19,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { deleteProperty } from '@/lib/actions/properties'
+import { parseSchedule, scheduleEntryLabel } from '@/lib/schedule'
 
 export default async function PropertyDetailPage({
   params,
@@ -65,14 +68,24 @@ export default async function PropertyDetailPage({
       <PageHeader
         eyebrow="Property"
         title={property.name}
+        backHref="/admin/properties"
+        backLabel="Properties"
         subtitle={
           <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {property.human_id && (
+              <span className="font-mono font-semibold">{property.human_id}</span>
+            )}
             <span className="flex items-center gap-1">
               <MapPin size={13} /> {property.address}
             </span>
             <span className="flex items-center gap-1">
               <Mail size={13} /> {property.email}
             </span>
+            {property.phone && (
+              <span className="flex items-center gap-1">
+                <Phone size={13} /> {property.phone}
+              </span>
+            )}
           </span>
         }
         action={
@@ -92,6 +105,38 @@ export default async function PropertyDetailPage({
           </>
         }
       />
+
+      {(() => {
+        const schedule = parseSchedule(property.required_schedule)
+        if (!schedule.length && !property.notes) return null
+        return (
+          <Card className="mb-8 flex flex-col gap-3">
+            {schedule.length > 0 && (
+              <div>
+                <p className="label-tracked mb-1.5 flex items-center gap-1.5 text-on-surface-variant">
+                  <CalendarDays size={13} /> Required Inspection Days
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {schedule.map((entry) => (
+                    <span
+                      key={`${entry.ordinal}-${entry.weekday}`}
+                      className="rounded-full bg-primary-container px-3 py-1 text-xs font-semibold text-on-primary-container"
+                    >
+                      {scheduleEntryLabel(entry)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {property.notes && (
+              <div>
+                <p className="label-tracked mb-1 text-on-surface-variant">Notes</p>
+                <p className="text-sm">{property.notes}</p>
+              </div>
+            )}
+          </Card>
+        )
+      })()}
 
       <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {stats.map((stat) => {

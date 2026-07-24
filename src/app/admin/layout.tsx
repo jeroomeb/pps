@@ -13,7 +13,7 @@ export default async function AdminLayout({
 
   return (
     <>
-      <Header title="PPS Inspections — Admin" fullName={profile.full_name} />
+      <Header title="Amenity Op's — Admin" fullName={profile.full_name} />
       <AppShell role="admin" fullName={profile.full_name} showStartAudit signOutAction={signOut}>
         {children}
       </AppShell>

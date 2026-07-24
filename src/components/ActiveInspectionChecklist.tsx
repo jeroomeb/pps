@@ -1,7 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft } from 'lucide-react'
 import { ChecklistItemCard, type ChecklistItemData } from '@/components/ChecklistItemCard'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
@@ -92,6 +94,13 @@ export function ActiveInspectionChecklist({
 
   return (
     <div className="max-w-3xl pb-28 lg:pb-8">
+      <Link
+        href="/inspector"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+      >
+        <ArrowLeft size={16} />
+        Back to My Inspections
+      </Link>
       <Card className="mb-6">
         <div className="mb-3 flex items-baseline justify-between">
           <div>
@@ -116,7 +125,7 @@ export function ActiveInspectionChecklist({
             <p className="text-sm font-semibold">#{inspectionId.slice(0, 8).toUpperCase()}</p>
           </div>
           <div>
-            <p className="label-tracked text-on-surface-variant">Inspector</p>
+            <p className="label-tracked text-on-surface-variant">Specialist</p>
             <p className="text-sm font-semibold">{inspectorName}</p>
           </div>
           <div>

@@ -1,11 +1,11 @@
 import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer'
 
-const GOLD = '#d4af37'
-const GOLD_DARK = '#554300'
+const GOLD = '#ee8a4b'
+const GOLD_DARK = '#364750'
 const CHARCOAL = '#191c1d'
 const MUTED = '#5d5e61'
-const BORDER = '#d0c5af'
-const PANEL = '#f6f4ee'
+const BORDER = '#d0d5dd'
+const PANEL = '#f4f6f8'
 
 const styles = StyleSheet.create({
   page: {
@@ -213,8 +213,8 @@ export function InspectionReport({
           <View style={styles.headerLeft}>
             <Image src={logoUrl} style={styles.logo} />
             <View>
-              <Text style={styles.company}>Property Preservation Solutions LLC</Text>
-              <Text style={styles.reportKicker}>Inspection Report</Text>
+              <Text style={styles.company}>Amenity Op&apos;s</Text>
+              <Text style={styles.reportKicker}>Operations, Asset and Logistics Report</Text>
             </View>
           </View>
           <View>
@@ -238,7 +238,7 @@ export function InspectionReport({
             <Text style={styles.metaValue}>{checklistName}</Text>
           </View>
           <View style={styles.metaItem}>
-            <Text style={styles.metaLabel}>Inspector</Text>
+            <Text style={styles.metaLabel}>Specialist</Text>
             <Text style={styles.metaValue}>{inspectorName}</Text>
           </View>
           <View style={styles.metaItem}>
@@ -267,7 +267,7 @@ export function InspectionReport({
                   <Text style={[styles.status, styles.statusFail]}>FAIL</Text>
                 </View>
                 <Text style={styles.failCategory}>{item.service_category}</Text>
-                <Text style={styles.commentLabel}>Inspector Comments</Text>
+                <Text style={styles.commentLabel}>Specialist Comments</Text>
                 <Text style={styles.commentText}>{item.comment?.trim() || '—'}</Text>
                 {item.photoUrl && <Image src={item.photoUrl} style={styles.photo} />}
               </View>
@@ -294,7 +294,7 @@ export function InspectionReport({
                     <View style={styles.itemBody}>
                       <Text style={styles.itemName}>{item.item_name}</Text>
                       {item.comment?.trim() ? (
-                        <Text style={styles.itemComment}>Inspector comments: {item.comment}</Text>
+                        <Text style={styles.itemComment}>Specialist comments: {item.comment}</Text>
                       ) : null}
                       {item.photoUrl && <Image src={item.photoUrl} style={styles.photoSmall} />}
                     </View>
@@ -308,7 +308,7 @@ export function InspectionReport({
 
         <View style={styles.footer} fixed>
           <Text>
-            Certified inspection report — Property Preservation Solutions LLC
+            Certified inspection report — Amenity Op&apos;s
           </Text>
           <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
         </View>

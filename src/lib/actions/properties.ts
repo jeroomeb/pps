@@ -6,14 +6,31 @@ import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { cleanupInspectionStorage } from '@/lib/supabase/storage-cleanup'
+import { genPropertyId } from '@/lib/ids'
+import type { ScheduleEntry } from '@/lib/schedule'
 
 const propertySchema = z.object({
   name: z.string().trim().min(1, 'Property name is required'),
   address: z.string().trim().min(1, 'Address is required'),
   email: z.string().trim().email('Enter a valid email'),
+  phone: z.string().trim().optional(),
+  notes: z.string().trim().optional(),
 })
 
 export type PropertyFormState = { error?: string } | undefined
+
+// Schedule checkboxes are submitted as `schedule=<ordinal>-<weekday>` values.
+function parseScheduleFromForm(formData: FormData): ScheduleEntry[] {
+  const seen = new Set<string>()
+  const out: ScheduleEntry[] = []
+  for (const raw of formData.getAll('schedule')) {
+    if (typeof raw !== 'string' || seen.has(raw)) continue
+    seen.add(raw)
+    const [o, w] = raw.split('-').map((n) => Number(n))
+    if (o >= 1 && o <= 5 && w >= 0 && w <= 6) out.push({ ordinal: o, weekday: w })
+  }
+  return out
+}
 
 export async function createProperty(
   _prevState: PropertyFormState,
@@ -25,6 +42,8 @@ export async function createProperty(
     name: formData.get('name'),
     address: formData.get('address'),
     email: formData.get('email'),
+    phone: formData.get('phone'),
+    notes: formData.get('notes'),
   })
 
   if (!parsed.success) {
@@ -32,14 +51,32 @@ export async function createProperty(
   }
 
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('properties')
-    .insert(parsed.data)
-    .select('id')
-    .single()
+  const insertRow = {
+    name: parsed.data.name,
+    address: parsed.data.address,
+    email: parsed.data.email,
+    phone: parsed.data.phone || null,
+    notes: parsed.data.notes || null,
+    required_schedule: parseScheduleFromForm(formData),
+    human_id: genPropertyId(),
+  }
 
-  if (error) {
-    return { error: error.message }
+  // Retry once on the (astronomically unlikely) human_id collision.
+  let data: { id: string } | null = null
+  for (let attempt = 0; attempt < 2 && !data; attempt++) {
+    const result = await supabase
+      .from('properties')
+      .insert({ ...insertRow, human_id: attempt === 0 ? insertRow.human_id : genPropertyId() })
+      .select('id')
+      .single()
+    if (result.error) {
+      if (result.error.code === '23505' && attempt === 0) continue
+      return { error: result.error.message }
+    }
+    data = result.data
+  }
+  if (!data) {
+    return { error: 'Could not create the property. Please try again.' }
   }
 
   revalidatePath('/admin/properties')
@@ -57,6 +94,8 @@ export async function updateProperty(
     name: formData.get('name'),
     address: formData.get('address'),
     email: formData.get('email'),
+    phone: formData.get('phone'),
+    notes: formData.get('notes'),
   })
 
   if (!parsed.success) {
@@ -66,7 +105,14 @@ export async function updateProperty(
   const supabase = await createClient()
   const { error } = await supabase
     .from('properties')
-    .update(parsed.data)
+    .update({
+      name: parsed.data.name,
+      address: parsed.data.address,
+      email: parsed.data.email,
+      phone: parsed.data.phone || null,
+      notes: parsed.data.notes || null,
+      required_schedule: parseScheduleFromForm(formData),
+    })
     .eq('id', propertyId)
 
   if (error) {

@@ -31,7 +31,7 @@ export function RoleToggleButton({
       }
       className="rounded border border-outline-variant px-3 py-2 text-xs font-semibold uppercase tracking-wide hover:bg-surface-container disabled:opacity-50"
     >
-      {pending ? 'Saving…' : `Make ${nextRole === 'admin' ? 'Admin' : 'Inspector'}`}
+      {pending ? 'Saving…' : `Make ${nextRole === 'admin' ? 'Admin' : 'Specialist'}`}
     </button>
   )
 }

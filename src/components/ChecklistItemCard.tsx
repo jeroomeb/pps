@@ -121,7 +121,10 @@ export function ChecklistItemCard({
   }
 
   const hasPhoto = Boolean(photoUrl || photoSavedNoPreview)
-  const needsPhoto = status === 'fail' && !hasPhoto
+  // Photo is required for every answered item except N/A (client punch list #8).
+  const needsPhoto = status !== null && status !== 'na' && !hasPhoto
+  // A Fail must be explained with a comment.
+  const needsComment = status === 'fail' && !comment.trim()
 
   return (
     <Card
@@ -162,8 +165,12 @@ export function ChecklistItemCard({
         </div>
       </div>
 
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-        Comments (Optional)
+      <label
+        className={`mb-1 block text-xs font-semibold uppercase tracking-wide ${
+          needsComment ? 'text-error' : 'text-on-surface-variant'
+        }`}
+      >
+        {status === 'fail' ? 'Comments (Required for Fail)' : 'Comments (Optional)'}
       </label>
       <textarea
         value={comment}
@@ -171,8 +178,17 @@ export function ChecklistItemCard({
         onBlur={handleCommentBlur}
         rows={2}
         placeholder="Add specific notes here…"
-        className="mb-3 w-full rounded border border-outline-variant px-3 py-2 text-sm focus:border-primary-container focus:outline-none"
+        className={`mb-1 w-full rounded border px-3 py-2 text-sm focus:outline-none ${
+          needsComment
+            ? 'border-error focus:border-error'
+            : 'border-outline-variant focus:border-primary-container'
+        }`}
       />
+      {needsComment && (
+        <p className="mb-3 text-xs font-semibold text-error">
+          A comment is required to explain a failure.
+        </p>
+      )}
 
       <input
         ref={fileInputRef}
@@ -224,7 +240,7 @@ export function ChecklistItemCard({
       )}
       {needsPhoto && (
         <p className="mt-1 text-xs font-semibold text-error">
-          Photo documentation required for failures.
+          Photo documentation is required (mark N/A if it does not apply).
         </p>
       )}
     </Card>

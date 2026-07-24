@@ -24,7 +24,7 @@ export async function sendReportEmail({
   const logoBuffer = readFileSync(path.join(process.cwd(), 'public', 'logo-sm.png'))
   const logoCid = 'pps-logo'
 
-  const from = process.env.EMAIL_FROM || 'PPS Inspections <onboarding@resend.dev>'
+  const from = process.env.EMAIL_FROM || "Amenity Op's <reports@amenityops.app>"
   const cc = process.env.ADMIN_EMAIL ? [process.env.ADMIN_EMAIL] : undefined
 
   // Resend's SDK resolves with { data, error } instead of throwing on API
@@ -34,7 +34,7 @@ export async function sendReportEmail({
     from,
     to,
     cc,
-    subject: `Inspection Report — ${propertyName} (${checklistName})`,
+    subject: `Operations, Asset and Logistics Report — ${propertyName} (${checklistName})`,
     html: reportEmailHtml({ propertyName, checklistName, inspectorName, completedAt, logoCid }),
     attachments: [
       {

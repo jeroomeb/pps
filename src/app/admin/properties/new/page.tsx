@@ -5,7 +5,12 @@ import { PageHeader } from '@/components/ui/PageHeader'
 export default function NewPropertyPage() {
   return (
     <div className="max-w-2xl">
-      <PageHeader eyebrow="Properties" title="New Property" />
+      <PageHeader
+        eyebrow="Properties"
+        title="New Property"
+        backHref="/admin/properties"
+        backLabel="Properties"
+      />
       <PropertyForm action={createProperty} />
     </div>
   )

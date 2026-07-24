@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { InspectorForm } from '@/components/InspectorForm'
@@ -32,10 +33,12 @@ export default async function TeamPage() {
                     key={member.id}
                     className="flex items-center justify-between gap-3 p-4"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold">{member.full_name}</p>
-                      <p className="label-tracked text-on-surface-variant">{member.role}</p>
-                    </div>
+                    <Link href={`/admin/team/${member.id}`} className="min-w-0 flex-1">
+                      <p className="truncate font-semibold hover:underline">{member.full_name}</p>
+                      <p className="label-tracked text-on-surface-variant">
+                        {member.role === 'admin' ? 'Admin' : 'Operational Continuity Specialist'}
+                      </p>
+                    </Link>
                     {member.id !== currentProfile.id ? (
                       <div className="flex shrink-0 items-center gap-2">
                         <RoleToggleButton profileId={member.id} role={member.role} />

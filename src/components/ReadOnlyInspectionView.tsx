@@ -1,4 +1,5 @@
-import { CheckCircle2, Lock } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowLeft, CheckCircle2, Lock } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { ZoomableImage } from '@/components/ZoomableImage'
 
@@ -52,6 +53,13 @@ export function ReadOnlyInspectionView({
 
   return (
     <div className="max-w-3xl">
+      <Link
+        href="/inspector"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+      >
+        <ArrowLeft size={16} />
+        Back to My Inspections
+      </Link>
       <Card className="mb-6">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
@@ -65,7 +73,7 @@ export function ReadOnlyInspectionView({
         </div>
         <div className="grid grid-cols-2 gap-4 border-t border-outline-variant pt-3 sm:grid-cols-3">
           <div>
-            <p className="label-tracked text-on-surface-variant">Inspector</p>
+            <p className="label-tracked text-on-surface-variant">Specialist</p>
             <p className="text-sm font-semibold">{inspectorName}</p>
           </div>
           <div>

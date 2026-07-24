@@ -41,10 +41,10 @@ export default async function InspectorDashboardPage() {
     isAdmin ? `/admin/reports/${inspectionId}` : `/inspector/inspections/${inspectionId}`
 
   const stats = [
-    { label: 'Pending', value: pending.length, icon: ClipboardList, accent: true },
-    { label: 'In Progress', value: inProgress.length, icon: Clock, accent: true },
-    { label: 'Completed', value: completed.length, icon: CheckCircle2, accent: false },
-    { label: 'Total Assigned', value: all.length, icon: ClipboardCheck, accent: false },
+    { label: 'Pending', value: pending.length, icon: ClipboardList, accent: true, href: '#open' },
+    { label: 'In Progress', value: inProgress.length, icon: Clock, accent: true, href: '#open' },
+    { label: 'Completed', value: completed.length, icon: CheckCircle2, accent: false, href: '#completed' },
+    { label: 'Total Assigned', value: all.length, icon: ClipboardCheck, accent: false, href: '#open' },
   ]
 
   return (
@@ -55,22 +55,24 @@ export default async function InspectorDashboardPage() {
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label} className="flex items-center justify-between">
-              <div>
-                <p className="label-tracked text-on-surface-variant">{stat.label}</p>
-                <p
-                  className={`font-headline text-2xl font-bold lg:text-3xl ${stat.accent ? 'text-primary' : ''}`}
-                >
-                  {stat.value.toString().padStart(2, '0')}
-                </p>
-              </div>
-              <Icon size={24} className="hidden text-primary lg:block" />
-            </Card>
+            <Link key={stat.label} href={stat.href} className="rounded-lg transition hover:brightness-95">
+              <Card className="flex items-center justify-between">
+                <div>
+                  <p className="label-tracked text-on-surface-variant">{stat.label}</p>
+                  <p
+                    className={`font-headline text-2xl font-bold lg:text-3xl ${stat.accent ? 'text-primary' : ''}`}
+                  >
+                    {stat.value.toString().padStart(2, '0')}
+                  </p>
+                </div>
+                <Icon size={24} className="hidden text-primary lg:block" />
+              </Card>
+            </Link>
           )
         })}
       </div>
 
-      <section className="mb-10">
+      <section id="open" className="mb-10 scroll-mt-24">
         <h2 className="mb-3 font-headline text-lg font-semibold">Open Inspections</h2>
         {open.length ? (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -126,7 +128,7 @@ export default async function InspectorDashboardPage() {
         )}
       </section>
 
-      <section>
+      <section id="completed" className="scroll-mt-24">
         <h2 className="mb-3 font-headline text-lg font-semibold">Completed</h2>
         {completed.length ? (
           <Card padded={false}>

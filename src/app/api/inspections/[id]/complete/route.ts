@@ -55,10 +55,23 @@ export async function POST(
     )
   }
 
-  const missingPhoto = items.find((item) => item.status === 'fail' && !item.photo_path)
+  // Photo required for every answered item except N/A (client punch list #8).
+  const missingPhoto = items.find(
+    (item) => item.status && item.status !== 'na' && !item.photo_path
+  )
   if (missingPhoto) {
     return NextResponse.json(
-      { error: `"${missingPhoto.item_name}" is marked Fail and needs a photo.` },
+      { error: `"${missingPhoto.item_name}" needs a photo (mark it N/A if it does not apply).` },
+      { status: 400 }
+    )
+  }
+
+  const missingComment = items.find(
+    (item) => item.status === 'fail' && !item.comment?.trim()
+  )
+  if (missingComment) {
+    return NextResponse.json(
+      { error: `"${missingComment.item_name}" is marked Fail and needs a comment explaining the failure.` },
       { status: 400 }
     )
   }

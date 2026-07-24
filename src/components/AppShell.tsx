@@ -29,8 +29,8 @@ export function AppShell({
         <div className="flex items-center gap-2 border-b border-outline-variant px-5 py-5">
           <Image src="/logo-sm.png" alt="" width={32} height={32} className="rounded" />
           <div>
-            <p className="font-headline text-sm font-bold leading-tight">PPS Inspections</p>
-            <p className="text-[11px] text-on-surface-variant">Property Preservation Solutions LLC</p>
+            <p className="font-headline text-sm font-bold leading-tight">Amenity Op&apos;s</p>
+            <p className="text-[11px] text-on-surface-variant">Property Inspections &amp; Audits</p>
           </div>
         </div>
 

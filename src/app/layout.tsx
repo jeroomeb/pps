@@ -16,13 +16,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "PPS Inspections",
-  description: "Property Preservation Solutions LLC — inspection & audit app",
+  title: "Amenity Op's",
+  description: "Amenity Op's — property inspection & audit app",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "PPS Inspections",
+    title: "Amenity Op's",
   },
   icons: {
     icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],

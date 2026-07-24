@@ -41,6 +41,8 @@ export default async function ChecklistDetailPage({
       <PageHeader
         eyebrow="Checklists"
         title={template.name}
+        backHref="/admin/checklists"
+        backLabel="Checklists"
         action={
           <>
             <RenameTemplateForm templateId={id} currentName={template.name} />

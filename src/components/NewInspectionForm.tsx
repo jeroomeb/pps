@@ -70,11 +70,11 @@ export function NewInspectionForm({
 
       <div className="flex flex-col gap-1">
         <label htmlFor="inspector_id" className="text-sm font-semibold uppercase tracking-wide">
-          Assign Inspector
+          Assign Specialist
         </label>
         <select id="inspector_id" name="inspector_id" required defaultValue="" className={SELECT_CLASSES}>
           <option value="" disabled>
-            Select an inspector…
+            Select a specialist…
           </option>
           {inspectors.map((i) => (
             <option key={i.id} value={i.id}>
@@ -85,6 +85,22 @@ export function NewInspectionForm({
         </select>
         <p className="text-xs text-on-surface-variant">
           Assign yourself and you’ll be taken straight to the checklist.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="scheduled_for" className="text-sm font-semibold uppercase tracking-wide">
+          Scheduled Date &amp; Time <span className="text-on-surface-variant">(optional)</span>
+        </label>
+        <input
+          id="scheduled_for"
+          name="scheduled_for"
+          type="datetime-local"
+          className={SELECT_CLASSES}
+        />
+        <p className="text-xs text-on-surface-variant">
+          The specialist can’t start the inspection before this time. Leave blank to allow starting
+          right away.
         </p>
       </div>
 

@@ -15,7 +15,7 @@ export default async function InspectorLayout({
 
   return (
     <>
-      <Header title="PPS Inspections" fullName={profile.full_name} />
+      <Header title="Amenity Op's" fullName={profile.full_name} />
       <AppShell
         role={profile.role}
         fullName={profile.full_name}

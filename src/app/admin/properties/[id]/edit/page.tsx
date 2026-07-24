@@ -13,7 +13,7 @@ export default async function EditPropertyPage({
   const supabase = await createClient()
   const { data: property } = await supabase
     .from('properties')
-    .select('name, address, email')
+    .select('name, address, email, phone, notes, human_id, required_schedule')
     .eq('id', id)
     .single()
 
@@ -23,10 +23,23 @@ export default async function EditPropertyPage({
 
   return (
     <div className="max-w-2xl">
-      <PageHeader eyebrow="Properties" title="Edit Property" />
+      <PageHeader
+        eyebrow="Properties"
+        title="Edit Property"
+        backHref={`/admin/properties/${id}`}
+        backLabel="Property"
+      />
       <PropertyForm
         action={updateProperty.bind(null, id)}
-        defaultValues={property}
+        defaultValues={{
+          name: property.name,
+          address: property.address,
+          email: property.email,
+          phone: property.phone,
+          notes: property.notes,
+          humanId: property.human_id,
+          schedule: property.required_schedule ?? [],
+        }}
       />
     </div>
   )

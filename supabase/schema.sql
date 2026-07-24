@@ -11,7 +11,13 @@ create table if not exists profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   full_name text not null,
   role text not null check (role in ('admin', 'inspector')) default 'inspector',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  human_id text unique,
+  phone text,
+  address text,
+  email text,
+  id_front_path text,
+  id_back_path text
 );
 
 create table if not exists checklist_templates (
@@ -34,7 +40,12 @@ create table if not exists properties (
   name text not null,
   address text not null,
   email text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  human_id text unique,
+  phone text,
+  notes text,
+  -- Monthly nth-weekday schedule: [{"ordinal":1,"weekday":1}, ...]
+  required_schedule jsonb not null default '[]'::jsonb
 );
 
 create table if not exists inspections (
@@ -45,7 +56,8 @@ create table if not exists inspections (
   status text not null check (status in ('pending', 'in_progress', 'completed')) default 'pending',
   created_at timestamptz not null default now(),
   completed_at timestamptz,
-  pdf_path text
+  pdf_path text,
+  scheduled_for timestamptz
 );
 
 create table if not exists inspection_items (
@@ -209,11 +221,12 @@ language plpgsql
 security definer
 as $$
 begin
-  insert into public.profiles (id, full_name, role)
+  insert into public.profiles (id, full_name, role, email)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', new.email),
-    'inspector'
+    'inspector',
+    new.email
   );
   return new;
 end;
@@ -223,6 +236,35 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
+
+-- Specialists may edit their OWN profile (address/phone/ID docs) but not their
+-- role/human_id/email — those privileged columns are reset for non-admins by
+-- the guard trigger, so the own-row policy can't be used to self-escalate.
+drop policy if exists "profiles_update_own" on profiles;
+create policy "profiles_update_own" on profiles
+  for update using (id = auth.uid())
+  with check (id = auth.uid());
+
+create or replace function guard_profile_self_update()
+returns trigger
+language plpgsql
+security definer
+as $$
+begin
+  if not current_role_is_admin() then
+    new.role := old.role;
+    new.human_id := old.human_id;
+    new.email := old.email;
+    new.id := old.id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_guard_self_update on profiles;
+create trigger profiles_guard_self_update
+  before update on profiles
+  for each row execute function guard_profile_self_update();
 
 -- ============================================================
 -- Storage buckets
@@ -256,3 +298,30 @@ drop policy if exists "reports_write" on storage.objects;
 create policy "reports_write" on storage.objects
   for all using (bucket_id = 'reports' and current_role_is_admin())
   with check (bucket_id = 'reports' and current_role_is_admin());
+
+-- documents: specialists' ID/driver's-license uploads. Owner-or-admin read;
+-- owner writes under their own `${uid}/` folder.
+insert into storage.buckets (id, name, public)
+values ('documents', 'documents', false)
+on conflict (id) do nothing;
+
+drop policy if exists "documents_read" on storage.objects;
+create policy "documents_read" on storage.objects
+  for select using (
+    bucket_id = 'documents'
+    and (current_role_is_admin() or (storage.foldername(name))[1] = auth.uid()::text)
+  );
+
+drop policy if exists "documents_write" on storage.objects;
+create policy "documents_write" on storage.objects
+  for insert with check (
+    bucket_id = 'documents'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "documents_update" on storage.objects;
+create policy "documents_update" on storage.objects
+  for update using (
+    bucket_id = 'documents'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

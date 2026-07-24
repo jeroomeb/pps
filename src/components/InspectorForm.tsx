@@ -76,11 +76,11 @@ export function InspectorForm() {
           defaultValue="inspector"
           className="min-h-12 rounded border border-outline-variant bg-surface-container-lowest px-3"
         >
-          <option value="inspector">Inspector</option>
+          <option value="inspector">Operational Continuity Specialist</option>
           <option value="admin">Admin</option>
         </select>
         <p className="text-xs text-on-surface-variant">
-          Admins can also be assigned inspections, just like inspectors.
+          Admins can also be assigned inspections, just like specialists.
         </p>
       </div>
       {state?.error && (

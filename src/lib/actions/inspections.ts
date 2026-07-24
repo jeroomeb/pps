@@ -6,11 +6,14 @@ import { revalidatePath } from 'next/cache'
 import { requireRole, getProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { cleanupInspectionStorage } from '@/lib/supabase/storage-cleanup'
+import { sendAssignmentEmail } from '@/lib/email/sendAssignmentEmail'
 
 const newInspectionSchema = z.object({
   property_id: z.string().uuid(),
   template_id: z.string().uuid(),
   inspector_id: z.string().uuid(),
+  // datetime-local string ("2026-08-01T09:00") or empty.
+  scheduled_for: z.string().trim().optional(),
 })
 
 export type InspectionFormState = { error?: string } | undefined
@@ -25,17 +28,32 @@ export async function createInspection(
     property_id: formData.get('property_id'),
     template_id: formData.get('template_id'),
     inspector_id: formData.get('inspector_id'),
+    scheduled_for: formData.get('scheduled_for'),
   })
 
   if (!parsed.success) {
-    return { error: 'Please choose a checklist type and an inspector.' }
+    return { error: 'Please choose a checklist type and a specialist.' }
+  }
+
+  let scheduledForIso: string | null = null
+  if (parsed.data.scheduled_for) {
+    const d = new Date(parsed.data.scheduled_for)
+    if (Number.isNaN(d.getTime())) {
+      return { error: 'That scheduled date/time is not valid.' }
+    }
+    scheduledForIso = d.toISOString()
   }
 
   const supabase = await createClient()
 
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
-    .insert(parsed.data)
+    .insert({
+      property_id: parsed.data.property_id,
+      template_id: parsed.data.template_id,
+      inspector_id: parsed.data.inspector_id,
+      scheduled_for: scheduledForIso,
+    })
     .select('id')
     .single()
 
@@ -68,6 +86,30 @@ export async function createInspection(
   if (itemsError) {
     await supabase.from('inspections').delete().eq('id', inspection.id)
     return { error: itemsError.message }
+  }
+
+  // Notify the assigned specialist (unless the admin assigned themselves).
+  // Best-effort — a mail failure must not fail the assignment.
+  if (parsed.data.inspector_id !== profile.id) {
+    try {
+      const [{ data: assignee }, { data: property }, { data: template }] = await Promise.all([
+        supabase.from('profiles').select('full_name, email').eq('id', parsed.data.inspector_id).single(),
+        supabase.from('properties').select('name, address').eq('id', parsed.data.property_id).single(),
+        supabase.from('checklist_templates').select('name').eq('id', parsed.data.template_id).single(),
+      ])
+      if (assignee?.email) {
+        await sendAssignmentEmail({
+          to: assignee.email,
+          specialistName: assignee.full_name,
+          propertyName: property?.name ?? 'a property',
+          propertyAddress: property?.address ?? '',
+          checklistName: template?.name ?? 'an inspection',
+          scheduledFor: scheduledForIso,
+        })
+      }
+    } catch (err) {
+      console.error('Assignment email failed:', err)
+    }
   }
 
   revalidatePath(`/admin/properties/${parsed.data.property_id}`)
@@ -125,7 +167,7 @@ export async function saveInspectionItem(
 
   const { data: inspection } = await supabase
     .from('inspections')
-    .select('status, inspector_id')
+    .select('status, inspector_id, scheduled_for')
     .eq('id', inspectionId)
     .single()
 
@@ -137,6 +179,9 @@ export async function saveInspectionItem(
   }
   if (inspection.status === 'completed') {
     return { error: 'This inspection has already been submitted and can no longer be edited.' }
+  }
+  if (inspection.scheduled_for && new Date(inspection.scheduled_for) > new Date()) {
+    return { error: 'This inspection cannot be started before its scheduled time.' }
   }
 
   const { error } = await supabase

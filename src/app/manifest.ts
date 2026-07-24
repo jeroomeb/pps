@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'PPS Inspections',
-    short_name: 'PPS',
-    description: 'Property Preservation Solutions LLC — inspection & audit app',
+    name: "Amenity Op's",
+    short_name: "Amenity Op's",
+    description: "Amenity Op's — property inspection & audit app",
     start_url: '/',
     display: 'standalone',
     background_color: '#f8f9fa',

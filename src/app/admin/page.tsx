@@ -1,9 +1,10 @@
 import Link from 'next/link'
-import { Building2, ClipboardList, ChevronRight, Plus } from 'lucide-react'
+import { Building2, ClipboardList, ChevronRight, Plus, CalendarClock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { dueEntries } from '@/lib/schedule'
 
 type InspectionRow = {
   id: string
@@ -17,14 +18,25 @@ export default async function AdminDashboardPage() {
   const supabase = await createClient()
 
   const [{ data: properties }, { data: inspections }] = await Promise.all([
-    supabase.from('properties').select('id, name, address').order('name'),
+    supabase.from('properties').select('id, name, address, required_schedule').order('name'),
     supabase
       .from('inspections')
-      .select('id, property_id, status, created_at, checklist_templates(name)')
+      .select('id, property_id, status, created_at, scheduled_for, checklist_templates(name)')
       .order('created_at', { ascending: false }),
   ])
 
   const pendingCount = (inspections ?? []).filter((i) => i.status !== 'completed').length
+
+  // Properties whose monthly schedule falls due this month with no inspection
+  // yet scheduled for that occurrence.
+  const due = dueEntries(
+    (properties ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      required_schedule: p.required_schedule,
+    })),
+    (inspections ?? []).map((i) => ({ property_id: i.property_id, scheduled_for: i.scheduled_for })),
+  )
 
   // Latest inspection per property — used only to show which checklist was
   // last run; no health/status is derived at the property level.
@@ -54,21 +66,56 @@ export default async function AdminDashboardPage() {
       />
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Card className="flex items-center justify-between">
-          <div>
-            <p className="label-tracked text-on-surface-variant">Total Properties</p>
-            <p className="font-headline text-3xl font-bold">{properties?.length ?? 0}</p>
-          </div>
-          <Building2 size={28} className="text-primary" />
-        </Card>
-        <Card className="flex items-center justify-between">
-          <div>
-            <p className="label-tracked text-on-surface-variant">Pending Inspections</p>
-            <p className="font-headline text-3xl font-bold">{pendingCount}</p>
-          </div>
-          <ClipboardList size={28} className="text-primary" />
-        </Card>
+        <Link href="/admin/properties" className="rounded-lg transition hover:brightness-95">
+          <Card className="flex items-center justify-between">
+            <div>
+              <p className="label-tracked text-on-surface-variant">Total Properties</p>
+              <p className="font-headline text-3xl font-bold">{properties?.length ?? 0}</p>
+            </div>
+            <Building2 size={28} className="text-primary" />
+          </Card>
+        </Link>
+        <Link href="/admin/inspections?status=open" className="rounded-lg transition hover:brightness-95">
+          <Card className="flex items-center justify-between">
+            <div>
+              <p className="label-tracked text-on-surface-variant">Pending Inspections</p>
+              <p className="font-headline text-3xl font-bold">{pendingCount}</p>
+            </div>
+            <ClipboardList size={28} className="text-primary" />
+          </Card>
+        </Link>
       </div>
+
+      {due.length > 0 && (
+        <Card padded={false} className="mb-8 border-primary-container">
+          <div className="flex items-center gap-2 border-b border-outline-variant bg-primary-container/25 p-4">
+            <CalendarClock size={18} className="text-primary" />
+            <h2 className="font-headline text-lg font-semibold">
+              Needs Scheduling ({due.length})
+            </h2>
+          </div>
+          <div className="flex flex-col divide-y divide-outline-variant">
+            {due.map((entry) => (
+              <Link
+                key={`${entry.propertyId}-${entry.date.toISOString()}`}
+                href={`/admin/properties/${entry.propertyId}`}
+                className="flex items-center justify-between p-4 transition hover:bg-surface-container-low"
+              >
+                <div>
+                  <p className="font-semibold">{entry.propertyName}</p>
+                  <p className="text-sm text-on-surface-variant">
+                    {entry.label} —{' '}
+                    {entry.date.toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                  </p>
+                </div>
+                <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-semibold text-on-primary-container">
+                  Schedule
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card padded={false}>
         <div className="flex items-center justify-between border-b border-outline-variant p-4">

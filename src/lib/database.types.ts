@@ -1,6 +1,7 @@
 export type UserRole = 'admin' | 'inspector'
 export type InspectionStatus = 'pending' | 'in_progress' | 'completed'
 export type ItemStatus = 'pass' | 'fail' | 'na'
+export type ScheduleEntry = { ordinal: number; weekday: number }
 
 export interface Database {
   public: {
@@ -11,18 +12,36 @@ export interface Database {
           full_name: string
           role: UserRole
           created_at: string
+          human_id: string | null
+          phone: string | null
+          address: string | null
+          email: string | null
+          id_front_path: string | null
+          id_back_path: string | null
         }
         Insert: {
           id: string
           full_name: string
           role?: UserRole
           created_at?: string
+          human_id?: string | null
+          phone?: string | null
+          address?: string | null
+          email?: string | null
+          id_front_path?: string | null
+          id_back_path?: string | null
         }
         Update: {
           id?: string
           full_name?: string
           role?: UserRole
           created_at?: string
+          human_id?: string | null
+          phone?: string | null
+          address?: string | null
+          email?: string | null
+          id_front_path?: string | null
+          id_back_path?: string | null
         }
         Relationships: []
       }
@@ -86,6 +105,10 @@ export interface Database {
           address: string
           email: string
           created_at: string
+          human_id: string | null
+          phone: string | null
+          notes: string | null
+          required_schedule: ScheduleEntry[]
         }
         Insert: {
           id?: string
@@ -93,6 +116,10 @@ export interface Database {
           address: string
           email: string
           created_at?: string
+          human_id?: string | null
+          phone?: string | null
+          notes?: string | null
+          required_schedule?: ScheduleEntry[]
         }
         Update: {
           id?: string
@@ -100,6 +127,10 @@ export interface Database {
           address?: string
           email?: string
           created_at?: string
+          human_id?: string | null
+          phone?: string | null
+          notes?: string | null
+          required_schedule?: ScheduleEntry[]
         }
         Relationships: []
       }
@@ -113,6 +144,7 @@ export interface Database {
           created_at: string
           completed_at: string | null
           pdf_path: string | null
+          scheduled_for: string | null
         }
         Insert: {
           id?: string
@@ -123,6 +155,7 @@ export interface Database {
           created_at?: string
           completed_at?: string | null
           pdf_path?: string | null
+          scheduled_for?: string | null
         }
         Update: {
           id?: string
@@ -133,6 +166,7 @@ export interface Database {
           created_at?: string
           completed_at?: string | null
           pdf_path?: string | null
+          scheduled_for?: string | null
         }
         Relationships: [
           {

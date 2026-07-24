@@ -2,8 +2,9 @@
 
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
-import { requireRole } from '@/lib/auth/dal'
+import { requireRole, getProfile } from '@/lib/auth/dal'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
+import { genSpecialistId } from '@/lib/ids'
 
 const teamMemberSchema = z.object({
   full_name: z.string().trim().min(1, 'Name is required'),
@@ -48,21 +49,82 @@ export async function createTeamMember(
 
   // The handle_new_user trigger deliberately ignores metadata and always
   // creates the profile as 'inspector' (so public signup can never mint an
-  // admin). Admin-created admins are promoted explicitly here instead.
-  if (parsed.data.role === 'admin' && created.user) {
-    const { error: roleError } = await admin
-      .from('profiles')
-      .update({ role: 'admin' })
-      .eq('id', created.user.id)
+  // admin), and copies the email. We add a human-readable OCS id here, and
+  // promote admins explicitly.
+  if (created.user) {
+    const patch: { role?: 'admin'; human_id: string } = {
+      human_id: genSpecialistId(),
+    }
+    if (parsed.data.role === 'admin') patch.role = 'admin'
+
+    // Retry once on the unlikely human_id collision.
+    let roleError = null
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { error } = await admin
+        .from('profiles')
+        .update({ ...patch, human_id: attempt === 0 ? patch.human_id : genSpecialistId() })
+        .eq('id', created.user.id)
+      if (!error) {
+        roleError = null
+        break
+      }
+      roleError = error
+      if (error.code !== '23505') break
+    }
     if (roleError) {
       return {
-        error: `Account created, but promoting to admin failed: ${roleError.message}. Use the role toggle to retry.`,
+        error: `Account created, but finishing setup failed: ${roleError.message}. Use the role toggle to retry.`,
       }
     }
   }
 
   revalidatePath('/admin/team')
   return { success: true }
+}
+
+const ownProfileSchema = z.object({
+  phone: z.string().trim().optional(),
+  address: z.string().trim().optional(),
+  id_front_path: z.string().trim().nullable().optional(),
+  id_back_path: z.string().trim().nullable().optional(),
+})
+
+// Self-service: a specialist updates their own contact info / ID document
+// paths. The DB guard trigger blocks any role/human_id/email change here, so
+// this can't be used to escalate. Returns { error } instead of throwing.
+export async function updateOwnProfile(input: {
+  phone?: string
+  address?: string
+  id_front_path?: string | null
+  id_back_path?: string | null
+}): Promise<{ error?: string } | void> {
+  const profile = await getProfile()
+
+  const parsed = ownProfileSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: 'Invalid input.' }
+  }
+
+  const supabase = await createClient()
+  const patch: {
+    phone: string | null
+    address: string | null
+    id_front_path?: string | null
+    id_back_path?: string | null
+  } = {
+    phone: parsed.data.phone || null,
+    address: parsed.data.address || null,
+  }
+  if (parsed.data.id_front_path !== undefined) patch.id_front_path = parsed.data.id_front_path
+  if (parsed.data.id_back_path !== undefined) patch.id_back_path = parsed.data.id_back_path
+
+  const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id)
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/inspector/profile')
+  revalidatePath('/admin/team')
 }
 
 export async function setTeamMemberRole(

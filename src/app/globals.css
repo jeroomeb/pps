@@ -17,19 +17,22 @@
   --color-surface-container-highest: #e1e3e4;
   --color-surface-variant: #e1e3e4;
   --color-on-surface: #191c1d;
-  --color-on-surface-variant: #4d4635;
+  --color-on-surface-variant: #4b5563;
   --color-inverse-surface: #2e3132;
   --color-inverse-on-surface: #f0f1f2;
 
-  --color-outline: #7f7663;
-  --color-outline-variant: #d0c5af;
+  --color-outline: #6b7280;
+  --color-outline-variant: #d0d5dd;
 
-  --color-primary: #735c00;
+  /* Amenity Op's accent — orange, sampled from the logo (#ee8a4b), with a
+     darkened variant (#b5611f) for text/icons so small type clears contrast
+     on the off-white surface. Slate #364750 is the on-container text color. */
+  --color-primary: #b5611f;
   --color-on-primary: #ffffff;
-  --color-primary-container: #d4af37;
-  --color-on-primary-container: #554300;
-  --color-inverse-primary: #e9c349;
-  --color-surface-tint: #735c00;
+  --color-primary-container: #ee8a4b;
+  --color-on-primary-container: #2b3742;
+  --color-inverse-primary: #f0a97a;
+  --color-surface-tint: #b5611f;
 
   --color-secondary: #5d5e61;
   --color-on-secondary: #ffffff;
@@ -83,7 +86,7 @@ body {
 }
 
 * {
-  scrollbar-color: #d0c5af transparent;
+  scrollbar-color: #cbd0d8 transparent;
 }
 
 *::-webkit-scrollbar {
@@ -92,7 +95,7 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: #d0c5af;
+  background-color: #cbd0d8;
   border-radius: 8px;
 }
 

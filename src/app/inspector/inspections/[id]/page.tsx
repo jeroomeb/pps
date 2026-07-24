@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import { Clock } from 'lucide-react'
 import { getProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { ActiveInspectionChecklist } from '@/components/ActiveInspectionChecklist'
@@ -16,7 +17,7 @@ export default async function InspectionDetailPage({
   const { data: inspection } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, created_at, completed_at, properties(name), checklist_templates(name), profiles(full_name)'
+      'id, status, inspector_id, created_at, completed_at, scheduled_for, properties(name), checklist_templates(name), profiles(full_name)'
     )
     .eq('id', id)
     .single()
@@ -68,6 +69,25 @@ export default async function InspectionDetailPage({
         completedAt={inspection.completed_at}
         items={itemsWithUrls}
       />
+    )
+  }
+
+  // Scheduled for the future → not startable yet.
+  if (inspection.scheduled_for && new Date(inspection.scheduled_for) > new Date()) {
+    const label = new Date(inspection.scheduled_for).toLocaleString('en-US', {
+      dateStyle: 'full',
+      timeStyle: 'short',
+    })
+    return (
+      <div className="mx-auto max-w-lg py-16 text-center">
+        <Clock size={40} className="mx-auto mb-4 text-primary" />
+        <h1 className="font-headline text-2xl font-bold">{property.name}</h1>
+        <p className="mt-1 text-on-surface-variant">{template.name}</p>
+        <p className="mt-6 rounded-lg bg-surface-container-low px-4 py-3 text-sm">
+          This inspection is scheduled for <span className="font-semibold">{label}</span>. You can
+          start it once that time arrives.
+        </p>
+      </div>
     )
   }
 

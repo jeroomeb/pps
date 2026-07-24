@@ -17,6 +17,8 @@ export default async function NewInspectionPage() {
         eyebrow="Inspections"
         title="Start Inspection"
         subtitle="Pick a property, choose the checklist, and assign an inspector."
+        backHref="/admin"
+        backLabel="Dashboard"
       />
       <NewInspectionForm
         properties={properties ?? []}
