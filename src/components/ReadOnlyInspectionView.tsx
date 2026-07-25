@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, CheckCircle2, Lock } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Lock, MapPin, Phone, Download } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { ZoomableImage } from '@/components/ZoomableImage'
 
@@ -28,13 +28,19 @@ function statusChip(status: ReadOnlyItem['status']) {
  * lets inspectors review what they submitted without being able to change it.
  */
 export function ReadOnlyInspectionView({
+  inspectionId,
   propertyName,
+  propertyAddress,
+  propertyPhone,
   checklistName,
   inspectorName,
   completedAt,
   items,
 }: {
+  inspectionId: string
   propertyName: string
+  propertyAddress?: string | null
+  propertyPhone?: string | null
   checklistName: string
   inspectorName: string
   completedAt: string | null
@@ -53,13 +59,24 @@ export function ReadOnlyInspectionView({
 
   return (
     <div className="max-w-3xl">
-      <Link
-        href="/inspector"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
-      >
-        <ArrowLeft size={16} />
-        Back to My Inspections
-      </Link>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Link
+          href="/inspector"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+        >
+          <ArrowLeft size={16} />
+          Back to My Inspections
+        </Link>
+        <a
+          href={`/api/inspections/${inspectionId}/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex min-h-10 items-center gap-1.5 rounded-lg border border-outline-variant px-3 text-xs font-semibold uppercase tracking-wide hover:bg-surface-container"
+        >
+          <Download size={14} />
+          Download PDF
+        </a>
+      </div>
       <Card className="mb-6">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
@@ -68,9 +85,28 @@ export function ReadOnlyInspectionView({
           </div>
           <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-success-container px-3 py-1 text-xs font-semibold uppercase tracking-wide text-on-success-container">
             <CheckCircle2 size={13} />
-            Completed
+            Resolved &amp; Closed
           </span>
         </div>
+        {(propertyAddress || propertyPhone) && (
+          <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-outline-variant pt-3 text-sm text-on-surface-variant">
+            {propertyAddress && (
+              <span className="flex items-center gap-1.5">
+                <MapPin size={14} className="shrink-0 text-primary" />
+                {propertyAddress}
+              </span>
+            )}
+            {propertyPhone && (
+              <a
+                href={`tel:${propertyPhone}`}
+                className="flex items-center gap-1.5 font-semibold text-on-surface hover:underline"
+              >
+                <Phone size={14} className="shrink-0 text-primary" />
+                {propertyPhone}
+              </a>
+            )}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4 border-t border-outline-variant pt-3 sm:grid-cols-3">
           <div>
             <p className="label-tracked text-on-surface-variant">Specialist</p>

@@ -82,7 +82,11 @@ create table if not exists inspections (
   created_at timestamptz not null default now(),
   completed_at timestamptz,
   pdf_path text,
-  scheduled_for timestamptz
+  scheduled_for timestamptz,
+  -- Whether the report email actually sent — surfaced on the Reports list
+  -- instead of only a toast the specialist may have already dismissed.
+  email_status text check (email_status in ('sent', 'failed')),
+  email_error text
 );
 
 create table if not exists inspection_items (
@@ -115,9 +119,10 @@ returns boolean
 language sql
 security definer
 stable
+set search_path = ''
 as $$
   select exists (
-    select 1 from profiles where id = auth.uid() and role = 'admin'
+    select 1 from public.profiles where id = auth.uid() and role = 'admin'
   );
 $$;
 
@@ -159,11 +164,18 @@ drop policy if exists "template_items_admin_write" on checklist_template_items;
 create policy "template_items_admin_write" on checklist_template_items
   for all using (current_role_is_admin()) with check (current_role_is_admin());
 
--- properties: readable by any authenticated user (inspectors need it via inspections join),
--- writable by admins only
+-- properties: readable by admins, or by inspectors assigned an inspection at
+-- that property (not every property — that leaked every property's private
+-- email/phone/notes to every specialist). Writable by admins only.
 drop policy if exists "properties_select_all" on properties;
 create policy "properties_select_all" on properties
-  for select using (auth.uid() is not null);
+  for select using (
+    current_role_is_admin()
+    or exists (
+      select 1 from inspections i
+      where i.property_id = properties.id and i.inspector_id = auth.uid()
+    )
+  );
 
 drop policy if exists "properties_admin_write" on properties;
 create policy "properties_admin_write" on properties
@@ -194,13 +206,19 @@ create policy "inspections_admin_delete" on inspections
 -- Completed inspections are frozen: the emailed report is the record of
 -- truth, so nobody edits them through the app's user-scoped client.
 -- (The submit pipeline itself runs on the service role and is unaffected.)
+-- `with check` carries the same `status <> 'completed'` guard as `using` —
+-- omitting it let a row be updated INTO `completed` with none of the app's
+-- validation via a direct PostgREST call.
 drop policy if exists "inspections_update" on inspections;
 create policy "inspections_update" on inspections
   for update using (
     (inspector_id = auth.uid() or current_role_is_admin())
     and status <> 'completed'
   )
-  with check (inspector_id = auth.uid() or current_role_is_admin());
+  with check (
+    (inspector_id = auth.uid() or current_role_is_admin())
+    and status <> 'completed'
+  );
 
 -- inspection_items: visible/editable only through owning inspection
 drop policy if exists "inspection_items_select" on inspection_items;
@@ -213,13 +231,18 @@ create policy "inspection_items_select" on inspection_items
     )
   );
 
+-- Insert is admin-only (despite the old policy's name, it also granted the
+-- assigned inspector insert with no completed-status guard — forged rows
+-- could be added to a completed inspection). Only createInspection ever
+-- inserts items, and it's an admin-only server action on the user-scoped
+-- client, so this doesn't touch app behavior.
 drop policy if exists "inspection_items_admin_insert" on inspection_items;
-create policy "inspection_items_admin_insert" on inspection_items
+create policy "inspection_items_insert" on inspection_items
   for insert with check (
-    exists (
+    current_role_is_admin()
+    and exists (
       select 1 from inspections i
-      where i.id = inspection_items.inspection_id
-        and (i.inspector_id = auth.uid() or current_role_is_admin())
+      where i.id = inspection_items.inspection_id and i.status <> 'completed'
     )
   );
 
@@ -254,6 +277,7 @@ create or replace function handle_new_user()
 returns trigger
 language plpgsql
 security definer
+set search_path = ''
 as $$
 begin
   insert into public.profiles (id, full_name, role, email)
@@ -280,13 +304,25 @@ create policy "profiles_update_own" on profiles
   for update using (id = auth.uid())
   with check (id = auth.uid());
 
+-- Exempts the service role: triggers always fire regardless of the calling
+-- role, and a service-role request has no auth.uid(), so
+-- current_role_is_admin() reads false for it — this trigger was silently
+-- reverting the role/human_id that createTeamMember's admin-client writes
+-- set on new admin accounts. Service-role writes are already fully trusted
+-- (they run our own server code, gated by requireRole('admin') beforehand).
 create or replace function guard_profile_self_update()
 returns trigger
 language plpgsql
 security definer
+set search_path = ''
 as $$
 begin
-  if not current_role_is_admin() then
+  if coalesce(current_setting('request.jwt.claims', true)::jsonb->>'role', '') = 'service_role' then
+    return new;
+  end if;
+  -- Explicitly schema-qualified: this function's own `search_path = ''`
+  -- means an unqualified call here would fail to resolve.
+  if not public.current_role_is_admin() then
     new.role := old.role;
     new.human_id := old.human_id;
     new.email := old.email;
@@ -313,21 +349,63 @@ insert into storage.buckets (id, name, public)
 values ('reports', 'reports', false)
 on conflict (id) do nothing;
 
+-- Photo objects live under `${inspectionId}/...` — scope read/write to the
+-- owning inspection's assigned inspector (or an admin), not every
+-- authenticated user, so one specialist can't read or overwrite another's
+-- evidence photos (including on a completed/frozen inspection).
 drop policy if exists "photos_read" on storage.objects;
 create policy "photos_read" on storage.objects
-  for select using (bucket_id = 'photos' and auth.uid() is not null);
+  for select using (
+    bucket_id = 'photos'
+    and (
+      current_role_is_admin()
+      or exists (
+        select 1 from inspections i
+        where i.id::text = (storage.foldername(name))[1]
+          and i.inspector_id = auth.uid()
+      )
+    )
+  );
 
 drop policy if exists "photos_write" on storage.objects;
 create policy "photos_write" on storage.objects
-  for insert with check (bucket_id = 'photos' and auth.uid() is not null);
+  for insert with check (
+    bucket_id = 'photos'
+    and exists (
+      select 1 from inspections i
+      where i.id::text = (storage.foldername(name))[1]
+        and (i.inspector_id = auth.uid() or current_role_is_admin())
+        and i.status <> 'completed'
+    )
+  );
 
 drop policy if exists "photos_update" on storage.objects;
 create policy "photos_update" on storage.objects
-  for update using (bucket_id = 'photos' and auth.uid() is not null);
+  for update using (
+    bucket_id = 'photos'
+    and exists (
+      select 1 from inspections i
+      where i.id::text = (storage.foldername(name))[1]
+        and (i.inspector_id = auth.uid() or current_role_is_admin())
+        and i.status <> 'completed'
+    )
+  );
 
+-- Report objects are named `${inspectionId}.pdf` (no folder) — scope reads to
+-- the same inspector-or-admin rule instead of every authenticated user.
 drop policy if exists "reports_read" on storage.objects;
 create policy "reports_read" on storage.objects
-  for select using (bucket_id = 'reports' and auth.uid() is not null);
+  for select using (
+    bucket_id = 'reports'
+    and (
+      current_role_is_admin()
+      or exists (
+        select 1 from inspections i
+        where i.id::text = split_part(storage.objects.name, '.', 1)
+          and i.inspector_id = auth.uid()
+      )
+    )
+  );
 
 drop policy if exists "reports_write" on storage.objects;
 create policy "reports_write" on storage.objects

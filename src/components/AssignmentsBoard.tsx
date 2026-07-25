@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   MapPin,
+  Phone,
   Clock,
   Play,
   CheckCircle2,
@@ -27,6 +28,7 @@ export type AssignmentRow = {
   completed_at: string | null
   propertyName: string
   propertyAddress: string
+  propertyPhone: string | null
   templateName: string
   /** Precomputed on the server so client and server agree on "today". */
   dueText: string | null
@@ -171,6 +173,16 @@ export function AssignmentsBoard({
                               <MapPin size={13} className="shrink-0" />
                               {inspection.propertyAddress}
                             </p>
+                            {inspection.propertyPhone && (
+                              <a
+                                href={`tel:${inspection.propertyPhone}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+                              >
+                                <Phone size={13} className="shrink-0" />
+                                {inspection.propertyPhone}
+                              </a>
+                            )}
                             <p className="mt-1 text-sm text-on-surface-variant">
                               {inspection.templateName}
                             </p>

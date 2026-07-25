@@ -3,24 +3,31 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, MapPin, Phone, Clock } from 'lucide-react'
 import { ChecklistItemCard, type ChecklistItemData } from '@/components/ChecklistItemCard'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
+import { validateInspectionItems } from '@/lib/inspection-validation'
 
 export function ActiveInspectionChecklist({
   inspectionId,
   propertyName,
+  propertyAddress,
+  propertyPhone,
   checklistName,
   inspectorName,
   startedAt,
+  scheduledFor,
   initialItems,
 }: {
   inspectionId: string
   propertyName: string
+  propertyAddress?: string | null
+  propertyPhone?: string | null
   checklistName: string
   inspectorName: string
   startedAt: string
+  scheduledFor?: string | null
   initialItems: (ChecklistItemData & { service_category: string })[]
 }) {
   const router = useRouter()
@@ -36,11 +43,8 @@ export function ActiveInspectionChecklist({
   }
 
   const completedCount = items.filter((item) => item.status).length
-  const canSubmit = useMemo(
-    () =>
-      items.every((item) => item.status && (item.status !== 'fail' || item.photo_path)),
-    [items]
-  )
+  const issues = useMemo(() => validateInspectionItems(items), [items])
+  const canSubmit = issues.length === 0
 
   const grouped = useMemo(() => {
     const map = new Map<string, typeof items>()
@@ -112,6 +116,36 @@ export function ActiveInspectionChecklist({
           </span>
         </div>
 
+        {(propertyAddress || propertyPhone || scheduledFor) && (
+          <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-outline-variant pt-3 text-sm text-on-surface-variant">
+            {propertyAddress && (
+              <span className="flex items-center gap-1.5">
+                <MapPin size={14} className="shrink-0 text-primary" />
+                {propertyAddress}
+              </span>
+            )}
+            {propertyPhone && (
+              <a
+                href={`tel:${propertyPhone}`}
+                className="flex items-center gap-1.5 font-semibold text-on-surface hover:underline"
+              >
+                <Phone size={14} className="shrink-0 text-primary" />
+                {propertyPhone}
+              </a>
+            )}
+            {scheduledFor && (
+              <span className="flex items-center gap-1.5">
+                <Clock size={14} className="shrink-0 text-primary" />
+                Scheduled{' '}
+                {new Date(scheduledFor).toLocaleString('en-US', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
           <div
             className="h-full bg-primary-container transition-all duration-500"
@@ -165,7 +199,32 @@ export function ActiveInspectionChecklist({
         </p>
       )}
 
-      <div className="fixed inset-x-0 bottom-16 z-10 border-t border-outline-variant bg-surface-container-lowest p-4 lg:sticky lg:bottom-0 lg:mt-6 lg:rounded-lg lg:border">
+      {issues.length > 0 && (
+        <Card className="mt-4 border-error/40 bg-error-container/20">
+          <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-on-error-container">
+            <AlertTriangle size={15} />
+            {issues.length} item{issues.length === 1 ? '' : 's'} need attention before you can
+            submit
+          </p>
+          <ul className="flex flex-col gap-1">
+            {issues.map((issue) => (
+              <li key={`${issue.itemId}-${issue.reason}`}>
+                <a
+                  href={`#checklist-item-${issue.itemId}`}
+                  className="text-sm text-on-error-container underline underline-offset-2 hover:no-underline"
+                >
+                  {issue.itemName}
+                </a>
+                <span className="text-sm text-on-error-container"> — {issue.reason}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {/* Bottom nav is ~56px tall on mobile; keep the submit bar clear of it,
+          and clear of the toast stack too (Toast.tsx anchors at bottom-20). */}
+      <div className="fixed inset-x-0 bottom-14 z-20 border-t border-outline-variant bg-surface-container-lowest p-4 lg:sticky lg:bottom-0 lg:mt-6 lg:rounded-lg lg:border">
         <div className="max-w-3xl">
           <button
             type="button"
@@ -177,7 +236,8 @@ export function ActiveInspectionChecklist({
           </button>
           {!canSubmit && (
             <p className="mt-2 text-center text-xs text-on-surface-variant">
-              Every item needs a status, and Fail items need a photo, before you can submit.
+              {issues.length} item{issues.length === 1 ? '' : 's'} above need a status, photo, or
+              comment before you can submit.
             </p>
           )}
         </div>

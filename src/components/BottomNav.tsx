@@ -19,13 +19,16 @@ export function BottomNav({ role }: { role: 'admin' | 'inspector' }) {
             href={item.href}
             aria-label={item.label}
             title={item.label}
-            className={`flex flex-1 items-center justify-center py-3 ${
+            className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 py-2 ${
               active
-                ? 'border-t-2 border-primary-container text-on-primary-container'
+                ? 'border-t-2 border-primary-container text-primary'
                 : 'border-t-2 border-transparent text-on-surface-variant'
             }`}
           >
-            <Icon size={22} />
+            <Icon size={20} />
+            <span className="text-[10px] font-semibold leading-none">
+              {item.shortLabel ?? item.label}
+            </span>
           </Link>
         )
       })}

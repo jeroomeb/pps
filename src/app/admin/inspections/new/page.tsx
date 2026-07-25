@@ -1,14 +1,21 @@
 import { createClient } from '@/lib/supabase/server'
 import { NewInspectionForm } from '@/components/NewInspectionForm'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { formatZonedDateTimeLocal } from '@/lib/timezone'
 
-/** `datetime-local` wants local wall-clock time, not a UTC ISO string. */
+/**
+ * `datetime-local` wants local wall-clock time, not a UTC ISO string —
+ * "local" here means APP_TIMEZONE, not the server's own timezone (see
+ * src/lib/timezone.ts). `date` deep-links in as a date-only key
+ * ("2026-08-03"); treat that as a bare calendar date rather than parsing it
+ * as a UTC instant, so it isn't shifted a day by the zone conversion.
+ */
 function toDateTimeLocal(value: string | undefined): string | undefined {
   if (!value) return undefined
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${value}T09:00`
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return undefined
-  const pad = (n: number) => `${n}`.padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return formatZonedDateTimeLocal(d)
 }
 
 export default async function NewInspectionPage({

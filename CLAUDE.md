@@ -188,6 +188,146 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-07-25 — Full audit + fix pass: UX, scheduling correctness, PDF/email reliability, RLS hardening (session 10)
+Client reported the app "feels very confusing, important info isn't where
+it's supposed to be." Ran three parallel deep audits (UI/UX/IA, business
+logic/data correctness, security/RLS) plus manual review, then fixed the
+highest-leverage findings across five phases. `tsc`/`eslint`/`npm run build`
+clean after every phase. **Migration `0004_email_status_and_rls_hardening.sql`
+must be applied** (see below) — it is the reason several of the security
+fixes below are "closed" rather than "code fixed, DB not yet updated."
+
+**Phase 1 — the actual "confusing" complaints:**
+- **Submit validation unified.** `src/lib/inspection-validation.ts` is now the
+  single source of truth for what blocks submission (status required; photo
+  required on every non-N/A item; comment required on Fail), used by both the
+  API route and the checklist UI — previously the client only required a
+  photo on Fail while the server required it on every item, so the Submit
+  button could enable on a 40-item checklist the server would reject one item
+  at a time. The checklist now shows the **full list** of blocking items with
+  jump links instead of one server error per submit attempt.
+- **Admin report screen brought to parity with the PDF**: every item now
+  shows its description/comment/photo (previously pass/N-A items showed only
+  a status pill on screen while the PDF showed everything), plus a Result
+  field, property phone, and the property's human-readable ID.
+- **Specialists now see the property** (address, click-to-call phone,
+  scheduled time) on the active checklist and their read-only completed view
+  — previously only the property *name* was shown while doing the inspection.
+- **Inconsistent click-throughs fixed**: an open inspection now opens the
+  checklist from every list (`/admin/inspections`, team member assignments)
+  instead of sometimes landing on the property page instead.
+- **Missing columns surfaced**: property email/phone/human_id on the
+  Properties list, team member human_id/email/phone on the Team list,
+  `scheduled_for`/human_id on Reports — all were already fetched or easily
+  available but never rendered.
+- Fixed the undefined `bg-primary-fixed`/`text-on-primary-fixed` classes
+  (not in the `@theme` token set — same failure mode as the session-4 bug,
+  the desktop user avatar chip was invisible) and labeled the mobile
+  bottom-nav tabs (were icon-only with no visible text).
+
+**Phase 2 — scheduling correctness:** new `src/lib/timezone.ts`
+(`APP_TIMEZONE`, defaults `America/New_York`) — every "today"/"due"/overdue
+calculation and every admin-entered `datetime-local` value previously ran in
+the *server's* timezone (UTC on Vercel), so "today" flipped over at 8pm
+Eastern and admin-scheduled times could shift by the UTC offset. All of
+`src/lib/schedule.ts` now operates on timezone-normalized dates. Also:
+required-inspection-day tracking now clears once **any** inspection for that
+property is completed near that occurrence (not only one with a matching
+`scheduled_for` — previously an unscheduled inspection that got completed
+left the dashboard reporting it "overdue" forever); the dashboard schedule
+panel gained an **Upcoming** (future occurrences) section and a **Dismissed**
+section with `restoreOccurrence` finally wired up (it existed but was called
+from nowhere); added several missing `revalidatePath` calls so the dashboard/
+inspections list don't show stale data after create/complete/delete.
+
+**Phase 3 — PDF/email/delete reliability:**
+- PDF photos resize to 900px/q72 (was 1600px/q78 — a 40-photo checklist could
+  produce a 15-25MB PDF, near or over Gmail's attachment limit); photo
+  processing is now concurrency-limited (4 at a time) instead of one giant
+  `Promise.all`; both PDF-generating routes have `maxDuration = 60`.
+- `/api/inspections/[id]/pdf` **no longer re-renders and re-uploads the PDF
+  on every GET** — it serves the stored file (the actual record of truth) and
+  only regenerates as a fallback, or on an explicit `?regenerate=1` admin
+  request. A plain download click was silently mutating a completed,
+  supposedly-frozen report if the property/template had changed since.
+  Specialists can now download their own completed report (was admin-only).
+- **Email delivery status tracked**: new `inspections.email_status`/
+  `email_error` columns, set by both the complete and resend routes. A
+  failed report email now shows a persistent warning on the Reports list and
+  the report page — previously it was only a 5-second toast the specialist
+  could easily miss, with no other record anywhere that delivery failed.
+- Destructive deletes: the icon-only `ConfirmDeleteButton` (used for deleting
+  completed reports) now shows "Confirm?" text on the armed tap instead of
+  only a color change; delete confirmations spell out that completed reports/
+  photos are destroyed too; `DeleteItemButton` switched from a native
+  `confirm()` to the same two-tap pattern as the rest of the app.
+
+**Phase 4 — security hardening (`0004_email_status_and_rls_hardening.sql`):**
+- `inspections_update` RLS: `with check` now carries the same
+  `status <> 'completed'` guard as `using` (it didn't — a direct PostgREST
+  call could update a row *into* `completed` bypassing all app validation).
+- `inspection_items` insert policy renamed/tightened to admin-only with a
+  completed-status guard (it granted the assigned inspector insert too, with
+  no such guard — forged rows could be added to a completed inspection).
+- `properties_select_all` scoped to admin-or-assigned-inspector (was: any
+  authenticated user could read every property's email/phone/private notes).
+- `photos`/`reports` storage bucket policies scoped to the owning
+  inspection's inspector-or-admin (were: any authenticated user could read,
+  and for `photos`, **overwrite**, any object — meaning one specialist could
+  tamper with another's evidence photos, including on a completed inspection,
+  since the PDF route used to re-render from live storage on every view).
+- New `src/lib/storage-paths.ts` validates client-supplied storage paths
+  (`photo_path`, `id_front_path`/`id_back_path`) server-side before any
+  service-role storage call — closes a path-traversal vector where a
+  malformed path (e.g. `../documents/<uid>/id-front.jpg`) could make the
+  service-role PDF pipeline (which bypasses RLS entirely) read a different
+  bucket/owner's file.
+- `guard_profile_self_update` and `current_role_is_admin` given
+  `set search_path = ''` (closes Supabase's `function_search_path_mutable`
+  lint on the functions every RLS policy depends on); the guard trigger now
+  exempts the service role, fixing a latent bug where `createTeamMember`'s
+  admin-client promotion (role/`human_id`) was being silently reverted by the
+  trigger (triggers run regardless of the connection's role, and a
+  service-role request has no `auth.uid()`, so `current_role_is_admin()` read
+  false for it).
+- `/auth/callback`'s `next` redirect param is now allowlisted (was an open
+  redirect — `?next=.evil.com` produced a same-looking-domain phishing
+  redirect after a valid code exchange).
+- `updatePassword` now requires the current password unless the session's
+  AMR shows it came from an actual recovery-email link, and evicts other
+  sessions on success (previously any session — including a stolen/left-open
+  one — could reach `/reset-password` and silently take over the account).
+- `next.config.ts` adds CSP/`X-Frame-Options`/`nosniff`/Referrer-Policy/
+  Permissions-Policy headers (there were none). No CSP nonce wiring was added
+  (`script-src 'unsafe-inline'`) — a stricter nonce-based CSP would need the
+  proxy to inject a per-request nonce, out of scope for this pass.
+
+**Phase 5 — consistency:** `normalizeCounty()` now strips a trailing "County"
+from admin/specialist input (was producing literal "Essex County County" on
+the property page, and letting "Essex" / "Essex County" appear as two
+different, non-matching filter options / proximity-match values); unified the
+"Resolved & Closed" status label onto the specialist's read-only view (was
+hardcoded "Completed" there); removed the dead `.industrial-gradient` CSS
+class and a dead `tone`/`isError` branch on the property stats cards; fixed
+the property detail page's "In Progress" stat, which was actually counting
+pending + in_progress together (disagreed with the dashboard's In Progress
+card for the same data).
+
+**Deliberately not done this session** (flagged, not fixed): the 32
+`as unknown as` embedded-join casts in `database.types.ts` (this is the class
+of bug that caused the session-9 "properties invisible" outage — regenerating
+types properly is a larger, separate task); full nonce-based CSP; converting
+the remaining vocabulary inconsistencies (role labels "Inspector"/"Specialist"/
+"OCS", a few more status-label spots) to one term everywhere; pagination on
+the four unbounded list pages; editable/reorderable checklist template items;
+deactivate-instead-of-delete for team members.
+
+**Action needed from the user:** apply
+`supabase/migrations/0004_email_status_and_rls_hardening.sql` in the
+Supabase SQL editor against the live DB (idempotent, safe to re-run) — the
+email-status columns and every RLS/storage fix in Phase 4 depend on it.
+`schema.sql` is updated to match for any fresh install.
+
 ### 2026-07-25 — Scheduling rebuild, split dashboards, structured addresses (session 9b)
 Client review of the session-9a fixes surfaced a batch of real defects. All
 rebuilt; `tsc`/`eslint`/`build` clean. **Migration `0003_schedule_dismissals_and_addresses.sql`

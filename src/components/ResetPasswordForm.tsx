@@ -7,7 +7,14 @@ import { SubmitButton } from '@/components/SubmitButton'
 const INPUT =
   'min-h-12 rounded border border-outline-variant bg-surface-container-lowest px-3 focus:border-primary-container focus:outline-none'
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({
+  requireCurrentPassword,
+}: {
+  /** True when this isn't a genuine password-reset (recovery) session — e.g.
+   * an already-logged-in user navigated here directly — so re-proving
+   * identity is required before the password can change. */
+  requireCurrentPassword: boolean
+}) {
   const [state, formAction] = useActionState<SignInState, FormData>(updatePassword, undefined)
 
   return (
@@ -15,6 +22,25 @@ export function ResetPasswordForm() {
       action={formAction}
       className="flex flex-col gap-4 rounded border border-outline-variant bg-surface-container-lowest p-6"
     >
+      {requireCurrentPassword && (
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="current_password"
+            className="text-sm font-semibold uppercase tracking-wide"
+          >
+            Current Password
+          </label>
+          <input
+            id="current_password"
+            name="current_password"
+            type="password"
+            required
+            autoComplete="current-password"
+            className={INPUT}
+          />
+        </div>
+      )}
+
       <div className="flex flex-col gap-1">
         <label htmlFor="password" className="text-sm font-semibold uppercase tracking-wide">
           New Password

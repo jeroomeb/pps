@@ -18,8 +18,10 @@ import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
 import {
   DashboardSchedulePanel,
   type ScheduleRow,
+  type DismissedRow,
 } from '@/components/DashboardSchedulePanel'
 import { dueEntries } from '@/lib/schedule'
+import { zonedDate } from '@/lib/timezone'
 
 const QUICK_ACTIONS = [
   { href: '/admin/inspections/new', label: 'Start Inspection', icon: Plus, primary: true },
@@ -44,10 +46,13 @@ export default async function AdminDashboardPage({
     supabase
       .from('inspections')
       .select(
-        'id, property_id, status, created_at, scheduled_for, properties(name), checklist_templates(name)'
+        'id, property_id, status, created_at, completed_at, scheduled_for, properties(name), checklist_templates(name)'
       )
       .order('created_at', { ascending: false }),
-    supabase.from('schedule_dismissals').select('property_id, occurrence_date'),
+    supabase
+      .from('schedule_dismissals')
+      .select('property_id, occurrence_date, dismissed_at, properties(name)')
+      .order('dismissed_at', { ascending: false }),
   ])
 
   const allProperties = properties ?? []
@@ -67,21 +72,42 @@ export default async function AdminDashboardPage({
       name: p.name,
       required_schedule: p.required_schedule,
     })),
-    allInspections.map((i) => ({ property_id: i.property_id, scheduled_for: i.scheduled_for })),
-    new Date(),
+    allInspections.map((i) => ({
+      property_id: i.property_id,
+      scheduled_for: i.scheduled_for,
+      status: i.status,
+      completed_at: i.completed_at,
+    })),
+    zonedDate(),
     dismissals ?? []
   )
 
   // Flatten to a serializable shape — no Date objects cross into the client.
+  // `entry.date` is a zoned shim (UTC fields hold the APP_TIMEZONE wall-clock
+  // day), so it must be formatted with `timeZone: 'UTC'` — otherwise the
+  // runtime's own zone would re-interpret it and could shift the printed day.
   const scheduleRows: ScheduleRow[] = due.map((entry) => ({
     propertyId: entry.propertyId,
     propertyName: entry.propertyName,
     dateKey: entry.dateKey,
-    dateLabel: entry.date.toLocaleDateString('en-US', { dateStyle: 'medium' }),
+    dateLabel: entry.date.toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' }),
     label: entry.label,
     tone: entry.tone,
     dueText: entry.dueText,
   }))
+
+  const dismissedRows: DismissedRow[] = (dismissals ?? []).map((d) => {
+    const property = d.properties as unknown as { name: string } | null
+    return {
+      propertyId: d.property_id,
+      propertyName: property?.name ?? 'Unknown property',
+      dateKey: d.occurrence_date.slice(0, 10),
+      dateLabel: new Date(`${d.occurrence_date.slice(0, 10)}T00:00:00Z`).toLocaleDateString(
+        'en-US',
+        { dateStyle: 'medium', timeZone: 'UTC' }
+      ),
+    }
+  })
 
   const stats = [
     {
@@ -151,7 +177,7 @@ export default async function AdminDashboardPage({
             counties={distinctValues(allProperties, 'county')}
           />
           <Card padded={false} className="overflow-hidden">
-            <DashboardSchedulePanel rows={scheduleRows} />
+            <DashboardSchedulePanel rows={scheduleRows} dismissedRows={dismissedRows} />
           </Card>
         </section>
 

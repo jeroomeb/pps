@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/dal'
 import { createAdminClient } from '@/lib/supabase/server'
 import { sendReportEmail } from '@/lib/email/sendReportEmail'
+
+export const runtime = 'nodejs'
 
 export async function POST(
   _request: Request,
@@ -59,8 +62,20 @@ export async function POST(
     })
   } catch (emailError) {
     console.error('Failed to resend report email:', emailError)
+    const message = emailError instanceof Error ? emailError.message : 'Unknown error'
+    await admin
+      .from('inspections')
+      .update({ email_status: 'failed', email_error: message })
+      .eq('id', inspectionId)
+    revalidatePath('/admin/reports')
     return NextResponse.json({ error: 'Failed to resend email.' }, { status: 500 })
   }
+
+  await admin
+    .from('inspections')
+    .update({ email_status: 'sent', email_error: null })
+    .eq('id', inspectionId)
+  revalidatePath('/admin/reports')
 
   return NextResponse.json({ success: true })
 }

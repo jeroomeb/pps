@@ -7,6 +7,8 @@ import { requireRole, getProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { cleanupInspectionStorage } from '@/lib/supabase/storage-cleanup'
 import { sendAssignmentEmail } from '@/lib/email/sendAssignmentEmail'
+import { parseZonedDateTimeLocal } from '@/lib/timezone'
+import { isSafeObjectPath } from '@/lib/storage-paths'
 
 const newInspectionSchema = z.object({
   property_id: z.string().uuid(),
@@ -37,8 +39,10 @@ export async function createInspection(
 
   let scheduledForIso: string | null = null
   if (parsed.data.scheduled_for) {
-    const d = new Date(parsed.data.scheduled_for)
-    if (Number.isNaN(d.getTime())) {
+    // The `datetime-local` input carries no timezone of its own — interpret
+    // it as APP_TIMEZONE wall-clock time, not the server's own timezone.
+    const d = parseZonedDateTimeLocal(parsed.data.scheduled_for)
+    if (!d || Number.isNaN(d.getTime())) {
       return { error: 'That scheduled date/time is not valid.' }
     }
     scheduledForIso = d.toISOString()
@@ -113,6 +117,8 @@ export async function createInspection(
   }
 
   revalidatePath(`/admin/properties/${parsed.data.property_id}`)
+  revalidatePath('/admin')
+  revalidatePath('/admin/inspections')
   revalidatePath('/inspector')
 
   // Self-assigned inspections go straight into the checklist — no extra clicks.
@@ -151,8 +157,10 @@ export async function updateInspection(
 
   let scheduledForIso: string | null = null
   if (parsed.data.scheduled_for) {
-    const d = new Date(parsed.data.scheduled_for)
-    if (Number.isNaN(d.getTime())) {
+    // The `datetime-local` input carries no timezone of its own — interpret
+    // it as APP_TIMEZONE wall-clock time, not the server's own timezone.
+    const d = parseZonedDateTimeLocal(parsed.data.scheduled_for)
+    if (!d || Number.isNaN(d.getTime())) {
       return { error: 'That scheduled date/time is not valid.' }
     }
     scheduledForIso = d.toISOString()
@@ -225,6 +233,12 @@ export async function deleteInspection(
   await requireRole('admin')
   const supabase = await createClient()
 
+  const { data: existing } = await supabase
+    .from('inspections')
+    .select('property_id')
+    .eq('id', inspectionId)
+    .single()
+
   await cleanupInspectionStorage([inspectionId])
 
   const { error } = await supabase.from('inspections').delete().eq('id', inspectionId)
@@ -234,7 +248,11 @@ export async function deleteInspection(
 
   revalidatePath('/admin')
   revalidatePath('/admin/reports')
+  revalidatePath('/admin/inspections')
   revalidatePath('/inspector')
+  if (existing?.property_id) {
+    revalidatePath(`/admin/properties/${existing.property_id}`)
+  }
 }
 
 const itemUpdateSchema = z.object({
@@ -287,6 +305,16 @@ export async function saveInspectionItem(
     return { error: 'This inspection cannot be started before its scheduled time.' }
   }
 
+  // A client-supplied photo path must belong to THIS inspection's folder —
+  // otherwise a caller could point an item at another inspection's (or
+  // another bucket's, via traversal) object.
+  if (
+    parsed.data.photo_path &&
+    !isSafeObjectPath(parsed.data.photo_path, inspectionId)
+  ) {
+    return { error: 'Invalid photo reference.' }
+  }
+
   const { error } = await supabase
     .from('inspection_items')
     .update({
@@ -296,6 +324,10 @@ export async function saveInspectionItem(
       photo_path: parsed.data.photo_path,
     })
     .eq('id', itemId)
+    // Belt-and-suspenders: authorization above is checked against
+    // `inspectionId`, so the write must be scoped to that same inspection —
+    // otherwise a caller could pass a mismatched itemId/inspectionId pair.
+    .eq('inspection_id', inspectionId)
 
   if (error) {
     return { error: error.message }

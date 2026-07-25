@@ -28,9 +28,16 @@ export function normalizeZip(value: string | null | undefined): string | null {
   return digits || null
 }
 
-/** Trim, collapse whitespace, Title Case — so "essex  county" matches "Essex County". */
+/**
+ * Trim, collapse whitespace, strip a trailing "County", Title Case — so
+ * "essex  county", "Essex", and "ESSEX COUNTY" all normalize to "Essex".
+ * The word is re-added wherever it's displayed (e.g. "Essex County"); keeping
+ * it out of the stored value is what prevents "Essex County County" and lets
+ * "Essex" / "Essex County" entries match each other instead of appearing as
+ * two different filter options.
+ */
 export function normalizeCounty(value: string | null | undefined): string | null {
-  const v = (value ?? '').trim().replace(/\s+/g, ' ')
+  const v = (value ?? '').trim().replace(/\s+/g, ' ').replace(/\s+county$/i, '')
   if (!v) return null
   return v
     .toLowerCase()

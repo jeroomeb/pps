@@ -84,7 +84,7 @@ export function AppShell({
         {/* Desktop top bar */}
         <div className="hidden items-center justify-end gap-3 border-b border-outline-variant bg-surface-container-lowest px-6 py-3 lg:flex">
           <p className="text-sm font-medium">{fullName}</p>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-fixed text-xs font-bold text-on-primary-fixed">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-container text-xs font-bold text-on-primary-container">
             {fullName
               .split(' ')
               .map((n) => n[0])

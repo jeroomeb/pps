@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/auth/dal'
-import { renderInspectionPdf, photoDataUri } from '@/lib/pdf/generate'
+import { renderInspectionPdf, photoDataUri, mapWithConcurrency } from '@/lib/pdf/generate'
 import { sendReportEmail } from '@/lib/email/sendReportEmail'
+import { validateInspectionItems } from '@/lib/inspection-validation'
 
 export const runtime = 'nodejs'
+export const maxDuration = 60
 
 export async function POST(
   _request: Request,
@@ -43,47 +46,30 @@ export async function POST(
     .eq('inspection_id', inspectionId)
     .order('sort_order')
 
-  if (itemsError || !items) {
+  if (itemsError || !items?.length) {
     return NextResponse.json({ error: 'Could not load checklist items.' }, { status: 500 })
   }
 
-  const incomplete = items.find((item) => !item.status)
-  if (incomplete) {
+  const issues = validateInspectionItems(items)
+  if (issues.length) {
     return NextResponse.json(
-      { error: `"${incomplete.item_name}" still needs a Pass/Fail/N/A status.` },
-      { status: 400 }
-    )
-  }
-
-  // Photo required for every answered item except N/A (client punch list #8).
-  const missingPhoto = items.find(
-    (item) => item.status && item.status !== 'na' && !item.photo_path
-  )
-  if (missingPhoto) {
-    return NextResponse.json(
-      { error: `"${missingPhoto.item_name}" needs a photo (mark it N/A if it does not apply).` },
-      { status: 400 }
-    )
-  }
-
-  const missingComment = items.find(
-    (item) => item.status === 'fail' && !item.comment?.trim()
-  )
-  if (missingComment) {
-    return NextResponse.json(
-      { error: `"${missingComment.item_name}" is marked Fail and needs a comment explaining the failure.` },
+      {
+        error:
+          issues.length === 1
+            ? `"${issues[0].itemName}" ${issues[0].reason}`
+            : `${issues.length} items still need attention before this inspection can be submitted.`,
+        issues,
+      },
       { status: 400 }
     )
   }
 
   const admin = createAdminClient()
 
-  const itemsWithPhotoUrls = await Promise.all(
-    items.map(async (item) => ({
-      ...item,
-      photoUrl: await photoDataUri(admin, item.photo_path),
-    }))
-  )
+  const itemsWithPhotoUrls = await mapWithConcurrency(items, 4, async (item) => ({
+    ...item,
+    photoUrl: await photoDataUri(admin, item.photo_path),
+  }))
 
   const property = inspection.properties as unknown as {
     name: string
@@ -137,6 +123,12 @@ export async function POST(
     )
   }
 
+  revalidatePath('/admin')
+  revalidatePath('/admin/inspections')
+  revalidatePath('/admin/reports')
+  revalidatePath(`/admin/properties/${inspection.property_id}`)
+  revalidatePath('/inspector')
+
   try {
     await sendReportEmail({
       to: property.email,
@@ -149,11 +141,22 @@ export async function POST(
     })
   } catch (emailError) {
     console.error('Failed to send report email:', emailError)
+    const message = emailError instanceof Error ? emailError.message : 'Unknown error'
+    await admin
+      .from('inspections')
+      .update({ email_status: 'failed', email_error: message })
+      .eq('id', inspectionId)
+    revalidatePath('/admin/reports')
     return NextResponse.json({
       success: true,
       warning: 'Inspection completed, but the report email failed to send.',
     })
   }
+
+  await admin
+    .from('inspections')
+    .update({ email_status: 'sent', email_error: null })
+    .eq('id', inspectionId)
 
   return NextResponse.json({ success: true })
 }

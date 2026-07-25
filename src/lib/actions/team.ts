@@ -6,6 +6,7 @@ import { requireRole, getProfile } from '@/lib/auth/dal'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { genSpecialistId } from '@/lib/ids'
 import { composeAddress, normalizeAddressParts } from '@/lib/address'
+import { isSafeObjectPath } from '@/lib/storage-paths'
 import type { Database } from '@/lib/database.types'
 
 const teamMemberSchema = z.object({
@@ -122,6 +123,17 @@ export async function updateOwnProfile(
   const parsed = ownProfileSchema.safeParse(input)
   if (!parsed.success) {
     return { error: 'Invalid input.' }
+  }
+
+  // A client-supplied ID-document path must live under the caller's OWN
+  // folder — otherwise a specialist could point their profile at someone
+  // else's uploaded document (the admin reviewing it would see the wrong
+  // person's ID, believing it belongs to this profile).
+  if (
+    (parsed.data.id_front_path && !isSafeObjectPath(parsed.data.id_front_path, profile.id)) ||
+    (parsed.data.id_back_path && !isSafeObjectPath(parsed.data.id_back_path, profile.id))
+  ) {
+    return { error: 'Invalid document reference.' }
   }
 
   const supabase = await createClient()

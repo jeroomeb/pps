@@ -52,15 +52,15 @@ export function ConfirmDeleteButton({
       onClick={handleClick}
       disabled={pending}
       title={armed ? confirmMessage : label}
-      aria-label={label}
+      aria-label={armed ? `Confirm: ${confirmMessage}` : label}
       className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg border text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50 ${
         armed
           ? 'border-error bg-error text-white'
           : 'border-outline-variant text-error hover:bg-error-container/40'
-      } ${iconOnly ? 'w-10' : 'px-3'}`}
+      } ${iconOnly ? (armed ? 'w-auto px-3' : 'w-10') : 'px-3'}`}
     >
       <Trash2 size={14} />
-      {!iconOnly && text}
+      {(!iconOnly || armed) && text}
     </button>
   )
 }

@@ -66,6 +66,7 @@ export default async function PropertiesPage({
                 <th className="px-4 py-3 font-semibold">Address</th>
                 <th className="px-4 py-3 font-semibold">County</th>
                 <th className="px-4 py-3 font-semibold">Phone</th>
+                <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="w-10 px-4 py-3" />
               </tr>
             </thead>
@@ -93,6 +94,9 @@ export default async function PropertiesPage({
                     <td className="p-0 text-on-surface-variant">
                       <Link href={href} className={cell}>{property.phone ?? '—'}</Link>
                     </td>
+                    <td className="p-0 text-on-surface-variant">
+                      <Link href={href} className={`${cell} truncate max-w-[16rem]`}>{property.email}</Link>
+                    </td>
                     <td className="p-0">
                       <Link href={href} className={cell}>
                         <ChevronRight size={16} className="text-on-surface-variant" />
@@ -109,17 +113,21 @@ export default async function PropertiesPage({
               <Link
                 key={property.id}
                 href={`/admin/properties/${property.id}`}
-                className="flex items-center justify-between p-4"
+                className="flex items-center justify-between gap-3 p-4"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="font-headline font-semibold">{property.name}</p>
                   <p className="text-sm text-on-surface-variant">{property.address}</p>
+                  {property.phone && (
+                    <p className="text-sm text-on-surface-variant">{property.phone}</p>
+                  )}
+                  <p className="truncate text-sm text-on-surface-variant">{property.email}</p>
                   <p className="font-mono text-xs text-on-surface-variant">
                     {property.human_id ?? ''}
                     {property.county ? ` · ${property.county}` : ''}
                   </p>
                 </div>
-                <ChevronRight size={18} className="text-on-surface-variant" />
+                <ChevronRight size={18} className="shrink-0 text-on-surface-variant" />
               </Link>
             ))}
           </div>

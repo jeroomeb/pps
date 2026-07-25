@@ -4,6 +4,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import sharp from 'sharp'
 import { createAdminClient } from '@/lib/supabase/server'
 import { InspectionReport } from '@/lib/pdf/InspectionReport'
+import { isSafeInspectionPhotoPath } from '@/lib/storage-paths'
 
 type ReportItem = {
   service_category: string
@@ -18,6 +19,29 @@ const MIME_BY_EXT: Record<string, string> = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   png: 'image/png',
+}
+
+/**
+ * Maps with at most `limit` in-flight calls at once. A 40+ item checklist
+ * downloading and sharp-processing every photo via a single `Promise.all`
+ * held all of them in memory simultaneously — this caps peak memory/socket
+ * usage on the PDF pipeline without changing the output order.
+ */
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let next = 0
+  async function worker() {
+    while (next < items.length) {
+      const index = next++
+      results[index] = await fn(items[index], index)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return results
 }
 
 /**
@@ -43,15 +67,25 @@ export async function photoDataUri(
   photoPath: string | null
 ): Promise<string | null> {
   if (!photoPath) return null
+  // This runs on the service-role client, which bypasses RLS entirely — a
+  // malformed/traversal path here (e.g. `../documents/<uid>/id-front.jpg`)
+  // would otherwise let it read any object in any bucket. Reject anything
+  // that isn't `<inspectionId>/<safe-filename>` before ever touching storage.
+  if (!isSafeInspectionPhotoPath(photoPath)) return null
   const { data, error } = await admin.storage.from('photos').download(photoPath)
   if (error || !data) return null
   const buffer = Buffer.from(await data.arrayBuffer())
 
   try {
+    // The PDF only ever displays these at 240×180pt (photo) or 180×135pt
+    // (photoSmall) — 900px is already several times that resolution at print
+    // DPI. The old 1600px/q78 setting was producing 15-25MB PDFs on a
+    // 40-photo checklist, close to or over Gmail's attachment limit and
+    // risking the serverless function's time/memory budget.
     const jpeg = await sharp(buffer)
       .rotate() // honor EXIF orientation so phone photos aren't sideways
-      .resize({ width: 1600, withoutEnlargement: true })
-      .jpeg({ quality: 78 })
+      .resize({ width: 900, withoutEnlargement: true })
+      .jpeg({ quality: 72 })
       .toBuffer()
     return `data:image/jpeg;base64,${jpeg.toString('base64')}`
   } catch {
@@ -109,12 +143,10 @@ export async function regenerateInspectionPdf(
     .eq('inspection_id', inspectionId)
     .order('sort_order')
 
-  const itemsWithPhotoUrls = await Promise.all(
-    (items ?? []).map(async (item) => ({
-      ...item,
-      photoUrl: await photoDataUri(admin, item.photo_path),
-    }))
-  )
+  const itemsWithPhotoUrls = await mapWithConcurrency(items ?? [], 4, async (item) => ({
+    ...item,
+    photoUrl: await photoDataUri(admin, item.photo_path),
+  }))
 
   const property = inspection.properties as unknown as { name: string; address: string }
   const template = inspection.checklist_templates as unknown as { name: string }

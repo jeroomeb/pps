@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { isRecoverySession } from '@/lib/auth/session'
 
 export type SignInState = { error?: string } | undefined
 export type ResetState = { error?: string; sent?: boolean } | undefined
@@ -68,13 +69,16 @@ export async function requestPasswordReset(
   return { sent: true }
 }
 
-// Sets a new password for the currently-authenticated (recovery) session.
+// Sets a new password for the currently-authenticated session. A genuine
+// password-reset (recovery) session may do this with no other proof; any
+// other session must additionally supply the current password.
 export async function updatePassword(
   _prevState: SignInState,
   formData: FormData
 ): Promise<SignInState> {
   const password = String(formData.get('password') ?? '')
   const confirm = String(formData.get('confirm') ?? '')
+  const currentPassword = String(formData.get('current_password') ?? '')
 
   if (password.length < 8) {
     return { error: 'Password must be at least 8 characters.' }
@@ -85,16 +89,33 @@ export async function updatePassword(
 
   const supabase = await createClient()
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: 'Your reset link has expired. Request a new one.' }
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session?.user?.email) {
+    return { error: 'Your session has expired. Request a new reset link.' }
+  }
+
+  if (!isRecoverySession(session.access_token)) {
+    if (!currentPassword) {
+      return { error: 'Enter your current password to confirm this change.' }
+    }
+    const { error: reauthError } = await supabase.auth.signInWithPassword({
+      email: session.user.email,
+      password: currentPassword,
+    })
+    if (reauthError) {
+      return { error: 'Current password is incorrect.' }
+    }
   }
 
   const { error } = await supabase.auth.updateUser({ password })
   if (error) {
     return { error: error.message }
   }
+
+  // Evict any other active sessions (e.g. a stolen cookie elsewhere) now
+  // that the password has changed.
+  await supabase.auth.signOut({ scope: 'others' })
 
   redirect('/')
 }

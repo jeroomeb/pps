@@ -214,6 +214,8 @@ export interface Database {
           completed_at: string | null
           pdf_path: string | null
           scheduled_for: string | null
+          email_status: 'sent' | 'failed' | null
+          email_error: string | null
         }
         Insert: {
           id?: string
@@ -225,6 +227,8 @@ export interface Database {
           completed_at?: string | null
           pdf_path?: string | null
           scheduled_for?: string | null
+          email_status?: 'sent' | 'failed' | null
+          email_error?: string | null
         }
         Update: {
           id?: string
@@ -236,6 +240,8 @@ export interface Database {
           completed_at?: string | null
           pdf_path?: string | null
           scheduled_for?: string | null
+          email_status?: 'sent' | 'failed' | null
+          email_error?: string | null
         }
         Relationships: [
           {

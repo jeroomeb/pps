@@ -18,7 +18,7 @@ export default async function InspectionDetailPage({
   const { data: inspection } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, created_at, completed_at, scheduled_for, properties(name), checklist_templates(name), profiles(full_name)'
+      'id, status, inspector_id, created_at, completed_at, scheduled_for, properties(name, address, phone), checklist_templates(name), profiles(full_name)'
     )
     .eq('id', id)
     .single()
@@ -57,14 +57,21 @@ export default async function InspectionDetailPage({
     })
   )
 
-  const property = inspection.properties as unknown as { name: string }
+  const property = inspection.properties as unknown as {
+    name: string
+    address: string | null
+    phone: string | null
+  }
   const template = inspection.checklist_templates as unknown as { name: string }
   const inspector = inspection.profiles as unknown as { full_name: string }
 
   if (inspection.status === 'completed') {
     return (
       <ReadOnlyInspectionView
+        inspectionId={id}
         propertyName={property.name}
+        propertyAddress={property.address}
+        propertyPhone={property.phone}
         checklistName={template.name}
         inspectorName={inspector.full_name}
         completedAt={inspection.completed_at}
@@ -118,9 +125,12 @@ export default async function InspectionDetailPage({
       <ActiveInspectionChecklist
         inspectionId={id}
         propertyName={property.name}
+        propertyAddress={property.address}
+        propertyPhone={property.phone}
         checklistName={template.name}
         inspectorName={inspector.full_name}
         startedAt={inspection.created_at}
+        scheduledFor={inspection.scheduled_for}
         initialItems={itemsWithUrls}
       />
     </>

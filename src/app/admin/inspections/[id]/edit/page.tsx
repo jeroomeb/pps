@@ -3,14 +3,14 @@ import { requireRole } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { EditInspectionForm } from '@/components/EditInspectionForm'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { formatZonedDateTimeLocal } from '@/lib/timezone'
 
-/** `datetime-local` wants local wall-clock time, not a UTC ISO string. */
+/** `datetime-local` wants local wall-clock time in APP_TIMEZONE, not a UTC ISO string. */
 function toDateTimeLocal(iso: string | null): string | undefined {
   if (!iso) return undefined
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return undefined
-  const pad = (n: number) => `${n}`.padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return formatZonedDateTimeLocal(d)
 }
 
 export default async function EditInspectionPage({

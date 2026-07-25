@@ -22,6 +22,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { deleteProperty } from '@/lib/actions/properties'
 import { parseSchedule, scheduleEntryLabel, dueLabel } from '@/lib/schedule'
+import { zonedDate } from '@/lib/timezone'
 
 export default async function PropertyDetailPage({
   params,
@@ -53,16 +54,19 @@ export default async function PropertyDetailPage({
   }
 
   const completedCount = (inspections ?? []).filter((i) => i.status === 'completed').length
-  const activeCount = (inspections ?? []).length - completedCount
+  // "In Progress" here previously counted pending + in_progress together
+  // (labeled activeCount), which disagreed with the dashboard's In Progress
+  // card (status === 'in_progress' only) for the same data.
+  const inProgressCount = (inspections ?? []).filter((i) => i.status === 'in_progress').length
 
   const deletePropertyWithId = deleteProperty.bind(null, id)
 
   // Failure counts live at the inspection/report level only — not on the
   // property overview (per client request).
   const stats = [
-    { label: 'Total Inspections', value: inspections?.length ?? 0, icon: ClipboardList, tone: '' },
-    { label: 'In Progress', value: activeCount, icon: Clock, tone: '' },
-    { label: 'Completed', value: completedCount, icon: ClipboardCheck, tone: '' },
+    { label: 'Total Inspections', value: inspections?.length ?? 0, icon: ClipboardList },
+    { label: 'In Progress', value: inProgressCount, icon: Clock },
+    { label: 'Completed', value: completedCount, icon: ClipboardCheck },
   ]
 
   return (
@@ -106,7 +110,7 @@ export default async function PropertyDetailPage({
             </Link>
             <ConfirmDeleteButton
               action={deletePropertyWithId}
-              confirmMessage="Delete this property and all of its inspections?"
+              confirmMessage="Delete this property and ALL of its inspections — including completed, already-emailed reports and every photo? This cannot be undone."
               redirectTo="/admin/properties"
             />
           </>
@@ -148,21 +152,13 @@ export default async function PropertyDetailPage({
       <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {stats.map((stat) => {
           const Icon = stat.icon
-          const isError = stat.tone === 'error'
           return (
-            <Card
-              key={stat.label}
-              className={`flex items-center justify-between ${isError ? 'border-error/40 bg-error-container/30' : ''}`}
-            >
+            <Card key={stat.label} className="flex items-center justify-between">
               <div>
-                <p className={`label-tracked ${isError ? 'text-on-error-container' : 'text-on-surface-variant'}`}>
-                  {stat.label}
-                </p>
-                <p className={`font-headline text-2xl font-bold ${isError ? 'text-on-error-container' : ''}`}>
-                  {stat.value}
-                </p>
+                <p className="label-tracked text-on-surface-variant">{stat.label}</p>
+                <p className="font-headline text-2xl font-bold">{stat.value}</p>
               </div>
-              <Icon size={24} className={isError ? 'text-error' : 'text-primary'} />
+              <Icon size={24} className="text-primary" />
             </Card>
           )
         })}
@@ -207,9 +203,11 @@ export default async function PropertyDetailPage({
                   const dateLabel = new Date(
                     inspection.completed_at ?? inspection.created_at
                   ).toLocaleDateString('en-US', { dateStyle: 'medium' })
-                  const due = inspection.scheduled_for
-                    ? dueLabel(new Date(inspection.scheduled_for))
-                    : null
+                  const dateKind = inspection.completed_at ? 'Completed' : 'Created'
+                  const due =
+                    inspection.scheduled_for && !isCompleted
+                      ? dueLabel(zonedDate(new Date(inspection.scheduled_for)))
+                      : null
                   return (
                     <div
                       key={inspection.id}
@@ -218,7 +216,7 @@ export default async function PropertyDetailPage({
                       <Link href={href} className="min-w-0 flex-1 py-4 pl-4">
                         <p className="truncate font-semibold">{template?.name ?? 'Checklist'}</p>
                         <p className="truncate text-sm text-on-surface-variant">
-                          {inspector?.full_name ?? 'Unassigned'} · {dateLabel}
+                          {inspector?.full_name ?? 'Unassigned'} · {dateKind} {dateLabel}
                         </p>
                         {due && (
                           <p

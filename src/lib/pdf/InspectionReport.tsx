@@ -118,6 +118,7 @@ const styles = StyleSheet.create({
   },
   itemBody: { flex: 1, paddingRight: 10 },
   itemName: { fontSize: 10.5, fontFamily: 'Helvetica-Bold' },
+  itemDescription: { fontSize: 9, color: MUTED, marginTop: 2 },
   itemComment: { fontSize: 9.5, color: '#3a3d3e', marginTop: 3 },
 
   // Status chips
@@ -293,6 +294,9 @@ export function InspectionReport({
                   >
                     <View style={styles.itemBody}>
                       <Text style={styles.itemName}>{item.item_name}</Text>
+                      {item.description ? (
+                        <Text style={styles.itemDescription}>{item.description}</Text>
+                      ) : null}
                       {item.comment?.trim() ? (
                         <Text style={styles.itemComment}>Specialist comments: {item.comment}</Text>
                       ) : null}

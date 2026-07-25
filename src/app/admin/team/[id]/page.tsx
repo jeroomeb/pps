@@ -168,7 +168,7 @@ export default async function TeamMemberProfilePage({
                   const href =
                     inspection.status === 'completed'
                       ? `/admin/reports/${inspection.id}`
-                      : `/admin/properties/${inspection.property_id}`
+                      : `/inspector/inspections/${inspection.id}`
                   return (
                     <Link
                       key={inspection.id}

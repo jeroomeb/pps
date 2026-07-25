@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusBadge } from '@/components/StatusBadge'
 import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
 import { dueLabel } from '@/lib/schedule'
+import { zonedDate } from '@/lib/timezone'
 
 // Filtered inspection list backing the clickable dashboard stats. `?status=`
 // accepts a single DB status (pending / in_progress / completed) or the
@@ -83,18 +84,18 @@ export default async function AdminInspectionsPage({
               const template = inspection.checklist_templates as unknown as { name: string } | null
               const specialist = inspection.profiles as unknown as { full_name: string } | null
               const isCompleted = inspection.status === 'completed'
-              // Completed → full report; open → the property's detail page,
-              // which lists its inspections (admins can't open the inspector-
-              // scoped active checklist directly).
+              // Completed → full report; open → straight into the checklist
+              // (admins can view/complete any inspection, see inspector/layout.tsx).
               const href = isCompleted
                 ? `/admin/reports/${inspection.id}`
-                : `/admin/properties/${inspection.property_id}`
+                : `/inspector/inspections/${inspection.id}`
               const dateLabel = new Date(inspection.created_at).toLocaleDateString('en-US', {
                 dateStyle: 'medium',
               })
-              const due = inspection.scheduled_for
-                ? dueLabel(new Date(inspection.scheduled_for))
-                : null
+              const due =
+                inspection.scheduled_for && !isCompleted
+                  ? dueLabel(zonedDate(new Date(inspection.scheduled_for)))
+                  : null
               return (
                 <div
                   key={inspection.id}

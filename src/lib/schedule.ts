@@ -10,6 +10,8 @@
 //   ordinal: always 1 (first occurrence of that weekday in the month)
 //   weekday: 0 = Sunday .. 6 = Saturday
 
+import { zonedDate } from '@/lib/timezone'
+
 export type ScheduleEntry = { ordinal: number; weekday: number }
 
 export const WEEKDAY_LABELS = [
@@ -45,11 +47,19 @@ export function parseSchedule(value: unknown): ScheduleEntry[] {
   return [...weekdays].sort((a, b) => a - b).map((weekday) => ({ ordinal: 1, weekday }))
 }
 
+// All Date values in this module (except raw instants like `scheduled_for`
+// timestamps, which callers must run through `zonedDate()` first) are "zoned
+// shim" dates: their UTC getters encode the wall-clock calendar day in
+// APP_TIMEZONE, regardless of the server's own local timezone. That's why
+// every function below reads/writes via getUTC*/Date.UTC rather than the
+// local getters — using local getters here is exactly the bug that made
+// "today" and "Overdue by N days" drift by the server's UTC offset.
+
 // Concrete calendar date of the first `weekday` in a given month (month 0-11).
 export function occurrenceDate(year: number, month: number, entry: ScheduleEntry): Date {
-  const first = new Date(year, month, 1)
-  const offset = (entry.weekday - first.getDay() + 7) % 7
-  return new Date(year, month, 1 + offset)
+  const first = new Date(Date.UTC(year, month, 1))
+  const offset = (entry.weekday - first.getUTCDay() + 7) % 7
+  return new Date(Date.UTC(year, month, 1 + offset))
 }
 
 export function occurrencesForMonth(
@@ -63,22 +73,22 @@ export function occurrencesForMonth(
 }
 
 function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
 }
 
 function sameCalendarDay(a: Date, b: Date): boolean {
   return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
+    a.getUTCFullYear() === b.getUTCFullYear() &&
+    a.getUTCMonth() === b.getUTCMonth() &&
+    a.getUTCDate() === b.getUTCDate()
   )
 }
 
-/** Local-date key (YYYY-MM-DD) — matches a Postgres `date` column's text form. */
+/** Zoned-date key (YYYY-MM-DD) — matches a Postgres `date` column's text form. */
 export function dateKey(d: Date): string {
-  const m = `${d.getMonth() + 1}`.padStart(2, '0')
-  const day = `${d.getDate()}`.padStart(2, '0')
-  return `${d.getFullYear()}-${m}-${day}`
+  const m = `${d.getUTCMonth() + 1}`.padStart(2, '0')
+  const day = `${d.getUTCDate()}`.padStart(2, '0')
+  return `${d.getUTCFullYear()}-${m}-${day}`
 }
 
 export function daysBetween(from: Date, to: Date): number {
@@ -92,8 +102,12 @@ export type DueTone = 'overdue' | 'today' | 'soon' | 'future'
  * Relative due wording shared by the dashboards, assignment cards and
  * inspection lists — "Overdue by 2 days" / "Due today" / "Due in 3 days".
  * `soon` covers the next 7 days; beyond that an absolute date reads better.
+ * `today` defaults to "now" in APP_TIMEZONE, not the server's own zone.
  */
-export function dueLabel(date: Date, today: Date = new Date()): { text: string; tone: DueTone } {
+export function dueLabel(
+  date: Date,
+  today: Date = zonedDate()
+): { text: string; tone: DueTone } {
   const diff = daysBetween(today, date)
   if (diff < 0) {
     const n = Math.abs(diff)
@@ -103,7 +117,10 @@ export function dueLabel(date: Date, today: Date = new Date()): { text: string; 
   if (diff === 1) return { text: 'Due tomorrow', tone: 'soon' }
   if (diff <= 7) return { text: `Due in ${diff} days`, tone: 'soon' }
   return {
-    text: `Due ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+    // `date` is a zoned shim (its UTC fields hold the wall-clock day), so
+    // format it with `timeZone: 'UTC'` — otherwise the runtime's own zone
+    // would re-interpret it and could shift the printed day.
+    text: `Due ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`,
     tone: 'future',
   }
 }
@@ -137,15 +154,20 @@ const OVERDUE_WINDOW_DAYS = 45
  */
 export function dueEntries(
   properties: { id: string; name: string; required_schedule: unknown }[],
-  inspections: { property_id: string; scheduled_for: string | null }[],
-  today: Date = new Date(),
+  inspections: {
+    property_id: string
+    scheduled_for: string | null
+    status?: string
+    completed_at?: string | null
+  }[],
+  today: Date = zonedDate(),
   dismissed: { property_id: string; occurrence_date: string }[] = []
 ): DueEntry[] {
   const dismissedKeys = new Set(
     dismissed.map((d) => `${d.property_id}|${d.occurrence_date.slice(0, 10)}`)
   )
   const earliest = startOfDay(today)
-  earliest.setDate(earliest.getDate() - OVERDUE_WINDOW_DAYS)
+  earliest.setUTCDate(earliest.getUTCDate() - OVERDUE_WINDOW_DAYS)
   const results: DueEntry[] = []
 
   for (const property of properties) {
@@ -155,21 +177,34 @@ export function dueEntries(
     // Two months back covers the window even at its month boundary; the
     // `earliest` check below is what actually bounds it.
     for (let offset = -2; offset <= 1; offset++) {
-      const cursor = new Date(today.getFullYear(), today.getMonth() + offset, 1)
+      const cursor = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + offset, 1))
       for (const entry of schedule) {
-        const date = occurrenceDate(cursor.getFullYear(), cursor.getMonth(), entry)
+        const date = occurrenceDate(cursor.getUTCFullYear(), cursor.getUTCMonth(), entry)
         if (date < earliest) continue
         const key = dateKey(date)
 
         if (dismissedKeys.has(`${property.id}|${key}`)) continue
 
-        const covered = inspections.some(
+        // Covered either by an inspection scheduled for that exact calendar
+        // day, or by any inspection for this property completed on/after
+        // that day and before the next monthly occurrence (~35-day grace) —
+        // so an unscheduled inspection that gets completed still clears the
+        // requirement instead of leaving it "overdue" forever.
+        const scheduledMatch = inspections.some(
           (i) =>
             i.property_id === property.id &&
             i.scheduled_for &&
-            sameCalendarDay(new Date(i.scheduled_for), date)
+            sameCalendarDay(zonedDate(new Date(i.scheduled_for)), date)
         )
-        if (covered) continue
+        const completedMatch = inspections.some((i) => {
+          if (i.property_id !== property.id || i.status !== 'completed' || !i.completed_at) {
+            return false
+          }
+          const completedDay = zonedDate(new Date(i.completed_at))
+          const daysSince = daysBetween(date, completedDay)
+          return daysSince >= 0 && daysSince < 35
+        })
+        if (scheduledMatch || completedMatch) continue
 
         const { text, tone } = dueLabel(date, today)
         results.push({

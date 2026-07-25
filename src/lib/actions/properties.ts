@@ -134,6 +134,7 @@ export async function updateProperty(
 
   revalidatePath('/admin/properties')
   revalidatePath(`/admin/properties/${propertyId}`)
+  revalidatePath('/admin')
   redirect(`/admin/properties/${propertyId}`)
 }
 
@@ -155,4 +156,7 @@ export async function deleteProperty(propertyId: string): Promise<{ error?: stri
 
   revalidatePath('/admin/properties')
   revalidatePath('/admin')
+  revalidatePath('/admin/inspections')
+  revalidatePath('/admin/reports')
+  revalidatePath('/inspector')
 }

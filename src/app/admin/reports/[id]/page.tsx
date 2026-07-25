@@ -22,7 +22,7 @@ export default async function ReportViewPage({
   const { data: inspection } = await admin
     .from('inspections')
     .select(
-      'id, status, completed_at, properties(name, address, email), checklist_templates(name), profiles(full_name)'
+      'id, status, created_at, completed_at, scheduled_for, email_status, email_error, properties(name, address, email, phone, human_id), checklist_templates(name), profiles(full_name)'
     )
     .eq('id', id)
     .single()
@@ -52,6 +52,8 @@ export default async function ReportViewPage({
     name: string
     address: string
     email: string
+    phone: string | null
+    human_id: string | null
   }
   const template = inspection.checklist_templates as unknown as { name: string }
   const inspector = inspection.profiles as unknown as { full_name: string }
@@ -104,7 +106,9 @@ export default async function ReportViewPage({
               <p className="text-sm text-on-surface-variant">Operations, Asset and Logistics Report</p>
             </div>
           </div>
-          <p className="text-xs text-on-surface-variant">Report ID: #{id.slice(0, 8).toUpperCase()}</p>
+          <p className="text-xs text-on-surface-variant">
+            Report ID: #{property.human_id ?? id.slice(0, 8).toUpperCase()}
+          </p>
         </div>
 
         <div className="mb-8 grid grid-cols-2 gap-4 rounded-lg bg-surface-container-low p-4 sm:grid-cols-4">
@@ -116,6 +120,12 @@ export default async function ReportViewPage({
             <p className="label-tracked text-on-surface-variant">Address</p>
             <p className="text-sm font-semibold">{property.address}</p>
           </div>
+          {property.phone && (
+            <div>
+              <p className="label-tracked text-on-surface-variant">Phone</p>
+              <p className="text-sm font-semibold">{property.phone}</p>
+            </div>
+          )}
           <div>
             <p className="label-tracked text-on-surface-variant">Checklist</p>
             <p className="text-sm font-semibold">{template.name}</p>
@@ -127,6 +137,14 @@ export default async function ReportViewPage({
           <div>
             <p className="label-tracked text-on-surface-variant">Completed</p>
             <p className="text-sm font-semibold">{completedAtLabel}</p>
+          </div>
+          <div>
+            <p className="label-tracked text-on-surface-variant">Result</p>
+            <p className="text-sm font-semibold">
+              {failures.length
+                ? `${failures.length} failure${failures.length === 1 ? '' : 's'}`
+                : 'No failures'}
+            </p>
           </div>
         </div>
 
@@ -188,13 +206,48 @@ export default async function ReportViewPage({
                 <p className="label-tracked mb-2 text-on-surface-variant">{category}</p>
                 <div className="flex flex-col divide-y divide-outline-variant rounded-lg border border-outline-variant">
                   {categoryItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between px-3 py-2">
-                      <span className="text-sm">{item.item_name}</span>
+                    <div key={item.id} className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">{item.item_name}</span>
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:hidden ${
+                              item.status === 'pass'
+                                ? 'bg-success-container text-on-success-container'
+                                : 'bg-na-container text-on-na-container'
+                            }`}
+                          >
+                            {item.status ?? 'N/A'}
+                          </span>
+                        </div>
+                        {item.description && (
+                          <p className="mt-0.5 text-xs text-on-surface-variant">{item.description}</p>
+                        )}
+                        {item.comment && (
+                          <p className="mt-1 text-sm">
+                            <span className="font-semibold">Specialist comments: </span>
+                            {item.comment}
+                          </p>
+                        )}
+                        {item.photoUrl ? (
+                          <div className="mt-2">
+                            <ZoomableImage
+                              src={item.photoUrl}
+                              alt={`Photo for ${item.item_name}`}
+                              thumbClassName="h-32 w-full max-w-xs"
+                            />
+                          </div>
+                        ) : item.photo_path ? (
+                          <p className="mt-2 text-xs text-on-surface-variant">
+                            Photo attached — preview unavailable.
+                          </p>
+                        ) : null}
+                      </div>
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                        className={`hidden shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:inline-block ${
                           item.status === 'pass'
                             ? 'bg-success-container text-on-success-container'
-                            : 'bg-na-container text-on-surface'
+                            : 'bg-na-container text-on-na-container'
                         }`}
                       >
                         {item.status ?? 'N/A'}
@@ -208,7 +261,15 @@ export default async function ReportViewPage({
         </section>
 
         <div className="mt-10 border-t border-outline-variant pt-4 text-xs text-on-surface-variant">
-          Certified inspection report generated by Amenity Op&apos;s. Sent to {property.email}.
+          {inspection.email_status === 'failed' ? (
+            <span className="flex items-center gap-1.5 font-semibold text-error">
+              <AlertTriangle size={13} />
+              Certified inspection report generated by Amenity Op&apos;s — the email to{' '}
+              {property.email} failed to send. Use Resend Email above to retry.
+            </span>
+          ) : (
+            <>Certified inspection report generated by Amenity Op&apos;s. Sent to {property.email}.</>
+          )}
         </div>
       </Card>
     </div>

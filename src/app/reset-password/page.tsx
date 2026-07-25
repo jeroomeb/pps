@@ -1,11 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { ResetPasswordForm } from '@/components/ResetPasswordForm'
+import { isRecoverySession } from '@/lib/auth/session'
 
 export default async function ResetPasswordPage() {
   const supabase = await createClient()
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user ?? null
 
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-12">
@@ -15,7 +17,9 @@ export default async function ResetPasswordPage() {
         </div>
 
         {user ? (
-          <ResetPasswordForm />
+          <ResetPasswordForm
+            requireCurrentPassword={!isRecoverySession(session!.access_token)}
+          />
         ) : (
           <div className="rounded border border-outline-variant bg-surface-container-lowest p-6 text-center text-sm">
             <p>This reset link is invalid or has expired.</p>

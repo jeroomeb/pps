@@ -128,9 +128,8 @@ export function ChecklistItemCard({
 
   return (
     <Card
-      className={
-        status === 'fail' ? 'border-error/50' : status === 'pass' ? 'border-success/40' : ''
-      }
+      id={`checklist-item-${item.id}`}
+      className={`scroll-mt-24 ${status === 'fail' ? 'border-error/50' : status === 'pass' ? 'border-success/40' : ''}`}
     >
       <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>

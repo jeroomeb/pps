@@ -25,7 +25,7 @@ export default async function TeamPage({
 
   let query = supabase
     .from('profiles')
-    .select('id, full_name, role, created_at, city, state, county')
+    .select('id, full_name, role, human_id, email, phone, city, state, county')
     .order('full_name')
 
   if (state) query = query.eq('state', state)
@@ -57,16 +57,24 @@ export default async function TeamPage({
                   >
                     <Link href={`/admin/team/${member.id}`} className="min-w-0 flex-1">
                       <p className="truncate font-semibold hover:underline">{member.full_name}</p>
-                      <p className="label-tracked text-on-surface-variant">
+                      <p className="label-tracked flex flex-wrap items-center gap-x-2 text-on-surface-variant">
                         {member.role === 'admin' ? 'Admin' : 'Operational Continuity Specialist'}
+                        {member.human_id && (
+                          <span className="font-mono normal-case">{member.human_id}</span>
+                        )}
+                      </p>
+                      <p className="truncate text-sm text-on-surface-variant">
+                        {[member.email, member.phone].filter(Boolean).join(' · ')}
                       </p>
                       {/* Coverage area — drives proximity-based assignment. */}
-                      {(member.county || member.state) && (
+                      {(member.county || member.state) ? (
                         <p className="truncate text-xs text-on-surface-variant">
                           {[member.city, member.county && `${member.county} County`, member.state]
                             .filter(Boolean)
                             .join(' · ')}
                         </p>
+                      ) : (
+                        <p className="truncate text-xs text-error">Coverage area not set</p>
                       )}
                     </Link>
                     {member.id !== currentProfile.id ? (
