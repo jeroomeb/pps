@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusBadge } from '@/components/StatusBadge'
 import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
 import { dueLabel } from '@/lib/schedule'
-import { zonedDate } from '@/lib/timezone'
+import { zonedDate, formatDate } from '@/lib/timezone'
 
 // Filtered inspection list backing the clickable dashboard stats. `?status=`
 // accepts a single DB status (pending / in_progress / completed) or the
@@ -89,9 +89,7 @@ export default async function AdminInspectionsPage({
               const href = isCompleted
                 ? `/admin/reports/${inspection.id}`
                 : `/inspector/inspections/${inspection.id}`
-              const dateLabel = new Date(inspection.created_at).toLocaleDateString('en-US', {
-                dateStyle: 'medium',
-              })
+              const dateLabel = formatDate(inspection.created_at)
               const due =
                 inspection.scheduled_for && !isCompleted
                   ? dueLabel(zonedDate(new Date(inspection.scheduled_for)))

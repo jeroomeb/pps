@@ -1,13 +1,113 @@
-// Business timezone for schedule math, "due" wording, and admin-entered
-// datetimes. Without this, every date computation ran in the *server's*
-// timezone (UTC on Vercel) — so "today" flipped over at 8pm Eastern, dismissals
-// keyed the wrong calendar day, and admin-entered times shifted by the UTC
-// offset. No date library is installed, so these are dependency-free
-// Intl-based conversions — accurate for civil-time math; DST-transition
-// instants (the one hour a year a wall-clock time is ambiguous/skipped) are
-// not specially handled, which matches what this app needs.
+// Business timezone for schedule math, "due" wording, admin-entered datetimes,
+// and EVERY user-visible timestamp. Without this, every date computation ran in
+// the *server's* timezone (UTC on Vercel) — so "today" flipped over at 8pm
+// Eastern, dismissals keyed the wrong calendar day, and admin-entered times
+// shifted by the UTC offset. No date library is installed, so these are
+// dependency-free Intl-based conversions — accurate for civil-time math;
+// DST-transition instants (the one hour a year a wall-clock time is
+// ambiguous/skipped) are not specially handled, which matches what this app
+// needs.
+//
+// ⚠️ THIS FILE HOLDS THE ONLY TIMEZONE NAME IN THE CODEBASE. Changing the
+// business timezone must be a one-variable change: set `APP_TIMEZONE` in the
+// environment (Vercel → Settings → Environment Variables) and redeploy. Never
+// hardcode an IANA zone anywhere else, and never format a user-visible date
+// without going through the formatters below — a bare `toLocaleString()` on
+// the server silently renders in UTC, which is the bug this file exists to
+// prevent.
 
 export const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/New_York'
+
+// ============================================================
+// Display formatters — take a REAL instant, always render in APP_TIMEZONE.
+//
+// These include the zone abbreviation (EDT/EST/PKT/...) by default so a
+// timestamp is never ambiguous to whoever is reading it — a specialist, an
+// admin in another country, or a property owner reading the emailed PDF.
+// ============================================================
+
+// NOTE: `dateStyle`/`timeStyle` are mutually exclusive with component options
+// like `timeZoneName` — combining them throws "Invalid option : option" at
+// runtime (and TypeScript does not catch it). So the zone abbreviation is
+// appended separately rather than requested from the same formatter.
+
+/** "Jul 25, 2026, 1:45 PM EDT" — the default for any date+time shown to a user. */
+export function formatDateTime(
+  value: Date | string | null | undefined,
+  { withZone = true }: { withZone?: boolean } = {}
+): string {
+  const date = toDate(value)
+  if (!date) return '—'
+  const base = date.toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: APP_TIMEZONE,
+  })
+  return withZone ? `${base} ${timeZoneAbbreviation(date)}` : base
+}
+
+/** "Friday, July 25, 2026 at 1:45 PM EDT" — for prominent single-date screens. */
+export function formatDateTimeLong(value: Date | string | null | undefined): string {
+  const date = toDate(value)
+  if (!date) return '—'
+  const base = date.toLocaleString('en-US', {
+    dateStyle: 'full',
+    timeStyle: 'short',
+    timeZone: APP_TIMEZONE,
+  })
+  return `${base} ${timeZoneAbbreviation(date)}`
+}
+
+/** "Jul 25, 2026" — date only, no time, so no zone label is needed. */
+export function formatDate(value: Date | string | null | undefined): string {
+  const date = toDate(value)
+  if (!date) return '—'
+  return date.toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: APP_TIMEZONE })
+}
+
+/** The current zone abbreviation, e.g. "EDT" — for labeling time inputs. */
+export function timeZoneAbbreviation(at: Date = new Date()): string {
+  const part = new Intl.DateTimeFormat('en-US', {
+    timeZone: APP_TIMEZONE,
+    timeZoneName: 'short',
+  })
+    .formatToParts(at)
+    .find((p) => p.type === 'timeZoneName')
+  return part?.value ?? APP_TIMEZONE
+}
+
+/**
+ * Rough "in about 2 hours" / "in 15 minutes" wording for a near-future instant.
+ * Used on the "scheduled ahead" gate so a specialist doesn't have to do
+ * timezone arithmetic to work out how long they're waiting.
+ */
+export function formatRelativeToNow(target: Date, now: Date = new Date()): string {
+  const diffMs = target.getTime() - now.getTime()
+  if (diffMs <= 0) return 'now'
+  const minutes = Math.round(diffMs / 60_000)
+  if (minutes < 60) return `in ${minutes} minute${minutes === 1 ? '' : 's'}`
+  const hours = Math.round(diffMs / 3_600_000)
+  if (hours < 24) return `in about ${hours} hour${hours === 1 ? '' : 's'}`
+  const days = Math.round(diffMs / 86_400_000)
+  return `in about ${days} day${days === 1 ? '' : 's'}`
+}
+
+function toDate(value: Date | string | null | undefined): Date | null {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+/**
+ * Formats a **zoned shim** date (see `zonedDate` below) — one whose UTC fields
+ * already hold the APP_TIMEZONE wall-clock values. These are not real instants,
+ * so they must be formatted with `timeZone: 'UTC'` to print as-is. Only
+ * `src/lib/schedule.ts` produces these; everything else should use
+ * `formatDate`/`formatDateTime` above.
+ */
+export function formatShimDay(shim: Date): string {
+  return shim.toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' })
+}
 
 /**
  * Returns a Date whose *UTC* getters (getUTCFullYear/getUTCMonth/getUTCDate/

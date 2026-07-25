@@ -20,6 +20,7 @@ export function NewInspectionForm({
   inspectors,
   defaultPropertyId,
   defaultScheduledFor,
+  timeZoneLabel,
 }: {
   /** Fixed property (property-detail page) — renders a hidden input. */
   propertyId?: string
@@ -35,6 +36,9 @@ export function NewInspectionForm({
   defaultPropertyId?: string
   /** Prefills the date input, e.g. when scheduling a due day from the dashboard. */
   defaultScheduledFor?: string
+  /** e.g. "EDT" — `datetime-local` carries no timezone, and the server reads it
+   * as APP_TIMEZONE, so an admin in another zone must be told which clock. */
+  timeZoneLabel: string
 }) {
   const [state, formAction] = useActionState<InspectionFormState, FormData>(
     createInspection,
@@ -108,8 +112,8 @@ export function NewInspectionForm({
             className={SELECT_CLASSES}
           />
           <p className="text-xs text-on-surface-variant">
-            The specialist can’t start the inspection before this time. Leave blank to allow
-            starting right away.
+            Times are <span className="font-semibold">{timeZoneLabel}</span>. The specialist can’t
+            start the inspection before this time. Leave blank to allow starting right away.
           </p>
         </div>
 

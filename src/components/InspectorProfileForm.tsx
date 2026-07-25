@@ -1,11 +1,12 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
-import { UploadCloud, CheckCircle2 } from 'lucide-react'
+import { UploadCloud, CheckCircle2, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateOwnProfile } from '@/lib/actions/team'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
+import { ZoomableImage } from '@/components/ZoomableImage'
 
 const INPUT =
   'min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none'
@@ -19,11 +20,17 @@ export function InspectorProfileForm({
   fullName,
   email,
   defaults,
+  idFrontUrl,
+  idBackUrl,
 }: {
   userId: string
   humanId: string | null
   fullName: string
   email: string | null
+  /** Signed preview URLs for the uploaded ID documents (server-generated —
+   * these expire, so they're not derivable on the client). */
+  idFrontUrl: string | null
+  idBackUrl: string | null
   defaults: {
     phone: string | null
     street: string | null
@@ -44,6 +51,8 @@ export function InspectorProfileForm({
   const [county, setCounty] = useState(defaults.county ?? '')
   const [frontPath, setFrontPath] = useState<string | null>(defaults.id_front_path)
   const [backPath, setBackPath] = useState<string | null>(defaults.id_back_path)
+  const [frontPreview, setFrontPreview] = useState<string | null>(idFrontUrl)
+  const [backPreview, setBackPreview] = useState<string | null>(idBackUrl)
   const [uploading, setUploading] = useState<Side | null>(null)
   const [pending, startTransition] = useTransition()
   const frontRef = useRef<HTMLInputElement>(null)
@@ -68,6 +77,12 @@ export function InspectorProfileForm({
     }
     if (side === 'front') setFrontPath(objectPath)
     else setBackPath(objectPath)
+    // Show the just-picked file immediately — the server-signed preview URL
+    // only arrives on the next load, so without this the upload would still
+    // look like it did nothing.
+    const localPreview = URL.createObjectURL(file)
+    if (side === 'front') setFrontPreview(localPreview)
+    else setBackPreview(localPreview)
     // Persist the new path immediately.
     startTransition(async () => {
       const result = await updateOwnProfile({
@@ -81,6 +96,30 @@ export function InspectorProfileForm({
       })
       if (result?.error) showToast('error', result.error)
       else showToast('success', `ID ${side} uploaded.`)
+    })
+  }
+
+  function handleRemoveId(side: Side) {
+    if (side === 'front') {
+      setFrontPath(null)
+      setFrontPreview(null)
+    } else {
+      setBackPath(null)
+      setBackPreview(null)
+    }
+    startTransition(async () => {
+      const result = await updateOwnProfile({
+        phone,
+        street,
+        city,
+        state,
+        zip,
+        county,
+        // Explicit null clears the column (undefined would leave it untouched).
+        ...(side === 'front' ? { id_front_path: null } : { id_back_path: null }),
+      })
+      if (result?.error) showToast('error', result.error)
+      else showToast('success', `ID ${side} removed.`)
     })
   }
 
@@ -197,9 +236,11 @@ export function InspectorProfileForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {(['front', 'back'] as Side[]).map((side) => {
             const has = side === 'front' ? frontPath : backPath
+            const preview = side === 'front' ? frontPreview : backPreview
             const ref = side === 'front' ? frontRef : backRef
             return (
-              <div key={side}>
+              <div key={side} className="flex flex-col gap-2">
+                <p className="label-tracked text-on-surface-variant">{side}</p>
                 <input
                   ref={ref}
                   type="file"
@@ -207,23 +248,55 @@ export function InspectorProfileForm({
                   className="hidden"
                   onChange={(e) => handleUpload(side, e)}
                 />
-                <button
-                  type="button"
-                  onClick={() => ref.current?.click()}
-                  disabled={uploading === side}
-                  className={`flex min-h-24 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-sm font-semibold ${
-                    has
-                      ? 'border-success text-success'
-                      : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
-                  }`}
-                >
-                  {has ? <CheckCircle2 size={20} /> : <UploadCloud size={20} />}
-                  {uploading === side
-                    ? 'Uploading…'
-                    : has
-                      ? `ID ${side} uploaded — tap to replace`
-                      : `Upload ID ${side}`}
-                </button>
+
+                {preview ? (
+                  <>
+                    <ZoomableImage
+                      src={preview}
+                      alt={`Your uploaded ID ${side}`}
+                      thumbClassName="h-40 w-full border border-outline-variant"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => ref.current?.click()}
+                        disabled={uploading === side || pending}
+                        className="min-h-10 flex-1 rounded-lg border border-outline-variant text-xs font-semibold uppercase tracking-wide hover:bg-surface-container disabled:opacity-50"
+                      >
+                        {uploading === side ? 'Uploading…' : 'Replace'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveId(side)}
+                        disabled={uploading === side || pending}
+                        className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-outline-variant px-3 text-xs font-semibold uppercase tracking-wide text-error hover:bg-error-container/40 disabled:opacity-50"
+                      >
+                        <Trash2 size={13} />
+                        Remove
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => ref.current?.click()}
+                    disabled={uploading === side}
+                    className={`flex min-h-40 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-sm font-semibold ${
+                      has
+                        ? 'border-success text-success'
+                        : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
+                    }`}
+                  >
+                    {has ? <CheckCircle2 size={20} /> : <UploadCloud size={20} />}
+                    {uploading === side
+                      ? 'Uploading…'
+                      : has
+                        ? // Path saved but no preview URL — e.g. the signed URL
+                          // could not be minted. Don't claim it's missing.
+                          `ID ${side} uploaded — preview unavailable, tap to replace`
+                        : `Upload ID ${side}`}
+                  </button>
+                )}
               </div>
             )
           })}

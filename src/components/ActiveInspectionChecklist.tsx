@@ -16,8 +16,8 @@ export function ActiveInspectionChecklist({
   propertyPhone,
   checklistName,
   inspectorName,
-  startedAt,
-  scheduledFor,
+  startedLabel,
+  scheduledLabel,
   initialItems,
 }: {
   inspectionId: string
@@ -26,8 +26,10 @@ export function ActiveInspectionChecklist({
   propertyPhone?: string | null
   checklistName: string
   inspectorName: string
-  startedAt: string
-  scheduledFor?: string | null
+  /** Preformatted on the server — this is a client component, so formatting a
+   * raw timestamp here would use the browser's timezone instead of the app's. */
+  startedLabel: string
+  scheduledLabel?: string | null
   initialItems: (ChecklistItemData & { service_category: string })[]
 }) {
   const router = useRouter()
@@ -116,7 +118,7 @@ export function ActiveInspectionChecklist({
           </span>
         </div>
 
-        {(propertyAddress || propertyPhone || scheduledFor) && (
+        {(propertyAddress || propertyPhone || scheduledLabel) && (
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-outline-variant pt-3 text-sm text-on-surface-variant">
             {propertyAddress && (
               <span className="flex items-center gap-1.5">
@@ -133,14 +135,10 @@ export function ActiveInspectionChecklist({
                 {propertyPhone}
               </a>
             )}
-            {scheduledFor && (
+            {scheduledLabel && (
               <span className="flex items-center gap-1.5">
                 <Clock size={14} className="shrink-0 text-primary" />
-                Scheduled{' '}
-                {new Date(scheduledFor).toLocaleString('en-US', {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                })}
+                Scheduled {scheduledLabel}
               </span>
             )}
           </div>
@@ -163,10 +161,8 @@ export function ActiveInspectionChecklist({
             <p className="text-sm font-semibold">{inspectorName}</p>
           </div>
           <div>
-            <p className="label-tracked text-on-surface-variant">Started</p>
-            <p className="text-sm font-semibold">
-              {new Date(startedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}
-            </p>
+            <p className="label-tracked text-on-surface-variant">Created</p>
+            <p className="text-sm font-semibold">{startedLabel}</p>
           </div>
         </div>
       </Card>

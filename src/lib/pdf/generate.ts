@@ -5,6 +5,7 @@ import sharp from 'sharp'
 import { createAdminClient } from '@/lib/supabase/server'
 import { InspectionReport } from '@/lib/pdf/InspectionReport'
 import { isSafeInspectionPhotoPath } from '@/lib/storage-paths'
+import { formatDateTime } from '@/lib/timezone'
 
 type ReportItem = {
   service_category: string
@@ -152,10 +153,7 @@ export async function regenerateInspectionPdf(
   const template = inspection.checklist_templates as unknown as { name: string }
   const inspectorProfile = inspection.profiles as unknown as { full_name: string }
   const completedAtLabel = inspection.completed_at
-    ? new Date(inspection.completed_at).toLocaleString('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })
+    ? formatDateTime(inspection.completed_at)
     : ''
 
   const pdfBuffer = await renderInspectionPdf({

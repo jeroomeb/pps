@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { deleteInspection } from '@/lib/actions/inspections'
+import { formatDateTime } from '@/lib/timezone'
 
 export default async function ReportsPage() {
   const supabase = await createClient()
@@ -55,13 +56,7 @@ export default async function ReportsPage() {
                         {template.name} — {inspector.full_name}
                       </p>
                       <p className="text-xs text-on-surface-variant">
-                        Completed{' '}
-                        {inspection.completed_at
-                          ? new Date(inspection.completed_at).toLocaleString('en-US', {
-                              dateStyle: 'medium',
-                              timeStyle: 'short',
-                            })
-                          : ''}
+                        Completed {formatDateTime(inspection.completed_at)}
                       </p>
                       {inspection.email_status === 'failed' && (
                         <p

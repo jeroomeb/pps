@@ -21,7 +21,7 @@ import {
   type DismissedRow,
 } from '@/components/DashboardSchedulePanel'
 import { dueEntries } from '@/lib/schedule'
-import { zonedDate } from '@/lib/timezone'
+import { zonedDate, formatShimDay } from '@/lib/timezone'
 
 const QUICK_ACTIONS = [
   { href: '/admin/inspections/new', label: 'Start Inspection', icon: Plus, primary: true },
@@ -83,14 +83,14 @@ export default async function AdminDashboardPage({
   )
 
   // Flatten to a serializable shape — no Date objects cross into the client.
-  // `entry.date` is a zoned shim (UTC fields hold the APP_TIMEZONE wall-clock
-  // day), so it must be formatted with `timeZone: 'UTC'` — otherwise the
-  // runtime's own zone would re-interpret it and could shift the printed day.
+  // `entry.date` is a zoned shim (its UTC fields hold the APP_TIMEZONE
+  // wall-clock day), so it goes through formatShimDay rather than the normal
+  // instant formatters.
   const scheduleRows: ScheduleRow[] = due.map((entry) => ({
     propertyId: entry.propertyId,
     propertyName: entry.propertyName,
     dateKey: entry.dateKey,
-    dateLabel: entry.date.toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' }),
+    dateLabel: formatShimDay(entry.date),
     label: entry.label,
     tone: entry.tone,
     dueText: entry.dueText,

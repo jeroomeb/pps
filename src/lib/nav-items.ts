@@ -29,14 +29,37 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin/team', label: 'Team', icon: Users },
 ]
 
-// This is one of two tabs for the inspector role, and it's the specialist's
-// landing/assignments page — keep it lit while inside a checklist detail too.
+// `/inspector` is the specialist's landing/assignments page — it prefix-matches
+// so it stays lit inside `/inspector/inspections/[id]` too. `/inspector/profile`
+// is nested under it, which is exactly why `resolveActiveNavHref` below picks
+// the most specific match rather than lighting up both.
 export const INSPECTOR_NAV_ITEMS: NavItem[] = [
   { href: '/inspector', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/inspector/profile', label: 'Profile', icon: UserCircle, exact: true },
+  { href: '/inspector/profile', label: 'Profile', icon: UserCircle },
 ]
 
-export function isNavItemActive(pathname: string, item: NavItem) {
+/** Does this item match the path at all? Not "is it THE active one" — see
+ * `resolveActiveNavHref`, which disambiguates between overlapping matches. */
+function navItemMatches(pathname: string, item: NavItem) {
   if (item.exact) return pathname === item.href
   return pathname === item.href || pathname.startsWith(`${item.href}/`)
+}
+
+/**
+ * The href of the single nav item that should render as active, or null.
+ *
+ * Nav hrefs nest (`/inspector` contains `/inspector/profile`; `/admin` used to
+ * contain everything), so more than one item can legitimately match a path.
+ * Most-specific-wins — the longest matching href — is what makes exactly one
+ * tab light up. Resolving this once for the whole list is the only correct
+ * approach: a per-item predicate cannot know another item matched better,
+ * which is what caused Dashboard and Profile to both highlight.
+ */
+export function resolveActiveNavHref(pathname: string, items: NavItem[]): string | null {
+  let best: string | null = null
+  for (const item of items) {
+    if (!navItemMatches(pathname, item)) continue
+    if (best === null || item.href.length > best.length) best = item.href
+  }
+  return best
 }

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NewInspectionForm } from '@/components/NewInspectionForm'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { formatZonedDateTimeLocal } from '@/lib/timezone'
+import { formatZonedDateTimeLocal, timeZoneAbbreviation } from '@/lib/timezone'
 
 /**
  * `datetime-local` wants local wall-clock time, not a UTC ISO string —
@@ -49,6 +49,7 @@ export default async function NewInspectionPage({
         inspectors={inspectors ?? []}
         defaultPropertyId={property}
         defaultScheduledFor={toDateTimeLocal(date)}
+        timeZoneLabel={timeZoneAbbreviation()}
       />
     </div>
   )

@@ -2,16 +2,19 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ADMIN_NAV_ITEMS, INSPECTOR_NAV_ITEMS, isNavItemActive } from '@/lib/nav-items'
+import { ADMIN_NAV_ITEMS, INSPECTOR_NAV_ITEMS, resolveActiveNavHref } from '@/lib/nav-items'
 
 export function BottomNav({ role }: { role: 'admin' | 'inspector' }) {
   const pathname = usePathname()
   const items = role === 'admin' ? ADMIN_NAV_ITEMS : INSPECTOR_NAV_ITEMS
+  // Resolved once for the whole list so exactly one tab can be active, even
+  // where hrefs nest (e.g. /inspector and /inspector/profile).
+  const activeHref = resolveActiveNavHref(pathname, items)
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-outline-variant bg-surface-container-lowest lg:hidden">
       {items.map((item) => {
-        const active = isNavItemActive(pathname, item)
+        const active = item.href === activeHref
         const Icon = item.icon
         return (
           <Link

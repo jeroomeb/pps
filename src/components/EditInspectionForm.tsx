@@ -20,6 +20,7 @@ export function EditInspectionForm({
   inspectors,
   defaultInspectorId,
   defaultScheduledFor,
+  timeZoneLabel,
 }: {
   inspectionId: string
   property: PropertyLocation & { name: string }
@@ -28,6 +29,9 @@ export function EditInspectionForm({
   defaultInspectorId: string
   /** `datetime-local` value ("2026-08-01T09:00") or undefined when unscheduled. */
   defaultScheduledFor?: string
+  /** e.g. "EDT" — `datetime-local` carries no timezone, and the server reads it
+   * as APP_TIMEZONE, so an admin in another zone must be told which clock. */
+  timeZoneLabel: string
 }) {
   const [state, formAction] = useActionState<InspectionFormState, FormData>(
     updateInspection.bind(null, inspectionId),
@@ -69,7 +73,8 @@ export function EditInspectionForm({
             className={INPUT}
           />
           <p className="text-xs text-on-surface-variant">
-            The specialist can’t start before this time. Clear it to let them start right away.
+            Times are <span className="font-semibold">{timeZoneLabel}</span>. The specialist can’t
+            start before this time. Clear it to let them start right away.
             Admins can always start early.
           </p>
         </div>

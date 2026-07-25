@@ -13,6 +13,21 @@ export default async function InspectorProfilePage() {
     .eq('id', profile.id)
     .single()
 
+  // Sign the ID documents so the specialist can actually SEE what they
+  // uploaded — previously this page only passed the storage paths down, so the
+  // form could say "uploaded" but never show the image. Same pattern the admin
+  // view already uses (src/app/admin/team/[id]/page.tsx); `documents_read` RLS
+  // permits owner-or-admin, so reading one's own is allowed.
+  async function signed(path: string | null | undefined) {
+    if (!path) return null
+    const { data } = await supabase.storage.from('documents').createSignedUrl(path, 3600)
+    return data?.signedUrl ?? null
+  }
+  const [idFrontUrl, idBackUrl] = await Promise.all([
+    signed(row?.id_front_path),
+    signed(row?.id_back_path),
+  ])
+
   return (
     <div className="max-w-3xl">
       <PageHeader eyebrow="My Profile" title="Profile & Identification" />
@@ -31,6 +46,8 @@ export default async function InspectorProfilePage() {
           id_front_path: row?.id_front_path ?? null,
           id_back_path: row?.id_back_path ?? null,
         }}
+        idFrontUrl={idFrontUrl}
+        idBackUrl={idBackUrl}
       />
     </div>
   )

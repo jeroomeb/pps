@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but .env.example is the setup documentation and carries no secret values
+# (every secret is left blank) — it must ship with the repo.
+!.env.example
 
 # vercel
 .vercel

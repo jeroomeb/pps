@@ -7,6 +7,7 @@ import { requireRole } from '@/lib/auth/dal'
 import { Card } from '@/components/ui/Card'
 import { ResendEmailButton } from '@/components/ResendEmailButton'
 import { ZoomableImage } from '@/components/ZoomableImage'
+import { formatDateTime } from '@/lib/timezone'
 
 export default async function ReportViewPage({
   params,
@@ -60,12 +61,7 @@ export default async function ReportViewPage({
   const failures = itemsWithUrls.filter((item) => item.status === 'fail')
   const passOrNa = itemsWithUrls.filter((item) => item.status !== 'fail')
 
-  const completedAtLabel = inspection.completed_at
-    ? new Date(inspection.completed_at).toLocaleString('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })
-    : '—'
+  const completedAtLabel = formatDateTime(inspection.completed_at)
 
   const grouped = new Map<string, typeof passOrNa>()
   for (const item of passOrNa) {

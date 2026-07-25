@@ -3,7 +3,7 @@ import { requireRole } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { EditInspectionForm } from '@/components/EditInspectionForm'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { formatZonedDateTimeLocal } from '@/lib/timezone'
+import { formatZonedDateTimeLocal, timeZoneAbbreviation } from '@/lib/timezone'
 
 /** `datetime-local` wants local wall-clock time in APP_TIMEZONE, not a UTC ISO string. */
 function toDateTimeLocal(iso: string | null): string | undefined {
@@ -69,6 +69,7 @@ export default async function EditInspectionPage({
         inspectors={inspectors ?? []}
         defaultInspectorId={inspection.inspector_id}
         defaultScheduledFor={toDateTimeLocal(inspection.scheduled_for)}
+        timeZoneLabel={timeZoneAbbreviation()}
       />
     </div>
   )

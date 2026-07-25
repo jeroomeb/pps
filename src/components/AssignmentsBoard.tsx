@@ -26,6 +26,9 @@ export type AssignmentRow = {
   status: string
   created_at: string
   completed_at: string | null
+  /** Preformatted on the server (app timezone) — formatting here would use the
+   * browser's zone instead. Null when not completed. */
+  completedLabel: string | null
   propertyName: string
   propertyAddress: string
   propertyPhone: string | null
@@ -228,11 +231,7 @@ export function AssignmentsBoard({
                     </thead>
                     <tbody>
                       {completed.map((inspection) => {
-                        const dateLabel = inspection.completed_at
-                          ? new Date(inspection.completed_at).toLocaleDateString('en-US', {
-                              dateStyle: 'medium',
-                            })
-                          : '—'
+                        const dateLabel = inspection.completedLabel ?? '—'
                         const href = completedHref(inspection.id)
                         const cell = 'block px-4 py-3'
                         return (
@@ -332,11 +331,7 @@ export function AssignmentsBoard({
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold">{inspection.propertyName}</p>
                         <p className="truncate text-xs text-on-surface-variant">
-                          {inspection.completed_at
-                            ? new Date(inspection.completed_at).toLocaleDateString('en-US', {
-                                dateStyle: 'medium',
-                              })
-                            : '—'}
+                          {inspection.completedLabel ?? '—'}
                         </p>
                       </div>
                       <ChevronRight

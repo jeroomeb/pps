@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { AssignmentsBoard, type AssignmentRow } from '@/components/AssignmentsBoard'
 import { dueLabel } from '@/lib/schedule'
-import { zonedDate } from '@/lib/timezone'
+import { zonedDate, formatDate, formatDateTime } from '@/lib/timezone'
 
 export default async function InspectorDashboardPage() {
   const profile = await getProfile()
@@ -41,12 +41,10 @@ export default async function InspectorDashboardPage() {
       templateName: template?.name ?? '—',
       dueText: due?.text ?? null,
       dueTone: due?.tone ?? null,
-      // `scheduled` is a zoned shim (see src/lib/timezone.ts) — format with
-      // timeZone: 'UTC' so its UTC fields (which hold the real wall-clock
-      // time) print as-is instead of being re-interpreted by the runtime's zone.
-      scheduledLabel: scheduled
-        ? scheduled.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })
-        : null,
+      // Formatted from the raw instant (not the zoned shim) via the shared
+      // app-timezone formatter, so this matches every other screen exactly.
+      scheduledLabel: i.scheduled_for ? formatDateTime(i.scheduled_for) : null,
+      completedLabel: i.completed_at ? formatDate(i.completed_at) : null,
     }
   })
 

@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { formatDateTimeLong } from '@/lib/timezone'
 
 function esc(value: string) {
   return value
@@ -33,7 +34,7 @@ export async function sendAssignmentEmail({
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://portal.amenityops.app'
 
   const scheduledLabel = scheduledFor
-    ? new Date(scheduledFor).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })
+    ? formatDateTimeLong(scheduledFor)
     : 'As soon as possible'
 
   const html = `

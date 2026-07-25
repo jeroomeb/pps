@@ -188,6 +188,67 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-07-25 — Fixing the session-10 regressions the client immediately hit (session 11)
+Client tested session 10 as a **non-admin specialist** and hit four things.
+**Two were regressions I introduced in session 10.** All fixed; `tsc`/`eslint`/
+`build` clean. **No migration needed** — nothing here touches the schema.
+
+- **Nav double-highlight (my regression).** In session 10 I removed
+  `exact: true` from `/inspector` in `nav-items.ts` to "fix" a comment that
+  contradicted the code — but I fixed it in the wrong direction. `/inspector`
+  then prefix-matched `/inspector/profile`, so **both Dashboard and Profile lit
+  up at once**. Root cause is that a per-item predicate can't know another item
+  matched more specifically. Replaced `isNavItemActive` with
+  **`resolveActiveNavHref(pathname, items)`**, which collects all matches and
+  keeps the **longest href** — so exactly one tab is ever active, `/inspector`
+  can stay lit inside `/inspector/inspections/[id]`, and `/inspector/profile`
+  correctly wins on its own page. Verified against all 8 path cases for both
+  roles. ⚠️ Nav hrefs nest — never go back to a per-item active check.
+- **Timezone split-brain (my half-finished work).** Session 10 pinned schedule
+  *math* to `APP_TIMEZONE` but left ~12 **display** sites formatting in the
+  server's zone (UTC on Vercel), and one in the **browser's** zone. Same
+  inspection read **1:45 PM** on the assignment card, **5:45 PM** on the screen
+  it opened, and a third value in the active checklist. The PDF, report screen
+  and both emails were also printing UTC with no zone label. Fixed by adding
+  **`formatDateTime` / `formatDateTimeLong` / `formatDate` /
+  `timeZoneAbbreviation` / `formatRelativeToNow`** to `src/lib/timezone.ts` and
+  routing **every** display site through them. Client components
+  (`ActiveInspectionChecklist`, `AssignmentsBoard`) now receive **preformatted
+  strings** from the server — they must never format a raw timestamp, or they
+  render in the viewer's zone.
+  - ⚠️ **`dateStyle`/`timeStyle` cannot be combined with `timeZoneName`** —
+    `Intl` throws `"Invalid option : option"` at runtime and **TypeScript does
+    not catch it, nor does `next build`**. The zone abbreviation is appended
+    separately. I shipped this bug briefly and only caught it by executing the
+    real module; a type-check and a green build are not sufficient here.
+  - ⚠️ **`src/lib/timezone.ts` holds the only IANA zone name in the codebase**
+    (verified by grep). Changing the business timezone is env-var only: set
+    `APP_TIMEZONE` in Vercel and redeploy — no code change, no migration.
+    Documented in `.env.example`. Client asked for Eastern for now, changeable
+    once Jerome confirms. Verified DST correctness (EST/EDT) and that flipping
+    the var moves every screen together.
+  - The two `datetime-local` inputs now **label which timezone they capture**
+    ("Times are EDT") — they carry no zone of their own and the server reads
+    them as `APP_TIMEZONE`, so an admin in another country was guessing.
+- **Start-inspection gate.** The block itself is correct and **stays
+  minute-precise** (client decision). The problems were around it: it printed
+  the UTC time, and it was a **dead-end screen** — no back link, so on mobile
+  the only escape was the browser back button. Now shows the correct zoned time,
+  a relative "You can start in about 2 hours", the property's address and
+  click-to-call phone, and a Back link.
+- **Specialists couldn't see their own uploaded ID.** `/inspector/profile` only
+  passed the storage *paths* down, so the form said "uploaded" but never
+  rendered anything — while the **admin** view had shown the images all along.
+  Now signs both URLs server-side (same pattern as `admin/team/[id]`) and
+  renders them with `ZoomableImage`, plus **Replace** and **Remove** buttons and
+  an instant local preview on upload. (`documents_read` RLS already allowed
+  owner-or-admin; the UI simply never asked.)
+
+**Lesson for future sessions:** `tsc` + `eslint` + `build` all passed on both
+the nav regression and the `Intl` runtime error. For anything touching
+formatting, nav-active state, or timezone, **execute the real code path** — or
+click through as the affected role — before claiming it works.
+
 ### 2026-07-25 — Full audit + fix pass: UX, scheduling correctness, PDF/email reliability, RLS hardening (session 10)
 Client reported the app "feels very confusing, important info isn't where
 it's supposed to be." Ran three parallel deep audits (UI/UX/IA, business

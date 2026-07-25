@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, Lock, MapPin, Phone, Download } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { ZoomableImage } from '@/components/ZoomableImage'
+import { formatDateTime } from '@/lib/timezone'
 
 type ReadOnlyItem = {
   id: string
@@ -53,9 +54,7 @@ export function ReadOnlyInspectionView({
     grouped.get(item.service_category)!.push(item)
   }
 
-  const completedLabel = completedAt
-    ? new Date(completedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
-    : '—'
+  const completedLabel = formatDateTime(completedAt)
 
   return (
     <div className="max-w-3xl">

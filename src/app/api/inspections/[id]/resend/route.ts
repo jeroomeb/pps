@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/dal'
 import { createAdminClient } from '@/lib/supabase/server'
 import { sendReportEmail } from '@/lib/email/sendReportEmail'
+import { formatDateTime } from '@/lib/timezone'
 
 export const runtime = 'nodejs'
 
@@ -44,10 +45,7 @@ export async function POST(
 
   const pdfBuffer = Buffer.from(await pdfFile.arrayBuffer())
   const completedAtLabel = inspection.completed_at
-    ? new Date(inspection.completed_at).toLocaleString('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })
+    ? formatDateTime(inspection.completed_at)
     : ''
 
   try {

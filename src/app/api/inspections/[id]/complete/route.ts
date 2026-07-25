@@ -5,6 +5,7 @@ import { getProfile } from '@/lib/auth/dal'
 import { renderInspectionPdf, photoDataUri, mapWithConcurrency } from '@/lib/pdf/generate'
 import { sendReportEmail } from '@/lib/email/sendReportEmail'
 import { validateInspectionItems } from '@/lib/inspection-validation'
+import { formatDateTime } from '@/lib/timezone'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -80,10 +81,7 @@ export async function POST(
   const inspectorProfile = inspection.profiles as unknown as { full_name: string }
 
   const completedAt = new Date()
-  const completedAtLabel = completedAt.toLocaleString('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  })
+  const completedAtLabel = formatDateTime(completedAt)
 
   const pdfBuffer = await renderInspectionPdf({
     reportId: inspectionId.slice(0, 8).toUpperCase(),

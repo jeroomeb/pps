@@ -22,7 +22,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { deleteProperty } from '@/lib/actions/properties'
 import { parseSchedule, scheduleEntryLabel, dueLabel } from '@/lib/schedule'
-import { zonedDate } from '@/lib/timezone'
+import { zonedDate, formatDate, timeZoneAbbreviation } from '@/lib/timezone'
 
 export default async function PropertyDetailPage({
   params,
@@ -181,6 +181,7 @@ export default async function PropertyDetailPage({
             ]}
             templates={templates ?? []}
             inspectors={inspectors ?? []}
+            timeZoneLabel={timeZoneAbbreviation()}
           />
         </section>
 
@@ -200,9 +201,7 @@ export default async function PropertyDetailPage({
                   const href = isCompleted
                     ? `/admin/reports/${inspection.id}`
                     : `/inspector/inspections/${inspection.id}`
-                  const dateLabel = new Date(
-                    inspection.completed_at ?? inspection.created_at
-                  ).toLocaleDateString('en-US', { dateStyle: 'medium' })
+                  const dateLabel = formatDate(inspection.completed_at ?? inspection.created_at)
                   const dateKind = inspection.completed_at ? 'Completed' : 'Created'
                   const due =
                     inspection.scheduled_for && !isCompleted

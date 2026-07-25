@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { LogOut, Plus } from 'lucide-react'
-import { ADMIN_NAV_ITEMS, INSPECTOR_NAV_ITEMS, isNavItemActive } from '@/lib/nav-items'
+import { ADMIN_NAV_ITEMS, INSPECTOR_NAV_ITEMS, resolveActiveNavHref } from '@/lib/nav-items'
 
 export function AppShell({
   role,
@@ -21,6 +21,9 @@ export function AppShell({
 }) {
   const pathname = usePathname()
   const navItems = role === 'admin' ? ADMIN_NAV_ITEMS : INSPECTOR_NAV_ITEMS
+  // Resolved once for the whole list so exactly one tab can be active, even
+  // where hrefs nest (e.g. /inspector and /inspector/profile).
+  const activeHref = resolveActiveNavHref(pathname, navItems)
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
@@ -36,7 +39,7 @@ export function AppShell({
 
         <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
           {navItems.map((item) => {
-            const active = isNavItemActive(pathname, item)
+            const active = item.href === activeHref
             const Icon = item.icon
             return (
               <Link

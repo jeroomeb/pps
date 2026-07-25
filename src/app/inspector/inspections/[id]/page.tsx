@@ -1,10 +1,16 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { Clock } from 'lucide-react'
+import { Clock, ArrowLeft, MapPin, Phone } from 'lucide-react'
 import { getProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { ActiveInspectionChecklist } from '@/components/ActiveInspectionChecklist'
 import { ReadOnlyInspectionView } from '@/components/ReadOnlyInspectionView'
+import {
+  formatDate,
+  formatDateTime,
+  formatDateTimeLong,
+  formatRelativeToNow,
+} from '@/lib/timezone'
 
 export default async function InspectionDetailPage({
   params,
@@ -80,27 +86,60 @@ export default async function InspectionDetailPage({
     )
   }
 
-  const isScheduledAhead =
-    !!inspection.scheduled_for && new Date(inspection.scheduled_for) > new Date()
-  const scheduledLabel = inspection.scheduled_for
-    ? new Date(inspection.scheduled_for).toLocaleString('en-US', {
-        dateStyle: 'full',
-        timeStyle: 'short',
-      })
-    : null
+  // Minute-precise gate, as the client specified. Comparing real instants is
+  // correct here — only the *label* was wrong before (it rendered in the
+  // server's UTC zone, so a 1:45 PM ET job read as "5:45 PM").
+  const scheduledAt = inspection.scheduled_for ? new Date(inspection.scheduled_for) : null
+  const isScheduledAhead = !!scheduledAt && scheduledAt > new Date()
+  const scheduledLabel = scheduledAt ? formatDateTimeLong(scheduledAt) : null
 
   // Scheduled for the future → specialists must wait. Admins own the schedule,
   // so they can proceed early (with a banner) and can edit the date instead.
   if (isScheduledAhead && profile.role !== 'admin') {
     return (
-      <div className="mx-auto max-w-lg py-16 text-center">
-        <Clock size={40} className="mx-auto mb-4 text-primary" />
-        <h1 className="font-headline text-2xl font-bold">{property.name}</h1>
-        <p className="mt-1 text-on-surface-variant">{template.name}</p>
-        <p className="mt-6 rounded-lg bg-surface-container-low px-4 py-3 text-sm">
-          This inspection is scheduled for <span className="font-semibold">{scheduledLabel}</span>.
-          You can start it once that time arrives.
-        </p>
+      <div className="max-w-lg">
+        {/* Previously this screen was a dead end — no back link, so on mobile
+            the only escape was the browser back button. */}
+        <Link
+          href="/inspector"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+        >
+          <ArrowLeft size={16} />
+          Back to My Assignments
+        </Link>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-6 text-center">
+          <Clock size={40} className="mx-auto mb-4 text-primary" />
+          <h1 className="font-headline text-2xl font-bold">{property.name}</h1>
+          <p className="mt-1 text-on-surface-variant">{template.name}</p>
+
+          <p className="mt-6 rounded-lg bg-surface-container-low px-4 py-3 text-sm">
+            This inspection is scheduled for{' '}
+            <span className="font-semibold">{scheduledLabel}</span>.
+            <br />
+            You can start it{' '}
+            <span className="font-semibold">{formatRelativeToNow(scheduledAt!)}</span>.
+          </p>
+
+          {(property.address || property.phone) && (
+            <div className="mt-4 flex flex-col items-center gap-1.5 border-t border-outline-variant pt-4 text-sm text-on-surface-variant">
+              {property.address && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin size={14} className="shrink-0 text-primary" />
+                  {property.address}
+                </span>
+              )}
+              {property.phone && (
+                <a
+                  href={`tel:${property.phone}`}
+                  className="flex items-center gap-1.5 font-semibold text-on-surface hover:underline"
+                >
+                  <Phone size={14} className="shrink-0 text-primary" />
+                  {property.phone}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     )
   }
@@ -129,8 +168,11 @@ export default async function InspectionDetailPage({
         propertyPhone={property.phone}
         checklistName={template.name}
         inspectorName={inspector.full_name}
-        startedAt={inspection.created_at}
-        scheduledFor={inspection.scheduled_for}
+        // Labels are preformatted on the server: ActiveInspectionChecklist is a
+        // client component, so a raw timestamp would render in the *browser's*
+        // timezone — a third different answer for the same field.
+        startedLabel={formatDate(inspection.created_at)}
+        scheduledLabel={scheduledAt ? formatDateTime(scheduledAt) : null}
         initialItems={itemsWithUrls}
       />
     </>
