@@ -2,26 +2,23 @@
 
 import { useActionState } from 'react'
 import { SubmitButton } from '@/components/SubmitButton'
+import { AddressFields } from '@/components/AddressFields'
 import { Card } from '@/components/ui/Card'
 import type { PropertyFormState } from '@/lib/actions/properties'
-import { ORDINAL_LABELS, WEEKDAY_LABELS, type ScheduleEntry } from '@/lib/schedule'
+import { WEEKDAY_LABELS, WEEKDAY_ORDER, type ScheduleEntry } from '@/lib/schedule'
+import type { AddressParts } from '@/lib/address'
 
 const INPUT =
   'min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none'
 const LABEL = 'text-sm font-semibold uppercase tracking-wide'
-
-// Row order Mon..Sun (business-week first); ordinals First..Last.
-const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
-const ORDINALS = [1, 2, 3, 4, 5]
 
 export function PropertyForm({
   action,
   defaultValues,
 }: {
   action: (state: PropertyFormState, formData: FormData) => Promise<PropertyFormState>
-  defaultValues?: {
+  defaultValues?: AddressParts & {
     name: string
-    address: string
     email: string
     phone?: string | null
     notes?: string | null
@@ -31,7 +28,8 @@ export function PropertyForm({
 }) {
   const [state, formAction] = useActionState<PropertyFormState, FormData>(action, undefined)
 
-  const checked = new Set((defaultValues?.schedule ?? []).map((e) => `${e.ordinal}-${e.weekday}`))
+  // Schedule is first-of-month only, so a weekday is either on or off.
+  const checkedDays = new Set((defaultValues?.schedule ?? []).map((e) => e.weekday))
 
   return (
     <Card>
@@ -51,19 +49,6 @@ export function PropertyForm({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="address" className={LABEL}>
-              Property Address
-            </label>
-            <input
-              id="address"
-              name="address"
-              required
-              defaultValue={defaultValues?.address}
-              className={INPUT}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
             <label htmlFor="email" className={LABEL}>
               Property Email
             </label>
@@ -79,19 +64,21 @@ export function PropertyForm({
               Completed inspection reports are emailed here.
             </p>
           </div>
+        </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="phone" className={LABEL}>
-              Phone Number
-            </label>
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              defaultValue={defaultValues?.phone ?? ''}
-              className={INPUT}
-            />
-          </div>
+        <AddressFields defaults={defaultValues} requireStreet />
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="phone" className={LABEL}>
+            Phone Number
+          </label>
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            defaultValue={defaultValues?.phone ?? ''}
+            className={`${INPUT} lg:max-w-xs`}
+          />
         </div>
 
         <div className="flex flex-col gap-1">
@@ -111,44 +98,27 @@ export function PropertyForm({
         <fieldset className="flex flex-col gap-2">
           <legend className={`${LABEL} mb-1`}>Required Inspection Days</legend>
           <p className="text-xs text-on-surface-variant">
-            Pick the monthly schedule (e.g. First Monday). Due properties show on the dashboard until
-            an inspection is scheduled for that day.
+            Pick which days this property is inspected. Each selection means the{' '}
+            <strong>first of that weekday every month</strong> — e.g. ticking Monday schedules the
+            first Monday of each month. Due days show on the dashboard until an inspection is
+            scheduled for them.
           </p>
-          <div className="mt-2 overflow-x-auto">
-            <table className="text-xs">
-              <thead>
-                <tr>
-                  <th className="p-1" />
-                  {ORDINALS.map((o) => (
-                    <th key={o} className="px-2 py-1 font-semibold text-on-surface-variant">
-                      {ORDINAL_LABELS[o]}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {WEEKDAY_ORDER.map((w) => (
-                  <tr key={w}>
-                    <td className="pr-2 font-semibold">{WEEKDAY_LABELS[w]}</td>
-                    {ORDINALS.map((o) => {
-                      const value = `${o}-${w}`
-                      return (
-                        <td key={o} className="px-2 py-1 text-center">
-                          <input
-                            type="checkbox"
-                            name="schedule"
-                            value={value}
-                            defaultChecked={checked.has(value)}
-                            className="h-4 w-4 accent-[#ee8a4b]"
-                            aria-label={`${ORDINAL_LABELS[o]} ${WEEKDAY_LABELS[w]}`}
-                          />
-                        </td>
-                      )
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {WEEKDAY_ORDER.map((w) => (
+              <label
+                key={w}
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-outline-variant px-3 text-sm font-semibold transition hover:bg-surface-container-low has-[:checked]:border-primary has-[:checked]:bg-primary-container has-[:checked]:text-on-primary-container"
+              >
+                <input
+                  type="checkbox"
+                  name="schedule"
+                  value={`1-${w}`}
+                  defaultChecked={checkedDays.has(w)}
+                  className="h-4 w-4 accent-[#ee8a4b]"
+                />
+                {WEEKDAY_LABELS[w]}
+              </label>
+            ))}
           </div>
         </fieldset>
 

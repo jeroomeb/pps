@@ -188,6 +188,50 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-07-25 — Scheduling rebuild, split dashboards, structured addresses (session 9b)
+Client review of the session-9a fixes surfaced a batch of real defects. All
+rebuilt; `tsc`/`eslint`/`build` clean. **Migration `0003_schedule_dismissals_and_addresses.sql`
+must be applied** (see below).
+
+- **Schedule model simplified to first-of-month only.** The old First/Second/
+  Third/Fourth/**Last** ordinal grid produced *duplicate dashboard rows*:
+  in any month with only 4 of a weekday, "Fourth Sunday" and "Last Sunday"
+  resolve to the same date. `parseSchedule()` now coerces every entry to
+  `ordinal: 1` and dedupes by weekday, so legacy data self-heals on read with
+  no data migration. `PropertyForm` is a single row of 7 weekday toggles.
+  ⚠️ `ScheduleEntry.ordinal` is retained on disk but is **always 1**.
+- **Overdue carry-forward + dismissal.** `dueEntries()` scans a **45-day
+  overdue window** through end of next month (was: current month only, so
+  misses vanished at rollover). A first pass used a 3-month lookback and
+  produced 35 rows "Overdue by 115 days" from before the feature existed —
+  hence the bounded window. Admins dismiss a row via the new
+  `schedule_dismissals` table (`src/lib/actions/schedule.ts`).
+- **Split-view dashboards** (`/admin` and `/inspector`): KPI strip + two
+  columns — Schedule (overdue/today/soon, with Schedule→ and Dismiss) beside
+  Quick Actions + Active Now. The Recent Properties table was **removed** from
+  `/admin` (duplicated the Properties tab; it was the main source of scrolling).
+- **Due dates replace created dates** on assignment cards. `/inspector` now
+  selects `scheduled_for`; new shared `dueLabel()` in `schedule.ts` renders
+  "Overdue by N days"/"Due today"/"Due in N days", and open inspections sort
+  urgency-first with unscheduled last.
+- **Admins are no longer blocked by `scheduled_for`.** Both the page gate and
+  `saveInspectionItem` now exempt `role === 'admin'` (admins get an inline
+  banner instead of a hard stop); specialists stay gated. New
+  **`updateInspection`** action + `/admin/inspections/[id]/edit` let admins
+  reschedule/reassign — `template_id` is deliberately **not** editable because
+  checklist items are snapshotted into `inspection_items` at creation.
+- **Structured addresses** on `properties` *and* `profiles`: `street`, `city`,
+  `state`, `zip`, `county`. **`address` is kept as a DERIVED single-line value**
+  composed by `composeAddress()` (`src/lib/address.ts`) on every write — that's
+  why the PDF/report/email pipeline needed zero changes. County is excluded
+  from the composed line (routing metadata, not a mailing address).
+  Location filters (`AddressFilterBar`) on Properties/Team/Inspections/dashboard,
+  and the assign-specialist dropdown sorts + labels by `proximityTier()`
+  (Same ZIP → county → state) **without restricting** who can be assigned.
+- **Client follow-ups:** `Jerome's Home` had 11 legacy rules that collapse to
+  all 7 weekdays — they should trim it. Real city/state/ZIP/county need filling
+  in on properties and specialists before proximity matching is useful.
+
 ### 2026-07-25 — Properties invisible: migration 0002 was NOT on the live DB (session 9)
 Client reported "can't see any existing properties" after login. Root-caused via
 read-only diagnostics against the live Supabase project (`lxihknznkiarqyqfulgm`,

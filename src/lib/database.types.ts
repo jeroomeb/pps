@@ -15,6 +15,11 @@ export interface Database {
           human_id: string | null
           phone: string | null
           address: string | null
+          street: string | null
+          city: string | null
+          state: string | null
+          zip: string | null
+          county: string | null
           email: string | null
           id_front_path: string | null
           id_back_path: string | null
@@ -27,6 +32,11 @@ export interface Database {
           human_id?: string | null
           phone?: string | null
           address?: string | null
+          street?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          county?: string | null
           email?: string | null
           id_front_path?: string | null
           id_back_path?: string | null
@@ -39,6 +49,11 @@ export interface Database {
           human_id?: string | null
           phone?: string | null
           address?: string | null
+          street?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          county?: string | null
           email?: string | null
           id_front_path?: string | null
           id_back_path?: string | null
@@ -103,6 +118,11 @@ export interface Database {
           id: string
           name: string
           address: string
+          street: string | null
+          city: string | null
+          state: string | null
+          zip: string | null
+          county: string | null
           email: string
           created_at: string
           human_id: string | null
@@ -114,6 +134,11 @@ export interface Database {
           id?: string
           name: string
           address: string
+          street?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          county?: string | null
           email: string
           created_at?: string
           human_id?: string | null
@@ -125,6 +150,11 @@ export interface Database {
           id?: string
           name?: string
           address?: string
+          street?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          county?: string | null
           email?: string
           created_at?: string
           human_id?: string | null
@@ -133,6 +163,45 @@ export interface Database {
           required_schedule?: ScheduleEntry[]
         }
         Relationships: []
+      }
+      schedule_dismissals: {
+        Row: {
+          id: string
+          property_id: string
+          occurrence_date: string
+          dismissed_by: string | null
+          dismissed_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          occurrence_date: string
+          dismissed_by?: string | null
+          dismissed_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          occurrence_date?: string
+          dismissed_by?: string | null
+          dismissed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'schedule_dismissals_property_id_fkey'
+            columns: ['property_id']
+            isOneToOne: false
+            referencedRelation: 'properties'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'schedule_dismissals_dismissed_by_fkey'
+            columns: ['dismissed_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
       }
       inspections: {
         Row: {

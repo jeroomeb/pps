@@ -26,14 +26,22 @@ export function InspectorProfileForm({
   email: string | null
   defaults: {
     phone: string | null
-    address: string | null
+    street: string | null
+    city: string | null
+    state: string | null
+    zip: string | null
+    county: string | null
     id_front_path: string | null
     id_back_path: string | null
   }
 }) {
   const showToast = useToast()
   const [phone, setPhone] = useState(defaults.phone ?? '')
-  const [address, setAddress] = useState(defaults.address ?? '')
+  const [street, setStreet] = useState(defaults.street ?? '')
+  const [city, setCity] = useState(defaults.city ?? '')
+  const [state, setState] = useState(defaults.state ?? '')
+  const [zip, setZip] = useState(defaults.zip ?? '')
+  const [county, setCounty] = useState(defaults.county ?? '')
   const [frontPath, setFrontPath] = useState<string | null>(defaults.id_front_path)
   const [backPath, setBackPath] = useState<string | null>(defaults.id_back_path)
   const [uploading, setUploading] = useState<Side | null>(null)
@@ -64,7 +72,11 @@ export function InspectorProfileForm({
     startTransition(async () => {
       const result = await updateOwnProfile({
         phone,
-        address,
+        street,
+        city,
+        state,
+        zip,
+        county,
         ...(side === 'front' ? { id_front_path: objectPath } : { id_back_path: objectPath }),
       })
       if (result?.error) showToast('error', result.error)
@@ -74,7 +86,7 @@ export function InspectorProfileForm({
 
   function handleSave() {
     startTransition(async () => {
-      const result = await updateOwnProfile({ phone, address })
+      const result = await updateOwnProfile({ phone, street, city, state, zip, county })
       if (result?.error) showToast('error', result.error)
       else showToast('success', 'Profile saved.')
     })
@@ -115,17 +127,70 @@ export function InspectorProfileForm({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="address" className={LABEL}>
-            Home Address
+          <label htmlFor="street" className={LABEL}>
+            Street Address
           </label>
           <input
-            id="address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            id="street"
+            value={street}
+            onChange={(e) => setStreet(e.target.value)}
             className={INPUT}
           />
         </div>
       </div>
+
+      {/* County/state/ZIP drive proximity matching when assigning inspections. */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="city" className={LABEL}>
+            City
+          </label>
+          <input id="city" value={city} onChange={(e) => setCity(e.target.value)} className={INPUT} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="state" className={LABEL}>
+            State
+          </label>
+          <input
+            id="state"
+            maxLength={2}
+            placeholder="NJ"
+            value={state}
+            onChange={(e) => setState(e.target.value)}
+            className={`${INPUT} uppercase`}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="zip" className={LABEL}>
+            ZIP Code
+          </label>
+          <input
+            id="zip"
+            inputMode="numeric"
+            maxLength={10}
+            placeholder="07102"
+            value={zip}
+            onChange={(e) => setZip(e.target.value)}
+            className={INPUT}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="county" className={LABEL}>
+            County
+          </label>
+          <input
+            id="county"
+            placeholder="Essex"
+            value={county}
+            onChange={(e) => setCounty(e.target.value)}
+            className={INPUT}
+          />
+        </div>
+      </div>
+      <p className="-mt-3 text-xs text-on-surface-variant">
+        Your county, state and ZIP are used to match you with nearby properties when inspections
+        are assigned.
+      </p>
 
       <div>
         <p className={`${LABEL} mb-2`}>Driver&apos;s License / Identification</p>

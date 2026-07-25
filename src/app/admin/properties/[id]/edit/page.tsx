@@ -13,7 +13,9 @@ export default async function EditPropertyPage({
   const supabase = await createClient()
   const { data: property } = await supabase
     .from('properties')
-    .select('name, address, email, phone, notes, human_id, required_schedule')
+    .select(
+      'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule'
+    )
     .eq('id', id)
     .single()
 
@@ -33,7 +35,11 @@ export default async function EditPropertyPage({
         action={updateProperty.bind(null, id)}
         defaultValues={{
           name: property.name,
-          address: property.address,
+          street: property.street,
+          city: property.city,
+          state: property.state,
+          zip: property.zip,
+          county: property.county,
           email: property.email,
           phone: property.phone,
           notes: property.notes,

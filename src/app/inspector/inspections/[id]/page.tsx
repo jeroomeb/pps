@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Clock } from 'lucide-react'
 import { getProfile } from '@/lib/auth/dal'
@@ -72,33 +73,56 @@ export default async function InspectionDetailPage({
     )
   }
 
-  // Scheduled for the future → not startable yet.
-  if (inspection.scheduled_for && new Date(inspection.scheduled_for) > new Date()) {
-    const label = new Date(inspection.scheduled_for).toLocaleString('en-US', {
-      dateStyle: 'full',
-      timeStyle: 'short',
-    })
+  const isScheduledAhead =
+    !!inspection.scheduled_for && new Date(inspection.scheduled_for) > new Date()
+  const scheduledLabel = inspection.scheduled_for
+    ? new Date(inspection.scheduled_for).toLocaleString('en-US', {
+        dateStyle: 'full',
+        timeStyle: 'short',
+      })
+    : null
+
+  // Scheduled for the future → specialists must wait. Admins own the schedule,
+  // so they can proceed early (with a banner) and can edit the date instead.
+  if (isScheduledAhead && profile.role !== 'admin') {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
         <Clock size={40} className="mx-auto mb-4 text-primary" />
         <h1 className="font-headline text-2xl font-bold">{property.name}</h1>
         <p className="mt-1 text-on-surface-variant">{template.name}</p>
         <p className="mt-6 rounded-lg bg-surface-container-low px-4 py-3 text-sm">
-          This inspection is scheduled for <span className="font-semibold">{label}</span>. You can
-          start it once that time arrives.
+          This inspection is scheduled for <span className="font-semibold">{scheduledLabel}</span>.
+          You can start it once that time arrives.
         </p>
       </div>
     )
   }
 
   return (
-    <ActiveInspectionChecklist
-      inspectionId={id}
-      propertyName={property.name}
-      checklistName={template.name}
-      inspectorName={inspector.full_name}
-      startedAt={inspection.created_at}
-      initialItems={itemsWithUrls}
-    />
+    <>
+      {isScheduledAhead && (
+        <div className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-primary-container bg-primary-container/25 px-4 py-3 text-sm">
+          <Clock size={16} className="shrink-0 text-primary" />
+          <span>
+            Scheduled for <span className="font-semibold">{scheduledLabel}</span>. The assigned
+            specialist can&apos;t start until then — you can, as an admin.
+          </span>
+          <Link
+            href={`/admin/inspections/${id}/edit`}
+            className="font-semibold text-primary underline"
+          >
+            Edit schedule
+          </Link>
+        </div>
+      )}
+      <ActiveInspectionChecklist
+        inspectionId={id}
+        propertyName={property.name}
+        checklistName={template.name}
+        inspectorName={inspector.full_name}
+        startedAt={inspection.created_at}
+        initialItems={itemsWithUrls}
+      />
+    </>
   )
 }

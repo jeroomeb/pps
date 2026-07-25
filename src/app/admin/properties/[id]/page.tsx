@@ -10,6 +10,8 @@ import {
   ChevronRight,
   ClipboardCheck,
   Clock,
+  Landmark,
+  Pencil as PencilIcon,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { NewInspectionForm } from '@/components/NewInspectionForm'
@@ -19,7 +21,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { deleteProperty } from '@/lib/actions/properties'
-import { parseSchedule, scheduleEntryLabel } from '@/lib/schedule'
+import { parseSchedule, scheduleEntryLabel, dueLabel } from '@/lib/schedule'
 
 export default async function PropertyDetailPage({
   params,
@@ -35,12 +37,12 @@ export default async function PropertyDetailPage({
       supabase.from('checklist_templates').select('id, name').order('name'),
       supabase
         .from('profiles')
-        .select('id, full_name, role')
+        .select('id, full_name, role, state, zip, county')
         .order('full_name'),
       supabase
         .from('inspections')
         .select(
-          'id, status, created_at, completed_at, checklist_templates(name), profiles(full_name)'
+          'id, status, created_at, completed_at, scheduled_for, checklist_templates(name), profiles(full_name)'
         )
         .eq('property_id', id)
         .order('created_at', { ascending: false }),
@@ -78,6 +80,11 @@ export default async function PropertyDetailPage({
             <span className="flex items-center gap-1">
               <MapPin size={13} /> {property.address}
             </span>
+            {property.county && (
+              <span className="flex items-center gap-1">
+                <Landmark size={13} /> {property.county} County
+              </span>
+            )}
             <span className="flex items-center gap-1">
               <Mail size={13} /> {property.email}
             </span>
@@ -166,6 +173,16 @@ export default async function PropertyDetailPage({
           <h2 className="mb-3 font-headline text-lg font-semibold">New Inspection</h2>
           <NewInspectionForm
             propertyId={id}
+            // Passed so the specialist list can rank by proximity to this property.
+            properties={[
+              {
+                id,
+                name: property.name,
+                state: property.state,
+                zip: property.zip,
+                county: property.county,
+              },
+            ]}
             templates={templates ?? []}
             inspectors={inspectors ?? []}
           />
@@ -183,33 +200,59 @@ export default async function PropertyDetailPage({
                   const inspector = inspection.profiles as unknown as {
                     full_name: string
                   } | null
-                  const href =
-                    inspection.status === 'completed'
-                      ? `/admin/reports/${inspection.id}`
-                      : `/inspector/inspections/${inspection.id}`
+                  const isCompleted = inspection.status === 'completed'
+                  const href = isCompleted
+                    ? `/admin/reports/${inspection.id}`
+                    : `/inspector/inspections/${inspection.id}`
                   const dateLabel = new Date(
                     inspection.completed_at ?? inspection.created_at
                   ).toLocaleDateString('en-US', { dateStyle: 'medium' })
+                  const due = inspection.scheduled_for
+                    ? dueLabel(new Date(inspection.scheduled_for))
+                    : null
                   return (
-                    <Link
+                    <div
                       key={inspection.id}
-                      href={href}
-                      className="group flex items-center justify-between gap-3 p-4 transition hover:bg-surface-container-low"
+                      className="group flex items-center justify-between gap-3 transition hover:bg-surface-container-low"
                     >
-                      <div className="min-w-0">
+                      <Link href={href} className="min-w-0 flex-1 py-4 pl-4">
                         <p className="truncate font-semibold">{template?.name ?? 'Checklist'}</p>
                         <p className="truncate text-sm text-on-surface-variant">
                           {inspector?.full_name ?? 'Unassigned'} · {dateLabel}
                         </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
+                        {due && (
+                          <p
+                            className={`truncate text-xs font-semibold ${
+                              due.tone === 'overdue'
+                                ? 'text-error'
+                                : due.tone === 'today'
+                                  ? 'text-primary'
+                                  : 'text-on-surface-variant'
+                            }`}
+                          >
+                            {due.text}
+                          </p>
+                        )}
+                      </Link>
+                      <div className="flex shrink-0 items-center gap-2 py-4 pr-4">
                         <StatusBadge status={inspection.status} />
+                        {/* Completed inspections are frozen — no edit path. */}
+                        {!isCompleted && (
+                          <Link
+                            href={`/admin/inspections/${inspection.id}/edit`}
+                            aria-label="Edit inspection"
+                            title="Edit schedule or specialist"
+                            className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+                          >
+                            <PencilIcon size={14} />
+                          </Link>
+                        )}
                         <ChevronRight
                           size={16}
                           className="text-on-surface-variant transition group-hover:translate-x-0.5"
                         />
                       </div>
-                    </Link>
+                    </div>
                   )
                 })}
               </div>

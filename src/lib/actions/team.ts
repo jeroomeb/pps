@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { requireRole, getProfile } from '@/lib/auth/dal'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { genSpecialistId } from '@/lib/ids'
+import { composeAddress, normalizeAddressParts } from '@/lib/address'
+import type { Database } from '@/lib/database.types'
 
 const teamMemberSchema = z.object({
   full_name: z.string().trim().min(1, 'Name is required'),
@@ -82,22 +84,39 @@ export async function createTeamMember(
   return { success: true }
 }
 
+const addressPartsSchema = {
+  street: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  state: z.string().trim().optional(),
+  zip: z.string().trim().optional(),
+  county: z.string().trim().optional(),
+}
+
 const ownProfileSchema = z.object({
   phone: z.string().trim().optional(),
-  address: z.string().trim().optional(),
+  ...addressPartsSchema,
   id_front_path: z.string().trim().nullable().optional(),
   id_back_path: z.string().trim().nullable().optional(),
 })
 
+export type ProfileAddressInput = {
+  street?: string
+  city?: string
+  state?: string
+  zip?: string
+  county?: string
+}
+
 // Self-service: a specialist updates their own contact info / ID document
 // paths. The DB guard trigger blocks any role/human_id/email change here, so
 // this can't be used to escalate. Returns { error } instead of throwing.
-export async function updateOwnProfile(input: {
-  phone?: string
-  address?: string
-  id_front_path?: string | null
-  id_back_path?: string | null
-}): Promise<{ error?: string } | void> {
+export async function updateOwnProfile(
+  input: ProfileAddressInput & {
+    phone?: string
+    id_front_path?: string | null
+    id_back_path?: string | null
+  }
+): Promise<{ error?: string } | void> {
   const profile = await getProfile()
 
   const parsed = ownProfileSchema.safeParse(input)
@@ -106,14 +125,12 @@ export async function updateOwnProfile(input: {
   }
 
   const supabase = await createClient()
-  const patch: {
-    phone: string | null
-    address: string | null
-    id_front_path?: string | null
-    id_back_path?: string | null
-  } = {
+  const addressParts = normalizeAddressParts(parsed.data)
+  const patch: Database['public']['Tables']['profiles']['Update'] = {
     phone: parsed.data.phone || null,
-    address: parsed.data.address || null,
+    ...addressParts,
+    // Derived single-line value read by the PDF/report/email pipeline.
+    address: composeAddress(addressParts) || null,
   }
   if (parsed.data.id_front_path !== undefined) patch.id_front_path = parsed.data.id_front_path
   if (parsed.data.id_back_path !== undefined) patch.id_back_path = parsed.data.id_back_path
@@ -125,6 +142,49 @@ export async function updateOwnProfile(input: {
 
   revalidatePath('/inspector/profile')
   revalidatePath('/admin/team')
+}
+
+const memberAddressSchema = z.object(addressPartsSchema)
+
+/**
+ * Admin-set coverage area for a specialist. Specialists can maintain this
+ * themselves from /inspector/profile, but proximity-based assignment is only
+ * useful if it's actually populated — so admins can fill it in from the
+ * member's detail page. Address columns only; never role/email/human_id.
+ */
+export async function updateTeamMemberAddress(
+  profileId: string,
+  _prevState: TeamMemberFormState,
+  formData: FormData
+): Promise<TeamMemberFormState> {
+  await requireRole('admin')
+
+  const parsed = memberAddressSchema.safeParse({
+    street: formData.get('street'),
+    city: formData.get('city'),
+    state: formData.get('state'),
+    zip: formData.get('zip'),
+    county: formData.get('county'),
+  })
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  }
+
+  const supabase = await createClient()
+  const addressParts = normalizeAddressParts(parsed.data)
+  const { error } = await supabase
+    .from('profiles')
+    .update({ ...addressParts, address: composeAddress(addressParts) || null })
+    .eq('id', profileId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath(`/admin/team/${profileId}`)
+  revalidatePath('/admin/team')
+  return { success: true }
 }
 
 export async function setTeamMemberRole(

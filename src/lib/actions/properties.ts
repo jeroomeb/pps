@@ -8,10 +8,15 @@ import { createClient } from '@/lib/supabase/server'
 import { cleanupInspectionStorage } from '@/lib/supabase/storage-cleanup'
 import { genPropertyId } from '@/lib/ids'
 import type { ScheduleEntry } from '@/lib/schedule'
+import { composeAddress, normalizeAddressParts } from '@/lib/address'
 
 const propertySchema = z.object({
   name: z.string().trim().min(1, 'Property name is required'),
-  address: z.string().trim().min(1, 'Address is required'),
+  street: z.string().trim().min(1, 'Street address is required'),
+  city: z.string().trim().optional(),
+  state: z.string().trim().optional(),
+  zip: z.string().trim().optional(),
+  county: z.string().trim().optional(),
   email: z.string().trim().email('Enter a valid email'),
   phone: z.string().trim().optional(),
   notes: z.string().trim().optional(),
@@ -20,16 +25,36 @@ const propertySchema = z.object({
 export type PropertyFormState = { error?: string } | undefined
 
 // Schedule checkboxes are submitted as `schedule=<ordinal>-<weekday>` values.
+// The model is first-of-month only, so the ordinal is always 1 — parseSchedule
+// normalizes anyway, but we keep the wire format for backwards compatibility.
 function parseScheduleFromForm(formData: FormData): ScheduleEntry[] {
-  const seen = new Set<string>()
-  const out: ScheduleEntry[] = []
+  const weekdays = new Set<number>()
   for (const raw of formData.getAll('schedule')) {
-    if (typeof raw !== 'string' || seen.has(raw)) continue
-    seen.add(raw)
-    const [o, w] = raw.split('-').map((n) => Number(n))
-    if (o >= 1 && o <= 5 && w >= 0 && w <= 6) out.push({ ordinal: o, weekday: w })
+    if (typeof raw !== 'string') continue
+    const w = Number(raw.split('-')[1] ?? raw)
+    if (Number.isInteger(w) && w >= 0 && w <= 6) weekdays.add(w)
   }
-  return out
+  return [...weekdays].sort((a, b) => a - b).map((weekday) => ({ ordinal: 1, weekday }))
+}
+
+/** Address parts + the derived single-line `address` used by PDFs/emails. */
+function addressColumns(data: z.infer<typeof propertySchema>) {
+  const parts = normalizeAddressParts(data)
+  return { ...parts, address: composeAddress(parts) }
+}
+
+function propertyFormFields(formData: FormData) {
+  return {
+    name: formData.get('name'),
+    street: formData.get('street'),
+    city: formData.get('city'),
+    state: formData.get('state'),
+    zip: formData.get('zip'),
+    county: formData.get('county'),
+    email: formData.get('email'),
+    phone: formData.get('phone'),
+    notes: formData.get('notes'),
+  }
 }
 
 export async function createProperty(
@@ -38,13 +63,7 @@ export async function createProperty(
 ): Promise<PropertyFormState> {
   await requireRole('admin')
 
-  const parsed = propertySchema.safeParse({
-    name: formData.get('name'),
-    address: formData.get('address'),
-    email: formData.get('email'),
-    phone: formData.get('phone'),
-    notes: formData.get('notes'),
-  })
+  const parsed = propertySchema.safeParse(propertyFormFields(formData))
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
@@ -53,7 +72,7 @@ export async function createProperty(
   const supabase = await createClient()
   const insertRow = {
     name: parsed.data.name,
-    address: parsed.data.address,
+    ...addressColumns(parsed.data),
     email: parsed.data.email,
     phone: parsed.data.phone || null,
     notes: parsed.data.notes || null,
@@ -90,13 +109,7 @@ export async function updateProperty(
 ): Promise<PropertyFormState> {
   await requireRole('admin')
 
-  const parsed = propertySchema.safeParse({
-    name: formData.get('name'),
-    address: formData.get('address'),
-    email: formData.get('email'),
-    phone: formData.get('phone'),
-    notes: formData.get('notes'),
-  })
+  const parsed = propertySchema.safeParse(propertyFormFields(formData))
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
@@ -107,7 +120,7 @@ export async function updateProperty(
     .from('properties')
     .update({
       name: parsed.data.name,
-      address: parsed.data.address,
+      ...addressColumns(parsed.data),
       email: parsed.data.email,
       phone: parsed.data.phone || null,
       notes: parsed.data.notes || null,

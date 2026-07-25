@@ -122,6 +122,103 @@ export async function createInspection(
   redirect(`/admin/properties/${parsed.data.property_id}`)
 }
 
+const updateInspectionSchema = z.object({
+  inspector_id: z.string().uuid(),
+  scheduled_for: z.string().trim().optional(),
+})
+
+/**
+ * Admin edit of an existing inspection: reschedule it or reassign the
+ * specialist. `template_id` is deliberately NOT editable — checklist items are
+ * snapshotted into inspection_items at creation, so swapping the template would
+ * leave the inspection's own item copies inconsistent with its label.
+ */
+export async function updateInspection(
+  inspectionId: string,
+  _prevState: InspectionFormState,
+  formData: FormData
+): Promise<InspectionFormState> {
+  await requireRole('admin')
+
+  const parsed = updateInspectionSchema.safeParse({
+    inspector_id: formData.get('inspector_id'),
+    scheduled_for: formData.get('scheduled_for'),
+  })
+
+  if (!parsed.success) {
+    return { error: 'Please choose a specialist.' }
+  }
+
+  let scheduledForIso: string | null = null
+  if (parsed.data.scheduled_for) {
+    const d = new Date(parsed.data.scheduled_for)
+    if (Number.isNaN(d.getTime())) {
+      return { error: 'That scheduled date/time is not valid.' }
+    }
+    scheduledForIso = d.toISOString()
+  }
+
+  const supabase = await createClient()
+
+  const { data: existing } = await supabase
+    .from('inspections')
+    .select('status, inspector_id, property_id, template_id')
+    .eq('id', inspectionId)
+    .single()
+
+  if (!existing) {
+    return { error: 'Inspection not found.' }
+  }
+  // Completed inspections are frozen — the emailed report is the record of truth.
+  if (existing.status === 'completed') {
+    return { error: 'This inspection is completed and can no longer be edited.' }
+  }
+
+  const { error } = await supabase
+    .from('inspections')
+    .update({ inspector_id: parsed.data.inspector_id, scheduled_for: scheduledForIso })
+    .eq('id', inspectionId)
+    .neq('status', 'completed')
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  // Notify the new assignee on reassignment. Best-effort — a mail failure must
+  // not fail the edit.
+  if (parsed.data.inspector_id !== existing.inspector_id) {
+    try {
+      const [{ data: assignee }, { data: property }, { data: template }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', parsed.data.inspector_id)
+          .single(),
+        supabase.from('properties').select('name, address').eq('id', existing.property_id).single(),
+        supabase.from('checklist_templates').select('name').eq('id', existing.template_id).single(),
+      ])
+      if (assignee?.email) {
+        await sendAssignmentEmail({
+          to: assignee.email,
+          specialistName: assignee.full_name,
+          propertyName: property?.name ?? 'a property',
+          propertyAddress: property?.address ?? '',
+          checklistName: template?.name ?? 'an inspection',
+          scheduledFor: scheduledForIso,
+        })
+      }
+    } catch (err) {
+      console.error('Reassignment email failed:', err)
+    }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/inspections')
+  revalidatePath(`/admin/properties/${existing.property_id}`)
+  revalidatePath('/inspector')
+  redirect(`/admin/properties/${existing.property_id}`)
+}
+
 export async function deleteInspection(
   inspectionId: string
 ): Promise<{ error?: string } | void> {
@@ -180,7 +277,13 @@ export async function saveInspectionItem(
   if (inspection.status === 'completed') {
     return { error: 'This inspection has already been submitted and can no longer be edited.' }
   }
-  if (inspection.scheduled_for && new Date(inspection.scheduled_for) > new Date()) {
+  // Specialists can't start before the scheduled time; admins can (they own the
+  // schedule and may need to run or correct an inspection early).
+  if (
+    profile.role !== 'admin' &&
+    inspection.scheduled_for &&
+    new Date(inspection.scheduled_for) > new Date()
+  ) {
     return { error: 'This inspection cannot be started before its scheduled time.' }
   }
 

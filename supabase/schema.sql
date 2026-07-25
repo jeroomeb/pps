@@ -14,7 +14,14 @@ create table if not exists profiles (
   created_at timestamptz not null default now(),
   human_id text unique,
   phone text,
+  -- `address` is a DERIVED single-line value composed from the parts below
+  -- on every write (src/lib/address.ts). PDFs/emails/reports read it directly.
   address text,
+  street text,
+  city text,
+  state text,
+  zip text,
+  county text,
   email text,
   id_front_path text,
   id_back_path text
@@ -38,14 +45,32 @@ create table if not exists checklist_template_items (
 create table if not exists properties (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  -- `address` is a DERIVED single-line value composed from the parts below
+  -- on every write (src/lib/address.ts). PDFs/emails/reports read it directly.
   address text not null,
+  street text,
+  city text,
+  state text,
+  zip text,
+  county text,
   email text not null,
   created_at timestamptz not null default now(),
   human_id text unique,
   phone text,
   notes text,
-  -- Monthly nth-weekday schedule: [{"ordinal":1,"weekday":1}, ...]
+  -- Monthly first-weekday schedule: [{"ordinal":1,"weekday":1}, ...]
+  -- ordinal is always 1 ("first <weekday> of the month"); weekday 0=Sun..6=Sat
   required_schedule jsonb not null default '[]'::jsonb
+);
+
+-- An admin-dismissed required-inspection day (stops it surfacing as overdue).
+create table if not exists schedule_dismissals (
+  id uuid primary key default gen_random_uuid(),
+  property_id uuid not null references properties (id) on delete cascade,
+  occurrence_date date not null,
+  dismissed_by uuid references profiles (id) on delete set null,
+  dismissed_at timestamptz not null default now(),
+  unique (property_id, occurrence_date)
 );
 
 create table if not exists inspections (
@@ -106,6 +131,7 @@ alter table checklist_template_items enable row level security;
 alter table properties enable row level security;
 alter table inspections enable row level security;
 alter table inspection_items enable row level security;
+alter table schedule_dismissals enable row level security;
 
 -- profiles: everyone can read their own row; admins can read/write all
 drop policy if exists "profiles_select_own_or_admin" on profiles;
@@ -141,6 +167,15 @@ create policy "properties_select_all" on properties
 
 drop policy if exists "properties_admin_write" on properties;
 create policy "properties_admin_write" on properties
+  for all using (current_role_is_admin()) with check (current_role_is_admin());
+
+-- schedule_dismissals: readable by any authenticated user, admin-managed
+drop policy if exists "schedule_dismissals_select" on schedule_dismissals;
+create policy "schedule_dismissals_select" on schedule_dismissals
+  for select using (auth.uid() is not null);
+
+drop policy if exists "schedule_dismissals_admin_write" on schedule_dismissals;
+create policy "schedule_dismissals_admin_write" on schedule_dismissals
   for all using (current_role_is_admin()) with check (current_role_is_admin());
 
 -- inspections: admins see/manage all; inspectors see/update only their own

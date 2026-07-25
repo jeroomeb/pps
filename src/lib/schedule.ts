@@ -1,6 +1,13 @@
-// Monthly nth-weekday inspection schedules, e.g. "First Monday of every month".
+// Monthly inspection schedules — "First Monday of every month".
+//
 // Stored on properties.required_schedule as a jsonb array of ScheduleEntry.
-//   ordinal: 1..4 = first..fourth, 5 = last
+// The `ordinal` field is retained for on-disk compatibility with data written
+// before session 9 (which allowed First..Fourth/Last), but the model is now
+// **first-of-month only**: parseSchedule() coerces every entry to ordinal 1 and
+// dedupes by weekday. That collapses legacy pairs like "Fourth Sunday" +
+// "Last Sunday" — which resolved to the SAME date in any month with only four
+// Sundays, and rendered as duplicate dashboard rows — into one entry.
+//   ordinal: always 1 (first occurrence of that weekday in the month)
 //   weekday: 0 = Sunday .. 6 = Saturday
 
 export type ScheduleEntry = { ordinal: number; weekday: number }
@@ -15,49 +22,34 @@ export const WEEKDAY_LABELS = [
   'Saturday',
 ]
 
-export const ORDINAL_LABELS: Record<number, string> = {
-  1: 'First',
-  2: 'Second',
-  3: 'Third',
-  4: 'Fourth',
-  5: 'Last',
-}
+// Business-week-first ordering for the property form's weekday toggles.
+export const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
 export function scheduleEntryLabel(entry: ScheduleEntry): string {
-  const ord = ORDINAL_LABELS[entry.ordinal] ?? ''
-  const day = WEEKDAY_LABELS[entry.weekday] ?? ''
-  return `${ord} ${day}`.trim()
+  return `First ${WEEKDAY_LABELS[entry.weekday] ?? ''}`.trim()
 }
 
-// Accepts unknown jsonb and returns a clean, validated ScheduleEntry[].
+// Accepts unknown jsonb and returns a clean, validated, first-of-month
+// ScheduleEntry[] with one entry per weekday at most.
 export function parseSchedule(value: unknown): ScheduleEntry[] {
   if (!Array.isArray(value)) return []
-  const out: ScheduleEntry[] = []
+  const weekdays = new Set<number>()
   for (const raw of value) {
     if (raw && typeof raw === 'object') {
-      const ordinal = Number((raw as Record<string, unknown>).ordinal)
       const weekday = Number((raw as Record<string, unknown>).weekday)
-      if (ordinal >= 1 && ordinal <= 5 && weekday >= 0 && weekday <= 6) {
-        out.push({ ordinal, weekday })
+      if (Number.isInteger(weekday) && weekday >= 0 && weekday <= 6) {
+        weekdays.add(weekday)
       }
     }
   }
-  return out
+  return [...weekdays].sort((a, b) => a - b).map((weekday) => ({ ordinal: 1, weekday }))
 }
 
-// Concrete calendar date for an entry within a given month (month is 0-11).
-// Returns null if that ordinal weekday doesn't exist in the month.
-export function occurrenceDate(year: number, month: number, entry: ScheduleEntry): Date | null {
-  if (entry.ordinal === 5) {
-    const lastDay = new Date(year, month + 1, 0)
-    const offset = (lastDay.getDay() - entry.weekday + 7) % 7
-    return new Date(year, month, lastDay.getDate() - offset)
-  }
+// Concrete calendar date of the first `weekday` in a given month (month 0-11).
+export function occurrenceDate(year: number, month: number, entry: ScheduleEntry): Date {
   const first = new Date(year, month, 1)
   const offset = (entry.weekday - first.getDay() + 7) % 7
-  const day = 1 + offset + (entry.ordinal - 1) * 7
-  const d = new Date(year, month, day)
-  return d.getMonth() === month ? d : null
+  return new Date(year, month, 1 + offset)
 }
 
 export function occurrencesForMonth(
@@ -67,8 +59,11 @@ export function occurrencesForMonth(
 ): Date[] {
   return schedule
     .map((entry) => occurrenceDate(year, month, entry))
-    .filter((d): d is Date => d !== null)
     .sort((a, b) => a.getTime() - b.getTime())
+}
+
+function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
 
 function sameCalendarDay(a: Date, b: Date): boolean {
@@ -79,46 +74,120 @@ function sameCalendarDay(a: Date, b: Date): boolean {
   )
 }
 
+/** Local-date key (YYYY-MM-DD) — matches a Postgres `date` column's text form. */
+export function dateKey(d: Date): string {
+  const m = `${d.getMonth() + 1}`.padStart(2, '0')
+  const day = `${d.getDate()}`.padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
+export function daysBetween(from: Date, to: Date): number {
+  const ms = startOfDay(to).getTime() - startOfDay(from).getTime()
+  return Math.round(ms / 86_400_000)
+}
+
+export type DueTone = 'overdue' | 'today' | 'soon' | 'future'
+
+/**
+ * Relative due wording shared by the dashboards, assignment cards and
+ * inspection lists — "Overdue by 2 days" / "Due today" / "Due in 3 days".
+ * `soon` covers the next 7 days; beyond that an absolute date reads better.
+ */
+export function dueLabel(date: Date, today: Date = new Date()): { text: string; tone: DueTone } {
+  const diff = daysBetween(today, date)
+  if (diff < 0) {
+    const n = Math.abs(diff)
+    return { text: `Overdue by ${n} day${n === 1 ? '' : 's'}`, tone: 'overdue' }
+  }
+  if (diff === 0) return { text: 'Due today', tone: 'today' }
+  if (diff === 1) return { text: 'Due tomorrow', tone: 'soon' }
+  if (diff <= 7) return { text: `Due in ${diff} days`, tone: 'soon' }
+  return {
+    text: `Due ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+    tone: 'future',
+  }
+}
+
 export type DueEntry = {
   propertyId: string
   propertyName: string
   date: Date
+  /** ISO local date key, used as the dismissal identity. */
+  dateKey: string
   label: string
+  tone: DueTone
+  dueText: string
 }
 
-// Properties with a schedule occurrence in `today`'s month that has no
-// inspection created for that occurrence date yet. Once an inspection is
-// scheduled for that date, the entry drops off.
+// How far back overdue occurrences keep surfacing. Missed days carry forward
+// (rather than vanishing at month rollover) until an inspection is scheduled
+// for them or an admin dismisses them — but only for this long. On a monthly
+// cadence 45 days gives every occurrence a full cycle of visibility while
+// keeping the dashboard from filling with months of pre-feature history that
+// was never actionable.
+const OVERDUE_WINDOW_DAYS = 45
+
+/**
+ * Required inspection days that still need an inspection scheduled.
+ *
+ * Scans LOOKBACK_MONTHS back through the end of next month, and drops any
+ * occurrence that either (a) already has an inspection whose `scheduled_for`
+ * falls on that calendar day, or (b) has been dismissed by an admin.
+ * Sorted overdue-first, then chronologically.
+ */
 export function dueEntries(
   properties: { id: string; name: string; required_schedule: unknown }[],
   inspections: { property_id: string; scheduled_for: string | null }[],
-  today: Date = new Date()
+  today: Date = new Date(),
+  dismissed: { property_id: string; occurrence_date: string }[] = []
 ): DueEntry[] {
-  const year = today.getFullYear()
-  const month = today.getMonth()
+  const dismissedKeys = new Set(
+    dismissed.map((d) => `${d.property_id}|${d.occurrence_date.slice(0, 10)}`)
+  )
+  const earliest = startOfDay(today)
+  earliest.setDate(earliest.getDate() - OVERDUE_WINDOW_DAYS)
   const results: DueEntry[] = []
 
   for (const property of properties) {
     const schedule = parseSchedule(property.required_schedule)
-    for (const entry of schedule) {
-      const date = occurrenceDate(year, month, entry)
-      if (!date) continue
-      const covered = inspections.some(
-        (i) =>
-          i.property_id === property.id &&
-          i.scheduled_for &&
-          sameCalendarDay(new Date(i.scheduled_for), date)
-      )
-      if (!covered) {
+    if (!schedule.length) continue
+
+    // Two months back covers the window even at its month boundary; the
+    // `earliest` check below is what actually bounds it.
+    for (let offset = -2; offset <= 1; offset++) {
+      const cursor = new Date(today.getFullYear(), today.getMonth() + offset, 1)
+      for (const entry of schedule) {
+        const date = occurrenceDate(cursor.getFullYear(), cursor.getMonth(), entry)
+        if (date < earliest) continue
+        const key = dateKey(date)
+
+        if (dismissedKeys.has(`${property.id}|${key}`)) continue
+
+        const covered = inspections.some(
+          (i) =>
+            i.property_id === property.id &&
+            i.scheduled_for &&
+            sameCalendarDay(new Date(i.scheduled_for), date)
+        )
+        if (covered) continue
+
+        const { text, tone } = dueLabel(date, today)
         results.push({
           propertyId: property.id,
           propertyName: property.name,
           date,
+          dateKey: key,
           label: scheduleEntryLabel(entry),
+          tone,
+          dueText: text,
         })
       }
     }
   }
 
-  return results.sort((a, b) => a.date.getTime() - b.date.getTime())
+  // Overdue first, then today, then upcoming; chronological within each group.
+  const rank: Record<DueTone, number> = { overdue: 0, today: 1, soon: 2, future: 3 }
+  return results.sort(
+    (a, b) => rank[a.tone] - rank[b.tone] || a.date.getTime() - b.date.getTime()
+  )
 }

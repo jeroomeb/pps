@@ -1,12 +1,22 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Mail, Phone, MapPin, ClipboardList, Clock, CheckCircle2, ChevronRight } from 'lucide-react'
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Landmark,
+  ClipboardList,
+  Clock,
+  CheckCircle2,
+  ChevronRight,
+} from 'lucide-react'
 import { requireRole } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusBadge } from '@/components/StatusBadge'
 import { ZoomableImage } from '@/components/ZoomableImage'
+import { TeamMemberAddressForm } from '@/components/TeamMemberAddressForm'
 
 export default async function TeamMemberProfilePage({
   params,
@@ -19,7 +29,9 @@ export default async function TeamMemberProfilePage({
 
   const { data: member } = await supabase
     .from('profiles')
-    .select('id, full_name, role, email, phone, address, human_id, id_front_path, id_back_path')
+    .select(
+      'id, full_name, role, email, phone, address, street, city, state, zip, county, human_id, id_front_path, id_back_path'
+    )
     .eq('id', id)
     .single()
 
@@ -80,6 +92,11 @@ export default async function TeamMemberProfilePage({
                 <MapPin size={13} /> {member.address}
               </span>
             )}
+            {member.county && (
+              <span className="flex items-center gap-1">
+                <Landmark size={13} /> {member.county} County
+              </span>
+            )}
           </span>
         }
       />
@@ -98,6 +115,20 @@ export default async function TeamMemberProfilePage({
           )
         })}
       </div>
+
+      <section className="mb-8">
+        <h2 className="mb-3 font-headline text-lg font-semibold">Coverage Area</h2>
+        <TeamMemberAddressForm
+          profileId={member.id}
+          defaults={{
+            street: member.street,
+            city: member.city,
+            state: member.state,
+            zip: member.zip,
+            county: member.county,
+          }}
+        />
+      </section>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <section>

@@ -1,54 +1,108 @@
 import Link from 'next/link'
-import { Building2, ClipboardList, ChevronRight, Plus, CalendarClock, Clock } from 'lucide-react'
+import {
+  Building2,
+  ClipboardList,
+  Plus,
+  CalendarClock,
+  Clock,
+  FileText,
+  Users,
+  ChevronRight,
+  Zap,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
+import {
+  DashboardSchedulePanel,
+  type ScheduleRow,
+} from '@/components/DashboardSchedulePanel'
 import { dueEntries } from '@/lib/schedule'
 
-type InspectionRow = {
-  id: string
-  property_id: string
-  status: string
-  created_at: string
-  checklist_templates: { name: string } | null
-}
+const QUICK_ACTIONS = [
+  { href: '/admin/inspections/new', label: 'Start Inspection', icon: Plus, primary: true },
+  { href: '/admin/properties/new', label: 'Add Property', icon: Building2, primary: false },
+  { href: '/admin/reports', label: 'View Reports', icon: FileText, primary: false },
+  { href: '/admin/team', label: 'Manage Team', icon: Users, primary: false },
+]
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ state?: string; county?: string }>
+}) {
+  const { state, county } = await searchParams
   const supabase = await createClient()
 
-  const [{ data: properties }, { data: inspections }] = await Promise.all([
-    supabase.from('properties').select('id, name, address, required_schedule').order('name'),
+  const [{ data: properties }, { data: inspections }, { data: dismissals }] = await Promise.all([
+    supabase
+      .from('properties')
+      .select('id, name, state, county, required_schedule')
+      .order('name'),
     supabase
       .from('inspections')
-      .select('id, property_id, status, created_at, scheduled_for, checklist_templates(name)')
+      .select(
+        'id, property_id, status, created_at, scheduled_for, properties(name), checklist_templates(name)'
+      )
       .order('created_at', { ascending: false }),
+    supabase.from('schedule_dismissals').select('property_id, occurrence_date'),
   ])
 
-  const pendingCount = (inspections ?? []).filter((i) => i.status === 'pending').length
-  const inProgressCount = (inspections ?? []).filter((i) => i.status === 'in_progress').length
+  const allProperties = properties ?? []
+  const allInspections = inspections ?? []
 
-  // Properties whose monthly schedule falls due this month with no inspection
-  // yet scheduled for that occurrence.
+  const pendingCount = allInspections.filter((i) => i.status === 'pending').length
+  const inProgress = allInspections.filter((i) => i.status === 'in_progress')
+
+  // Location filter applies to the schedule panel (which is property-driven).
+  const scopedProperties = allProperties.filter(
+    (p) => (!state || p.state === state) && (!county || p.county === county)
+  )
+
   const due = dueEntries(
-    (properties ?? []).map((p) => ({
+    scopedProperties.map((p) => ({
       id: p.id,
       name: p.name,
       required_schedule: p.required_schedule,
     })),
-    (inspections ?? []).map((i) => ({ property_id: i.property_id, scheduled_for: i.scheduled_for })),
+    allInspections.map((i) => ({ property_id: i.property_id, scheduled_for: i.scheduled_for })),
+    new Date(),
+    dismissals ?? []
   )
 
-  // Latest inspection per property — used only to show which checklist was
-  // last run; no health/status is derived at the property level.
-  const latestByProperty = new Map<string, InspectionRow>()
-  for (const inspection of (inspections ?? []) as unknown as InspectionRow[]) {
-    if (!latestByProperty.has(inspection.property_id)) {
-      latestByProperty.set(inspection.property_id, inspection)
-    }
-  }
+  // Flatten to a serializable shape — no Date objects cross into the client.
+  const scheduleRows: ScheduleRow[] = due.map((entry) => ({
+    propertyId: entry.propertyId,
+    propertyName: entry.propertyName,
+    dateKey: entry.dateKey,
+    dateLabel: entry.date.toLocaleDateString('en-US', { dateStyle: 'medium' }),
+    label: entry.label,
+    tone: entry.tone,
+    dueText: entry.dueText,
+  }))
 
-  const recentProperties = (properties ?? []).slice(0, 8)
+  const stats = [
+    {
+      label: 'Total Properties',
+      value: allProperties.length,
+      icon: Building2,
+      href: '/admin/properties',
+    },
+    {
+      label: 'Pending',
+      value: pendingCount,
+      icon: ClipboardList,
+      href: '/admin/inspections?status=pending',
+    },
+    {
+      label: 'In Progress',
+      value: inProgress.length,
+      icon: Clock,
+      href: '/admin/inspections?status=in_progress',
+    },
+  ]
 
   return (
     <div>
@@ -66,148 +120,122 @@ export default async function AdminDashboardPage() {
         }
       />
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Link href="/admin/properties" className="rounded-lg transition hover:brightness-95">
-          <Card className="flex items-center justify-between">
-            <div>
-              <p className="label-tracked text-on-surface-variant">Total Properties</p>
-              <p className="font-headline text-3xl font-bold">{properties?.length ?? 0}</p>
-            </div>
-            <Building2 size={28} className="text-primary" />
-          </Card>
-        </Link>
-        <Link href="/admin/inspections?status=pending" className="rounded-lg transition hover:brightness-95">
-          <Card className="flex items-center justify-between">
-            <div>
-              <p className="label-tracked text-on-surface-variant">Pending Inspections</p>
-              <p className="font-headline text-3xl font-bold">{pendingCount}</p>
-            </div>
-            <ClipboardList size={28} className="text-primary" />
-          </Card>
-        </Link>
-        <Link href="/admin/inspections?status=in_progress" className="rounded-lg transition hover:brightness-95">
-          <Card className="flex items-center justify-between">
-            <div>
-              <p className="label-tracked text-on-surface-variant">In Progress</p>
-              <p className="font-headline text-3xl font-bold">{inProgressCount}</p>
-            </div>
-            <Clock size={28} className="text-primary" />
-          </Card>
-        </Link>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {stats.map((stat) => {
+          const Icon = stat.icon
+          return (
+            <Link key={stat.label} href={stat.href} className="rounded-lg transition hover:brightness-95">
+              <Card className="flex items-center justify-between">
+                <div>
+                  <p className="label-tracked text-on-surface-variant">{stat.label}</p>
+                  <p className="font-headline text-3xl font-bold">{stat.value}</p>
+                </div>
+                <Icon size={28} className="text-primary" />
+              </Card>
+            </Link>
+          )
+        })}
       </div>
 
-      {due.length > 0 && (
-        <Card padded={false} className="mb-8 border-primary-container">
-          <div className="flex items-center gap-2 border-b border-outline-variant bg-primary-container/25 p-4">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Left — what needs attention */}
+        <section>
+          <h2 className="mb-3 flex items-center gap-2 font-headline text-lg font-semibold">
             <CalendarClock size={18} className="text-primary" />
-            <h2 className="font-headline text-lg font-semibold">
-              Needs Scheduling ({due.length})
-            </h2>
-          </div>
-          <div className="flex flex-col divide-y divide-outline-variant">
-            {due.map((entry) => (
-              <Link
-                key={`${entry.propertyId}-${entry.date.toISOString()}`}
-                href={`/admin/properties/${entry.propertyId}`}
-                className="flex items-center justify-between p-4 transition hover:bg-surface-container-low"
-              >
-                <div>
-                  <p className="font-semibold">{entry.propertyName}</p>
-                  <p className="text-sm text-on-surface-variant">
-                    {entry.label} —{' '}
-                    {entry.date.toLocaleDateString('en-US', { dateStyle: 'medium' })}
-                  </p>
-                </div>
-                <span className="rounded-full bg-primary-container px-3 py-1 text-xs font-semibold text-on-primary-container">
-                  Schedule
-                </span>
-              </Link>
-            ))}
-          </div>
-        </Card>
-      )}
+            Schedule
+          </h2>
+          <AddressFilterBar
+            action="/admin"
+            values={{ state, county }}
+            states={distinctValues(allProperties, 'state')}
+            counties={distinctValues(allProperties, 'county')}
+          />
+          <Card padded={false} className="overflow-hidden">
+            <DashboardSchedulePanel rows={scheduleRows} />
+          </Card>
+        </section>
 
-      <Card padded={false}>
-        <div className="flex items-center justify-between border-b border-outline-variant p-4">
-          <h2 className="font-headline text-lg font-semibold">Recent Properties</h2>
-          <Link
-            href="/admin/properties"
-            className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-primary"
-          >
-            View All <ChevronRight size={14} />
-          </Link>
-        </div>
-
-        {recentProperties.length ? (
-          <>
-            {/* Desktop table — every cell is a full-bleed link so the whole row is clickable */}
-            <table className="hidden w-full text-sm lg:table">
-              <thead>
-                <tr className="border-b border-outline-variant text-left label-tracked text-on-surface-variant">
-                  <th className="px-4 py-3 font-semibold">Name</th>
-                  <th className="px-4 py-3 font-semibold">Address</th>
-                  <th className="px-4 py-3 font-semibold">Last Checklist</th>
-                  <th className="w-10 px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {recentProperties.map((property) => {
-                  const latest = latestByProperty.get(property.id)
-                  const template = latest?.checklist_templates ?? null
-                  const href = `/admin/properties/${property.id}`
-                  const cell = 'block px-4 py-3'
-                  return (
-                    <tr
-                      key={property.id}
-                      className="border-b border-outline-variant transition last:border-0 hover:bg-surface-container-low"
-                    >
-                      <td className="p-0 font-semibold">
-                        <Link href={href} className={cell}>{property.name}</Link>
-                      </td>
-                      <td className="p-0 text-on-surface-variant">
-                        <Link href={href} className={cell}>{property.address}</Link>
-                      </td>
-                      <td className="p-0 text-on-surface-variant">
-                        <Link href={href} className={cell}>{template?.name ?? '—'}</Link>
-                      </td>
-                      <td className="p-0">
-                        <Link href={href} className={cell}>
-                          <ChevronRight size={16} className="text-on-surface-variant" />
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-
-            {/* Mobile cards */}
-            <div className="flex flex-col divide-y divide-outline-variant lg:hidden">
-              {recentProperties.map((property) => (
-                <Link
-                  key={property.id}
-                  href={`/admin/properties/${property.id}`}
-                  className="flex items-center justify-between p-4"
-                >
-                  <div>
-                    <p className="font-semibold">{property.name}</p>
-                    <p className="text-sm text-on-surface-variant">{property.address}</p>
-                  </div>
-                  <ChevronRight size={18} className="text-on-surface-variant" />
-                </Link>
-              ))}
+        {/* Right — act on it */}
+        <section className="flex flex-col gap-6">
+          <div>
+            <h2 className="mb-3 font-headline text-lg font-semibold">Quick Actions</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {QUICK_ACTIONS.map((action) => {
+                const Icon = action.icon
+                return (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    className={`flex min-h-14 items-center gap-2 rounded-lg px-4 font-headline text-sm font-semibold transition hover:brightness-95 ${
+                      action.primary
+                        ? 'bg-primary-container text-on-primary-container'
+                        : 'border border-outline-variant bg-surface-container-lowest'
+                    }`}
+                  >
+                    <Icon size={16} className={action.primary ? '' : 'text-primary'} />
+                    {action.label}
+                  </Link>
+                )
+              })}
             </div>
-          </>
-        ) : (
-          <div className="p-4">
-            <EmptyState
-              icon={Building2}
-              title="No properties yet"
-              description="Add your first property to start scheduling audits."
-            />
           </div>
-        )}
-      </Card>
+
+          <div>
+            <h2 className="mb-3 flex items-center gap-2 font-headline text-lg font-semibold">
+              <Zap size={18} className="text-primary" />
+              Active Now
+            </h2>
+            <Card padded={false}>
+              {inProgress.length ? (
+                <div className="flex flex-col divide-y divide-outline-variant">
+                  {inProgress.slice(0, 5).map((inspection) => {
+                    const property = inspection.properties as unknown as { name: string } | null
+                    const template = inspection.checklist_templates as unknown as {
+                      name: string
+                    } | null
+                    return (
+                      <Link
+                        key={inspection.id}
+                        href={`/inspector/inspections/${inspection.id}`}
+                        className="group flex items-center gap-3 p-4 transition hover:bg-surface-container-low"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold">
+                            {property?.name ?? 'Unknown property'}
+                          </p>
+                          <p className="truncate text-xs text-on-surface-variant">
+                            {template?.name ?? '—'}
+                          </p>
+                        </div>
+                        <ChevronRight
+                          size={16}
+                          className="shrink-0 text-on-surface-variant transition group-hover:translate-x-0.5"
+                        />
+                      </Link>
+                    )
+                  })}
+                  {inProgress.length > 5 && (
+                    <Link
+                      href="/admin/inspections?status=in_progress"
+                      className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-primary hover:bg-surface-container-low"
+                    >
+                      View all {inProgress.length}
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4">
+                  <EmptyState
+                    icon={Clock}
+                    title="Nothing in progress"
+                    description="Started inspections appear here."
+                  />
+                </div>
+              )}
+            </Card>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }
