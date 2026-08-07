@@ -90,7 +90,7 @@ export function PropertyForm({
             name="notes"
             rows={2}
             defaultValue={defaultValues?.notes ?? ''}
-            placeholder="Internal notes visible to admins…"
+            placeholder="Notes visible to admins and the assigned specialist…"
             className="w-full rounded border border-outline-variant px-3 py-2 text-sm focus:border-primary-container focus:outline-none"
           />
         </div>
@@ -98,10 +98,9 @@ export function PropertyForm({
         <fieldset className="flex flex-col gap-2">
           <legend className={`${LABEL} mb-1`}>Required Inspection Days</legend>
           <p className="text-xs text-on-surface-variant">
-            Pick which days this property is inspected. Each selection means the{' '}
-            <strong>first of that weekday every month</strong> — e.g. ticking Monday schedules the
-            first Monday of each month. Due days show on the dashboard until an inspection is
-            scheduled for them.
+            Pick which days of the week this property needs inspecting. Shown on the property page
+            and to the assigned specialist for reference — inspections are still scheduled
+            individually below.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {WEEKDAY_ORDER.map((w) => (

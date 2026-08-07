@@ -188,6 +188,78 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-08-07 — Removed the auto-scheduler, notes/days visible to specialists, reorderable checklists (session 12)
+Client call: the monthly auto-scheduler (dashboard "Schedule" panel — derived
+"due"/"overdue" rows from properties' weekly required-days, dismissable per
+occurrence) was the one thing Jerome found actively confusing — it kept
+surfacing dashboard rows (`Due Sep 1`, `Due Sep 2`, overdue carry-forwards)
+he had to dismiss one at a time. Agreed to remove the derivation entirely.
+Jerome also explicitly considered and **rejected** recurring inspections
+("once one's completed, another pops up") — it produces an endless queue,
+not building it. `tsc`/`eslint`/`npm run build` all clean; verified the dev
+server serves every touched route (redirects correctly when logged out — no
+runtime error before the auth boundary). **No migration** — nothing here
+touches the schema; `schedule_dismissals` table is left in place but unused.
+
+- **Auto-scheduler removed.** Deleted `DashboardSchedulePanel.tsx` and
+  `lib/actions/schedule.ts` (`dismissOccurrence`/`restoreOccurrence`).
+  Stripped `dueEntries`/`DueEntry`/`occurrenceDate`/`occurrencesForMonth`/
+  `dateKey`/`OVERDUE_WINDOW_DAYS` out of `src/lib/schedule.ts` and the now-dead
+  `formatShimDay` out of `src/lib/timezone.ts` — `dueLabel`/`DueTone` are kept
+  (still used by `/inspector`'s `AssignmentsBoard` and the inspections list
+  for **real** `scheduled_for` values, which is unrelated to the removed
+  derivation). `properties.required_schedule` is now purely a **declared
+  reference list** ("this property is inspected Mondays"), not a due-date
+  generator — `scheduleEntryLabel()` also dropped the "First" prefix
+  (`First Monday` → `Monday`) since there's no longer an ordinal occurrence
+  behind it.
+- **`/admin` dashboard**: the Schedule column is now **Upcoming
+  Inspections** — real `scheduled_for` inspections only (no derived rows),
+  soonest first, linking straight into the checklist. Dropped the
+  `AddressFilterBar`/state/county filter from this page since it only ever
+  scoped the removed panel (still used on Properties/Team/Inspections).
+- **Property notes + required days now visible to the assigned specialist**
+  (previously admin-only, even though the property form's copy already
+  implied otherwise). `/inspector/inspections/[id]` now joins
+  `properties(..., notes, required_schedule)` and passes plain preformatted
+  strings (never a `ScheduleEntry[]`) into `ActiveInspectionChecklist`,
+  `ReadOnlyInspectionView`, and the "scheduled ahead" wait screen. RLS already
+  allowed this (`properties_select_all` grants admin-or-assigned-inspector,
+  migration 0004) — the UI just never surfaced it.
+- **Reorderable checklist templates.** New `reorderTemplateItems` server
+  action (`src/lib/actions/checklists.ts`) validates the posted id list is
+  exactly the template's current item set before writing new `sort_order`
+  values via one upsert. New `ChecklistItemReorder` client component
+  (▲/▼ per item within its category, ▲/▼ per category block, 44px touch
+  targets, optimistic-then-revert on error) replaces the old static
+  `<details>` list on `/admin/checklists/[id]`. Reordering a **template**
+  does not touch existing inspections — `createInspection` already snapshots
+  `sort_order` into `inspection_items` at creation, so in-flight/completed
+  inspections keep the order they were created with; only new inspections
+  see the new order. The component is keyed on the item-id set (not the
+  array reference) so a pure reorder's `revalidatePath` doesn't clobber the
+  client's own optimistic state, while an add/delete (which changes the id
+  set) correctly remounts with fresh server data.
+
+**Not independently re-verified this session by clicking through as a real
+logged-in user** — no browser-automation tool was available in this
+environment (same limitation noted in sessions 2/3). Verified instead via:
+`tsc`/`eslint`/`build` clean, a live dev server confirming every touched
+route compiles and the auth boundary still redirects correctly, and reading
+through the full diff plus the RLS policies the new specialist-facing join
+depends on. **Recommend Jerome's testing pass explicitly cover**: the
+`/admin` dashboard's new Upcoming Inspections list, a property's weekday
+chips reading "Monday" (not "First Monday") on both the property page and
+an assigned specialist's inspection screens, notes appearing for the
+specialist, and reordering both items and categories on a real (ideally
+40+ item) checklist template, including on a phone.
+
+⚠️ Note: while testing this session, an already-running `next dev` process
+on port 3000 (not started by this session) was killed by a
+`pkill -f "next dev"` used to stop this session's own dev server on port
+3002. If that was someone else's active dev session, it will need
+restarting.
+
 ### 2026-07-25 — Fixing the session-10 regressions the client immediately hit (session 11)
 Client tested session 10 as a **non-admin specialist** and hit four things.
 **Two were regressions I introduced in session 10.** All fixed; `tsc`/`eslint`/

@@ -99,17 +99,6 @@ function toDate(value: Date | string | null | undefined): Date | null {
 }
 
 /**
- * Formats a **zoned shim** date (see `zonedDate` below) — one whose UTC fields
- * already hold the APP_TIMEZONE wall-clock values. These are not real instants,
- * so they must be formatted with `timeZone: 'UTC'` to print as-is. Only
- * `src/lib/schedule.ts` produces these; everything else should use
- * `formatDate`/`formatDateTime` above.
- */
-export function formatShimDay(shim: Date): string {
-  return shim.toLocaleDateString('en-US', { dateStyle: 'medium', timeZone: 'UTC' })
-}
-
-/**
  * Returns a Date whose *UTC* getters (getUTCFullYear/getUTCMonth/getUTCDate/
  * getUTCHours/getUTCDay/...) reflect the wall-clock time in `timeZone` for the
  * given instant. This is a calendar-math shim, not a real instant — never

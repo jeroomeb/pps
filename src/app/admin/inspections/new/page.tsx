@@ -6,7 +6,7 @@ import { formatZonedDateTimeLocal, timeZoneAbbreviation } from '@/lib/timezone'
 /**
  * `datetime-local` wants local wall-clock time, not a UTC ISO string —
  * "local" here means APP_TIMEZONE, not the server's own timezone (see
- * src/lib/timezone.ts). `date` deep-links in as a date-only key
+ * src/lib/timezone.ts). `date` can deep-link in as a date-only key
  * ("2026-08-03"); treat that as a bare calendar date rather than parsing it
  * as a UTC instant, so it isn't shifted a day by the zone conversion.
  */

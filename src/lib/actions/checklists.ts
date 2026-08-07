@@ -172,6 +172,62 @@ export async function renameTemplate(
   revalidatePath(`/admin/checklists/${templateId}`)
 }
 
+/**
+ * Persist a new item order for a template (drag/reorder UI). `orderedIds`
+ * must be the full, exact set of the template's current item ids — rejected
+ * otherwise, so a stale client can't drop or duplicate items. Only the
+ * template's `sort_order` changes; existing inspections already snapshotted
+ * their own item order into `inspection_items` at creation and are
+ * unaffected (see createInspection in lib/actions/inspections.ts).
+ */
+export async function reorderTemplateItems(
+  templateId: string,
+  orderedIds: string[]
+): Promise<{ error?: string } | void> {
+  await requireRole('admin')
+  const supabase = await createClient()
+
+  const { data: existing, error: fetchError } = await supabase
+    .from('checklist_template_items')
+    .select('id, template_id, service_category, item_name, description')
+    .eq('template_id', templateId)
+
+  if (fetchError) {
+    return { error: fetchError.message }
+  }
+
+  const existingIds = new Set((existing ?? []).map((item) => item.id))
+  if (
+    orderedIds.length !== existingIds.size ||
+    !orderedIds.every((id) => existingIds.has(id))
+  ) {
+    return { error: 'Checklist items changed elsewhere — refresh and try again.' }
+  }
+
+  const byId = new Map((existing ?? []).map((item) => [item.id, item]))
+  const rows = orderedIds.map((id, index) => {
+    const item = byId.get(id)!
+    return {
+      id,
+      template_id: item.template_id,
+      service_category: item.service_category,
+      item_name: item.item_name,
+      description: item.description,
+      sort_order: index,
+    }
+  })
+
+  const { error } = await supabase.from('checklist_template_items').upsert(rows, {
+    onConflict: 'id',
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath(`/admin/checklists/${templateId}`)
+}
+
 export async function deleteTemplate(templateId: string): Promise<{ error?: string } | void> {
   await requireRole('admin')
   const supabase = await createClient()

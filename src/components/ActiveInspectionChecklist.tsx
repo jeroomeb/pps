@@ -14,6 +14,8 @@ export function ActiveInspectionChecklist({
   propertyName,
   propertyAddress,
   propertyPhone,
+  propertyNotes,
+  inspectionDays,
   checklistName,
   inspectorName,
   startedLabel,
@@ -24,6 +26,9 @@ export function ActiveInspectionChecklist({
   propertyName: string
   propertyAddress?: string | null
   propertyPhone?: string | null
+  propertyNotes?: string | null
+  /** Weekday labels only (e.g. "Monday") — reference info, not a scheduler. */
+  inspectionDays?: string[]
   checklistName: string
   inspectorName: string
   /** Preformatted on the server — this is a client component, so formatting a
@@ -140,6 +145,29 @@ export function ActiveInspectionChecklist({
                 <Clock size={14} className="shrink-0 text-primary" />
                 Scheduled {scheduledLabel}
               </span>
+            )}
+          </div>
+        )}
+
+        {((inspectionDays && inspectionDays.length > 0) || propertyNotes) && (
+          <div className="mb-4 flex flex-col gap-2 border-t border-outline-variant pt-3">
+            {inspectionDays && inspectionDays.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {inspectionDays.map((day) => (
+                  <span
+                    key={day}
+                    className="rounded-full bg-primary-container px-3 py-1 text-xs font-semibold text-on-primary-container"
+                  >
+                    {day}
+                  </span>
+                ))}
+              </div>
+            )}
+            {propertyNotes && (
+              <p className="text-sm text-on-surface-variant">
+                <span className="font-semibold text-on-surface">Notes: </span>
+                {propertyNotes}
+              </p>
             )}
           </div>
         )}

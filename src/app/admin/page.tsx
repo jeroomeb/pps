@@ -14,14 +14,8 @@ import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
-import {
-  DashboardSchedulePanel,
-  type ScheduleRow,
-  type DismissedRow,
-} from '@/components/DashboardSchedulePanel'
-import { dueEntries } from '@/lib/schedule'
-import { zonedDate, formatShimDay } from '@/lib/timezone'
+import { dueLabel } from '@/lib/schedule'
+import { zonedDate, formatDateTime } from '@/lib/timezone'
 
 const QUICK_ACTIONS = [
   { href: '/admin/inspections/new', label: 'Start Inspection', icon: Plus, primary: true },
@@ -30,29 +24,17 @@ const QUICK_ACTIONS = [
   { href: '/admin/team', label: 'Manage Team', icon: Users, primary: false },
 ]
 
-export default async function AdminDashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ state?: string; county?: string }>
-}) {
-  const { state, county } = await searchParams
+export default async function AdminDashboardPage() {
   const supabase = await createClient()
 
-  const [{ data: properties }, { data: inspections }, { data: dismissals }] = await Promise.all([
-    supabase
-      .from('properties')
-      .select('id, name, state, county, required_schedule')
-      .order('name'),
+  const [{ data: properties }, { data: inspections }] = await Promise.all([
+    supabase.from('properties').select('id, name').order('name'),
     supabase
       .from('inspections')
       .select(
         'id, property_id, status, created_at, completed_at, scheduled_for, properties(name), checklist_templates(name)'
       )
       .order('created_at', { ascending: false }),
-    supabase
-      .from('schedule_dismissals')
-      .select('property_id, occurrence_date, dismissed_at, properties(name)')
-      .order('dismissed_at', { ascending: false }),
   ])
 
   const allProperties = properties ?? []
@@ -61,53 +43,25 @@ export default async function AdminDashboardPage({
   const pendingCount = allInspections.filter((i) => i.status === 'pending').length
   const inProgress = allInspections.filter((i) => i.status === 'in_progress')
 
-  // Location filter applies to the schedule panel (which is property-driven).
-  const scopedProperties = allProperties.filter(
-    (p) => (!state || p.state === state) && (!county || p.county === county)
-  )
-
-  const due = dueEntries(
-    scopedProperties.map((p) => ({
-      id: p.id,
-      name: p.name,
-      required_schedule: p.required_schedule,
-    })),
-    allInspections.map((i) => ({
-      property_id: i.property_id,
-      scheduled_for: i.scheduled_for,
-      status: i.status,
-      completed_at: i.completed_at,
-    })),
-    zonedDate(),
-    dismissals ?? []
-  )
-
-  // Flatten to a serializable shape — no Date objects cross into the client.
-  // `entry.date` is a zoned shim (its UTC fields hold the APP_TIMEZONE
-  // wall-clock day), so it goes through formatShimDay rather than the normal
-  // instant formatters.
-  const scheduleRows: ScheduleRow[] = due.map((entry) => ({
-    propertyId: entry.propertyId,
-    propertyName: entry.propertyName,
-    dateKey: entry.dateKey,
-    dateLabel: formatShimDay(entry.date),
-    label: entry.label,
-    tone: entry.tone,
-    dueText: entry.dueText,
-  }))
-
-  const dismissedRows: DismissedRow[] = (dismissals ?? []).map((d) => {
-    const property = d.properties as unknown as { name: string } | null
-    return {
-      propertyId: d.property_id,
-      propertyName: property?.name ?? 'Unknown property',
-      dateKey: d.occurrence_date.slice(0, 10),
-      dateLabel: new Date(`${d.occurrence_date.slice(0, 10)}T00:00:00Z`).toLocaleDateString(
-        'en-US',
-        { dateStyle: 'medium', timeZone: 'UTC' }
-      ),
-    }
-  })
+  // Real scheduled inspections only — no derived/auto-generated due dates.
+  const now = zonedDate()
+  const upcoming = allInspections
+    .filter((i) => i.status !== 'completed' && i.scheduled_for)
+    .map((i) => {
+      const property = i.properties as unknown as { name: string } | null
+      const template = i.checklist_templates as unknown as { name: string } | null
+      const due = dueLabel(zonedDate(new Date(i.scheduled_for!)), now)
+      return {
+        id: i.id,
+        propertyName: property?.name ?? 'Unknown property',
+        templateName: template?.name ?? '—',
+        scheduledLabel: formatDateTime(i.scheduled_for),
+        dueText: due.text,
+        dueTone: due.tone,
+        scheduledFor: i.scheduled_for!,
+      }
+    })
+    .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
 
   const stats = [
     {
@@ -164,20 +118,58 @@ export default async function AdminDashboardPage({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Left — what needs attention */}
+        {/* Left — what's scheduled */}
         <section>
           <h2 className="mb-3 flex items-center gap-2 font-headline text-lg font-semibold">
             <CalendarClock size={18} className="text-primary" />
-            Schedule
+            Upcoming Inspections
           </h2>
-          <AddressFilterBar
-            action="/admin"
-            values={{ state, county }}
-            states={distinctValues(allProperties, 'state')}
-            counties={distinctValues(allProperties, 'county')}
-          />
           <Card padded={false} className="overflow-hidden">
-            <DashboardSchedulePanel rows={scheduleRows} dismissedRows={dismissedRows} />
+            {upcoming.length ? (
+              <div className="flex flex-col divide-y divide-outline-variant">
+                {upcoming.slice(0, 6).map((row) => (
+                  <Link
+                    key={row.id}
+                    href={`/inspector/inspections/${row.id}`}
+                    className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-container-low"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{row.propertyName}</p>
+                      <p className="truncate text-xs text-on-surface-variant">
+                        {row.templateName} · {row.scheduledLabel}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-xs font-semibold ${
+                        row.dueTone === 'overdue'
+                          ? 'text-error'
+                          : row.dueTone === 'today'
+                            ? 'text-primary'
+                            : 'text-on-surface-variant'
+                      }`}
+                    >
+                      {row.dueText}
+                    </span>
+                  </Link>
+                ))}
+                {upcoming.length > 6 && (
+                  <Link
+                    href="/admin/inspections"
+                    className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-primary hover:bg-surface-container-low"
+                  >
+                    View all {upcoming.length}
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="p-4">
+                <EmptyState
+                  icon={CalendarClock}
+                  title="Nothing scheduled"
+                  description="Scheduled inspections appear here."
+                />
+              </div>
+            )}
           </Card>
         </section>
 

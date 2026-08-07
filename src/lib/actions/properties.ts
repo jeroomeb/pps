@@ -25,8 +25,9 @@ const propertySchema = z.object({
 export type PropertyFormState = { error?: string } | undefined
 
 // Schedule checkboxes are submitted as `schedule=<ordinal>-<weekday>` values.
-// The model is first-of-month only, so the ordinal is always 1 — parseSchedule
-// normalizes anyway, but we keep the wire format for backwards compatibility.
+// These are a declared reference list (not a scheduler), so the ordinal is
+// always 1 — parseSchedule normalizes anyway, but we keep the wire format for
+// backwards compatibility with existing stored data.
 function parseScheduleFromForm(formData: FormData): ScheduleEntry[] {
   const weekdays = new Set<number>()
   for (const raw of formData.getAll('schedule')) {

@@ -5,6 +5,7 @@ import { getProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { ActiveInspectionChecklist } from '@/components/ActiveInspectionChecklist'
 import { ReadOnlyInspectionView } from '@/components/ReadOnlyInspectionView'
+import { parseSchedule, scheduleEntryLabel } from '@/lib/schedule'
 import {
   formatDate,
   formatDateTime,
@@ -24,7 +25,7 @@ export default async function InspectionDetailPage({
   const { data: inspection } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, created_at, completed_at, scheduled_for, properties(name, address, phone), checklist_templates(name), profiles(full_name)'
+      'id, status, inspector_id, created_at, completed_at, scheduled_for, properties(name, address, phone, notes, required_schedule), checklist_templates(name), profiles(full_name)'
     )
     .eq('id', id)
     .single()
@@ -67,9 +68,15 @@ export default async function InspectionDetailPage({
     name: string
     address: string | null
     phone: string | null
+    notes: string | null
+    required_schedule: unknown
   }
   const template = inspection.checklist_templates as unknown as { name: string }
   const inspector = inspection.profiles as unknown as { full_name: string }
+
+  // Reference-only weekday list (see src/lib/schedule.ts) — plain strings, no
+  // ScheduleEntry[] crosses into the client components below.
+  const inspectionDays = parseSchedule(property.required_schedule).map(scheduleEntryLabel)
 
   if (inspection.status === 'completed') {
     return (
@@ -78,6 +85,8 @@ export default async function InspectionDetailPage({
         propertyName={property.name}
         propertyAddress={property.address}
         propertyPhone={property.phone}
+        propertyNotes={property.notes}
+        inspectionDays={inspectionDays}
         checklistName={template.name}
         inspectorName={inspector.full_name}
         completedAt={inspection.completed_at}
@@ -139,6 +148,31 @@ export default async function InspectionDetailPage({
               )}
             </div>
           )}
+
+          {inspectionDays.length > 0 && (
+            <div className="mt-4 border-t border-outline-variant pt-4 text-center">
+              <p className="label-tracked mb-1.5 text-on-surface-variant">
+                Required Inspection Days
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {inspectionDays.map((day) => (
+                  <span
+                    key={day}
+                    className="rounded-full bg-primary-container px-3 py-1 text-xs font-semibold text-on-primary-container"
+                  >
+                    {day}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {property.notes && (
+            <div className="mt-4 border-t border-outline-variant pt-4 text-left">
+              <p className="label-tracked mb-1 text-center text-on-surface-variant">Notes</p>
+              <p className="text-sm">{property.notes}</p>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -166,6 +200,8 @@ export default async function InspectionDetailPage({
         propertyName={property.name}
         propertyAddress={property.address}
         propertyPhone={property.phone}
+        propertyNotes={property.notes}
+        inspectionDays={inspectionDays}
         checklistName={template.name}
         inspectorName={inspector.full_name}
         // Labels are preformatted on the server: ActiveInspectionChecklist is a

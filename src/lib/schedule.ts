@@ -1,13 +1,16 @@
-// Monthly inspection schedules — "First Monday of every month".
+// Declared weekly inspection days for a property.
 //
 // Stored on properties.required_schedule as a jsonb array of ScheduleEntry.
-// The `ordinal` field is retained for on-disk compatibility with data written
-// before session 9 (which allowed First..Fourth/Last), but the model is now
-// **first-of-month only**: parseSchedule() coerces every entry to ordinal 1 and
-// dedupes by weekday. That collapses legacy pairs like "Fourth Sunday" +
-// "Last Sunday" — which resolved to the SAME date in any month with only four
-// Sundays, and rendered as duplicate dashboard rows — into one entry.
-//   ordinal: always 1 (first occurrence of that weekday in the month)
+// Through session 11 this drove an auto-scheduler that derived "due"/"overdue"
+// rows on the admin dashboard (first-of-month-only, dismissible per
+// occurrence). The client found that panel confusing and asked for it to be
+// removed entirely (session 12) — this is now purely a **declared reference
+// list** ("this property is inspected Mondays/Wednesdays"), shown to the
+// admin and the assigned specialist. Nothing derives due dates from it
+// anymore; inspections are scheduled the normal way (admin picks a date).
+// The `ordinal` field is retained on-disk for compatibility with data written
+// before session 9 but is unused — parseSchedule() ignores it and dedupes by
+// weekday only.
 //   weekday: 0 = Sunday .. 6 = Saturday
 
 import { zonedDate } from '@/lib/timezone'
@@ -28,11 +31,11 @@ export const WEEKDAY_LABELS = [
 export const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
 export function scheduleEntryLabel(entry: ScheduleEntry): string {
-  return `First ${WEEKDAY_LABELS[entry.weekday] ?? ''}`.trim()
+  return WEEKDAY_LABELS[entry.weekday] ?? ''
 }
 
-// Accepts unknown jsonb and returns a clean, validated, first-of-month
-// ScheduleEntry[] with one entry per weekday at most.
+// Accepts unknown jsonb and returns a clean, validated ScheduleEntry[] with
+// one entry per weekday at most.
 export function parseSchedule(value: unknown): ScheduleEntry[] {
   if (!Array.isArray(value)) return []
   const weekdays = new Set<number>()
@@ -47,48 +50,8 @@ export function parseSchedule(value: unknown): ScheduleEntry[] {
   return [...weekdays].sort((a, b) => a - b).map((weekday) => ({ ordinal: 1, weekday }))
 }
 
-// All Date values in this module (except raw instants like `scheduled_for`
-// timestamps, which callers must run through `zonedDate()` first) are "zoned
-// shim" dates: their UTC getters encode the wall-clock calendar day in
-// APP_TIMEZONE, regardless of the server's own local timezone. That's why
-// every function below reads/writes via getUTC*/Date.UTC rather than the
-// local getters — using local getters here is exactly the bug that made
-// "today" and "Overdue by N days" drift by the server's UTC offset.
-
-// Concrete calendar date of the first `weekday` in a given month (month 0-11).
-export function occurrenceDate(year: number, month: number, entry: ScheduleEntry): Date {
-  const first = new Date(Date.UTC(year, month, 1))
-  const offset = (entry.weekday - first.getUTCDay() + 7) % 7
-  return new Date(Date.UTC(year, month, 1 + offset))
-}
-
-export function occurrencesForMonth(
-  schedule: ScheduleEntry[],
-  year: number,
-  month: number
-): Date[] {
-  return schedule
-    .map((entry) => occurrenceDate(year, month, entry))
-    .sort((a, b) => a.getTime() - b.getTime())
-}
-
 function startOfDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-}
-
-function sameCalendarDay(a: Date, b: Date): boolean {
-  return (
-    a.getUTCFullYear() === b.getUTCFullYear() &&
-    a.getUTCMonth() === b.getUTCMonth() &&
-    a.getUTCDate() === b.getUTCDate()
-  )
-}
-
-/** Zoned-date key (YYYY-MM-DD) — matches a Postgres `date` column's text form. */
-export function dateKey(d: Date): string {
-  const m = `${d.getUTCMonth() + 1}`.padStart(2, '0')
-  const day = `${d.getUTCDate()}`.padStart(2, '0')
-  return `${d.getUTCFullYear()}-${m}-${day}`
 }
 
 export function daysBetween(from: Date, to: Date): number {
@@ -125,104 +88,3 @@ export function dueLabel(
   }
 }
 
-export type DueEntry = {
-  propertyId: string
-  propertyName: string
-  date: Date
-  /** ISO local date key, used as the dismissal identity. */
-  dateKey: string
-  label: string
-  tone: DueTone
-  dueText: string
-}
-
-// How far back overdue occurrences keep surfacing. Missed days carry forward
-// (rather than vanishing at month rollover) until an inspection is scheduled
-// for them or an admin dismisses them — but only for this long. On a monthly
-// cadence 45 days gives every occurrence a full cycle of visibility while
-// keeping the dashboard from filling with months of pre-feature history that
-// was never actionable.
-const OVERDUE_WINDOW_DAYS = 45
-
-/**
- * Required inspection days that still need an inspection scheduled.
- *
- * Scans LOOKBACK_MONTHS back through the end of next month, and drops any
- * occurrence that either (a) already has an inspection whose `scheduled_for`
- * falls on that calendar day, or (b) has been dismissed by an admin.
- * Sorted overdue-first, then chronologically.
- */
-export function dueEntries(
-  properties: { id: string; name: string; required_schedule: unknown }[],
-  inspections: {
-    property_id: string
-    scheduled_for: string | null
-    status?: string
-    completed_at?: string | null
-  }[],
-  today: Date = zonedDate(),
-  dismissed: { property_id: string; occurrence_date: string }[] = []
-): DueEntry[] {
-  const dismissedKeys = new Set(
-    dismissed.map((d) => `${d.property_id}|${d.occurrence_date.slice(0, 10)}`)
-  )
-  const earliest = startOfDay(today)
-  earliest.setUTCDate(earliest.getUTCDate() - OVERDUE_WINDOW_DAYS)
-  const results: DueEntry[] = []
-
-  for (const property of properties) {
-    const schedule = parseSchedule(property.required_schedule)
-    if (!schedule.length) continue
-
-    // Two months back covers the window even at its month boundary; the
-    // `earliest` check below is what actually bounds it.
-    for (let offset = -2; offset <= 1; offset++) {
-      const cursor = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + offset, 1))
-      for (const entry of schedule) {
-        const date = occurrenceDate(cursor.getUTCFullYear(), cursor.getUTCMonth(), entry)
-        if (date < earliest) continue
-        const key = dateKey(date)
-
-        if (dismissedKeys.has(`${property.id}|${key}`)) continue
-
-        // Covered either by an inspection scheduled for that exact calendar
-        // day, or by any inspection for this property completed on/after
-        // that day and before the next monthly occurrence (~35-day grace) —
-        // so an unscheduled inspection that gets completed still clears the
-        // requirement instead of leaving it "overdue" forever.
-        const scheduledMatch = inspections.some(
-          (i) =>
-            i.property_id === property.id &&
-            i.scheduled_for &&
-            sameCalendarDay(zonedDate(new Date(i.scheduled_for)), date)
-        )
-        const completedMatch = inspections.some((i) => {
-          if (i.property_id !== property.id || i.status !== 'completed' || !i.completed_at) {
-            return false
-          }
-          const completedDay = zonedDate(new Date(i.completed_at))
-          const daysSince = daysBetween(date, completedDay)
-          return daysSince >= 0 && daysSince < 35
-        })
-        if (scheduledMatch || completedMatch) continue
-
-        const { text, tone } = dueLabel(date, today)
-        results.push({
-          propertyId: property.id,
-          propertyName: property.name,
-          date,
-          dateKey: key,
-          label: scheduleEntryLabel(entry),
-          tone,
-          dueText: text,
-        })
-      }
-    }
-  }
-
-  // Overdue first, then today, then upcoming; chronological within each group.
-  const rank: Record<DueTone, number> = { overdue: 0, today: 1, soon: 2, future: 3 }
-  return results.sort(
-    (a, b) => rank[a.tone] - rank[b.tone] || a.date.getTime() - b.date.getTime()
-  )
-}
