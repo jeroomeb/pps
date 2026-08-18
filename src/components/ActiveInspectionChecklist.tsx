@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, AlertTriangle, MapPin, Phone, Clock, LifeBuoy } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, MapPin, Phone, Clock, LifeBuoy, Pencil } from 'lucide-react'
 import { ChecklistItemCard, type ChecklistItemData } from '@/components/ChecklistItemCard'
+import { CancelInspectionButton } from '@/components/CancelInspectionButton'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 import { validateInspectionItems } from '@/lib/inspection-validation'
@@ -28,6 +29,7 @@ export function ActiveInspectionChecklist({
   startedLabel,
   scheduledLabel,
   initialItems,
+  isAdmin = false,
 }: {
   inspectionId: string
   propertyName: string
@@ -43,6 +45,8 @@ export function ActiveInspectionChecklist({
   startedLabel: string
   scheduledLabel?: string | null
   initialItems: (ChecklistItemData & { service_category: string })[]
+  /** Admins get reschedule/cancel controls inline; specialists never do. */
+  isAdmin?: boolean
 }) {
   const router = useRouter()
   const showToast = useToast()
@@ -200,6 +204,25 @@ export function ActiveInspectionChecklist({
             {completedCount}/{items.length} Completed
           </span>
         </div>
+
+        {/* Admin-only. Previously an admin looking at an inspection had to go
+            back out to a list to reschedule or cancel it — the controls existed
+            nowhere on the inspection itself. Specialists never see these. */}
+        {isAdmin && (
+          <div className="mb-3 flex flex-wrap items-center gap-2 border-t border-outline-variant pt-3">
+            <Link
+              href={`/admin/inspections/${inspectionId}/edit`}
+              className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-outline-variant px-3 text-xs font-semibold uppercase tracking-wide text-on-surface-variant transition hover:bg-surface-container"
+            >
+              <Pencil size={14} />
+              Edit
+            </Link>
+            <CancelInspectionButton
+              inspectionId={inspectionId}
+              redirectTo={`/admin/inspections/${inspectionId}/edit`}
+            />
+          </div>
+        )}
 
         {(propertyAddress || propertyPhone || scheduledLabel) && (
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-outline-variant pt-3 text-sm text-on-surface-variant">

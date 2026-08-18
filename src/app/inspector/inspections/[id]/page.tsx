@@ -260,6 +260,7 @@ export default async function InspectionDetailPage({
         startedLabel={formatDate(inspection.created_at)}
         scheduledLabel={scheduledAt ? formatDateTime(scheduledAt) : null}
         initialItems={itemsWithUrls}
+        isAdmin={profile.role === 'admin'}
       />
     </>
   )
