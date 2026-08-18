@@ -69,7 +69,31 @@ export function CancelInspectionButton({
       }
       setOpen(false)
       setReason('')
-      showToast('success', 'Inspection cancelled. The specialist has been notified.')
+
+      // Report what actually happened to the email. Claiming "the specialist
+      // has been notified" unconditionally was wrong in three of these four
+      // cases, and the two failure states are exactly when the admin needs to
+      // reach the specialist another way.
+      switch (result?.notification) {
+        case 'skipped-self':
+          showToast('success', 'Inspection cancelled. It was assigned to you, so no email was sent.')
+          break
+        case 'failed':
+          showToast(
+            'error',
+            'Inspection cancelled, but the notification email failed — please tell the specialist directly.'
+          )
+          break
+        case 'no-address':
+          showToast(
+            'error',
+            'Inspection cancelled, but the specialist has no email address on file — please tell them directly.'
+          )
+          break
+        default:
+          showToast('success', 'Inspection cancelled. The specialist has been emailed.')
+      }
+
       if (redirectTo) {
         router.push(redirectTo)
       }

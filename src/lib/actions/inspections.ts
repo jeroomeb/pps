@@ -21,6 +21,20 @@ const newInspectionSchema = z.object({
 
 export type InspectionFormState = { error?: string } | undefined
 
+/**
+ * What actually happened to the specialist's cancellation email.
+ *
+ * `skipped-self` is not a failure — an admin cancelling an inspection assigned
+ * to themselves has no one to tell. The others are real "nobody was told"
+ * states the admin needs to see, because the specialist will otherwise turn up
+ * at the property.
+ */
+export type CancelNotification = 'sent' | 'skipped-self' | 'failed' | 'no-address'
+
+export type CancelInspectionState =
+  | { error?: string; notification?: CancelNotification }
+  | undefined
+
 export async function createInspection(
   _prevState: InspectionFormState,
   formData: FormData
@@ -246,9 +260,9 @@ export async function updateInspection(
  */
 export async function cancelInspection(
   inspectionId: string,
-  _prevState: InspectionFormState,
+  _prevState: CancelInspectionState,
   formData: FormData
-): Promise<InspectionFormState> {
+): Promise<CancelInspectionState> {
   const profile = await requireRole('admin')
 
   const rawReason = formData.get('reason')
@@ -294,8 +308,21 @@ export async function cancelInspection(
 
   // Tell the assigned specialist it's off — they already got an assignment
   // email, and without this they'd show up at the property. Best-effort: a
-  // mail failure must never fail the cancellation.
-  if (existing.inspector_id !== profile.id) {
+  // mail failure must never fail the cancellation, which has already been
+  // committed above.
+  //
+  // The outcome is REPORTED BACK rather than only logged. Swallowing it meant
+  // the UI claimed "the specialist has been notified" even when no email was
+  // sent — after a self-assigned cancel (skipped by design), after a Resend
+  // failure, and when the specialist has no address on file. The dangerous
+  // case is a genuine cancellation the specialist never hears about while the
+  // admin is told they did: they turn up at the property.
+  let notification: CancelNotification = 'sent'
+
+  if (existing.inspector_id === profile.id) {
+    // Self-assigned — emailing yourself about your own cancellation is noise.
+    notification = 'skipped-self'
+  } else {
     try {
       const [{ data: assignee }, { data: property }, { data: template }] = await Promise.all([
         supabase
@@ -306,7 +333,9 @@ export async function cancelInspection(
         supabase.from('properties').select('name, address').eq('id', existing.property_id).single(),
         supabase.from('checklist_templates').select('name').eq('id', existing.template_id).single(),
       ])
-      if (assignee?.email) {
+      if (!assignee?.email) {
+        notification = 'no-address'
+      } else {
         await sendCancellationEmail({
           to: assignee.email,
           specialistName: assignee.full_name,
@@ -319,6 +348,7 @@ export async function cancelInspection(
       }
     } catch (err) {
       console.error('Cancellation email failed:', err)
+      notification = 'failed'
     }
   }
 
@@ -328,6 +358,8 @@ export async function cancelInspection(
   revalidatePath(`/admin/properties/${existing.property_id}`)
   revalidatePath('/inspector')
   revalidatePath(`/inspector/inspections/${inspectionId}`)
+
+  return { notification }
 }
 
 /**
