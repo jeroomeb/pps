@@ -21,7 +21,7 @@ export async function POST(
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, template_id, properties(name, address, email), checklist_templates(name), profiles(full_name)'
+      'id, status, inspector_id, property_id, template_id, properties(name, address, email), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()

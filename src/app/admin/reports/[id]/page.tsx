@@ -23,7 +23,7 @@ export default async function ReportViewPage({
   const { data: inspection } = await admin
     .from('inspections')
     .select(
-      'id, status, created_at, completed_at, scheduled_for, email_status, email_error, properties(name, address, email, phone, human_id), checklist_templates(name), profiles(full_name)'
+      'id, status, created_at, completed_at, scheduled_for, email_status, email_error, properties(name, address, email, phone, human_id), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', id)
     .single()

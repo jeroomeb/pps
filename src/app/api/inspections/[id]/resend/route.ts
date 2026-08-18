@@ -18,7 +18,7 @@ export async function POST(
   const { data: inspection, error } = await admin
     .from('inspections')
     .select(
-      'id, pdf_path, completed_at, properties(name, address, email), checklist_templates(name), profiles(full_name)'
+      'id, pdf_path, completed_at, properties(name, address, email), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()

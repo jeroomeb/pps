@@ -48,7 +48,7 @@ export default async function AdminInspectionsPage({
   let query = supabase
     .from('inspections')
     .select(
-      'id, status, created_at, completed_at, scheduled_for, property_id, properties!inner(name, state, county), checklist_templates(name), profiles(full_name)'
+      'id, status, created_at, completed_at, scheduled_for, property_id, properties!inner(name, state, county), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .order('created_at', { ascending: false })
 

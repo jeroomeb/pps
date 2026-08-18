@@ -22,14 +22,18 @@ export default async function InspectionDetailPage({
   const profile = await getProfile()
   const supabase = await createClient()
 
-  const { data: inspection } = await supabase
+  const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, created_at, completed_at, scheduled_for, cancellation_reason, properties(name, address, phone, notes, required_schedule), checklist_templates(name), profiles(full_name)'
+      'id, status, inspector_id, created_at, completed_at, scheduled_for, cancellation_reason, properties(name, address, phone, notes, required_schedule), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', id)
     .single()
 
+  if (inspectionError) {
+    console.error('Failed to load inspection:', inspectionError)
+    notFound()
+  }
   if (!inspection) {
     notFound()
   }

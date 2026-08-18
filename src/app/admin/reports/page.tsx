@@ -15,7 +15,7 @@ export default async function ReportsPage() {
   const { data: inspections } = await supabase
     .from('inspections')
     .select(
-      'id, completed_at, email_status, email_error, properties(name, human_id), checklist_templates(name), profiles(full_name)'
+      'id, completed_at, email_status, email_error, properties(name, human_id), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('status', 'completed')
     .order('completed_at', { ascending: false, nullsFirst: false })
