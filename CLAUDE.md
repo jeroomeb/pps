@@ -18,12 +18,14 @@ inspection & audit app for **Jerome Bermudez** (client GitHub/Vercel:
 `jeroomeb`). Two roles:
 
 - **Admin**: creates properties (with a human-readable `PROP-` ID, phone,
-  notes, and a monthly nth-weekday inspection schedule), creates checklist
-  types (three seeded: Luxury Condominium, 55+ Community, Commercial
-  Multi-Tenant — admin can add more anytime), creates inspections (assigns a
-  checklist type + specialist + optional scheduled date/time to a property),
-  manages the team, views a read-only specialist profile + mini-dashboard,
-  views/re-sends completed reports.
+  notes, and a **declared** set of required inspection weekdays — reference
+  info only, see the session-12 note in the Status Log; it does not drive any
+  due-date logic), creates checklist types (three seeded: Luxury
+  Condominium, 55+ Community, Commercial Multi-Tenant — admin can add more
+  anytime, and can reorder both categories and items within a template),
+  creates inspections (assigns a checklist type + specialist + optional
+  scheduled date/time to a property), manages the team, views a read-only
+  specialist profile + mini-dashboard, views/re-sends completed reports.
 - **Specialist** (OCS, role `inspector`): sees assigned pending inspections,
   fills out a Pass/Fail/N/A checklist per item (comment required on Fail;
   **photo required on every item except N/A**), submits. Has a self-service
@@ -188,6 +190,96 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-08-18 — Cancel a scheduled inspection + crash-safe local drafts (session 13)
+Two client asks. **Migration `0006_inspection_cancellation.sql` must be
+applied** (see below). `tsc`/`eslint`/`build` clean; the drafts module was
+additionally executed against a mock `localStorage` (14 assertions) rather
+than trusted to a green build — per the session-11 lesson.
+
+- **Admins can now cancel a scheduled/in-progress inspection.** Previously
+  `deleteInspection` existed but was wired into exactly one place — the
+  completed-reports list — so an open inspection could only be edited or
+  completed, never called off. Cancelling is a **soft state change**, not a
+  delete: new `'cancelled'` status plus `cancelled_at`/`cancelled_by`/
+  `cancellation_reason`, so the audit trail survives. `restoreInspection`
+  undoes it (back to `pending`; `saveInspectionItem` re-promotes to
+  `in_progress` on the next item save). `deleteInspection` is untouched and
+  remains the hard-delete escape hatch.
+  - ⚠️ **The RLS `with check` trap.** `inspections_update` guards on both
+    `using` (OLD row) and `with check` (NEW row). A blanket
+    `status not in ('completed','cancelled')` would have **rejected the cancel
+    write itself** — silently, since the update just affects 0 rows. The guard
+    is role-aware instead: only an admin may produce a cancelled row, and a
+    cancelled row is editable only by an admin (which is what makes restore
+    possible). Same bug class as the session-10 fix, opposite direction.
+  - Cancelled inspections are frozen in the same three places completed ones
+    are: RLS (`inspections_update`, both `inspection_items` policies, and the
+    `photos` write/update policies), `saveInspectionItem`, and the submit route.
+  - **The submit race is the important one.** A specialist holding an open
+    checklist could otherwise still POST `/complete` after an admin cancelled
+    it and **trigger a real report email**. The compare-and-set there now
+    scopes to `.in('status', ['pending','in_progress'])` instead of
+    `.neq('status','completed')` — that route uses the *service-role* client,
+    so RLS is bypassed and this predicate is the only thing standing in the way.
+  - Every status filter was swept: `/admin`'s Upcoming Inspections excludes
+    cancelled (it filtered only on `!== 'completed'`), `/inspector` excludes it
+    at the query so it leaves the specialist's board entirely, list rows link to
+    the record (not the checklist) and drop the due-date label, `/admin/inspections`
+    gains a `?status=cancelled` filter, and the specialist's detail page gets a
+    cancelled screen with a back link. The stat-card counts on the dashboard,
+    property, and team pages needed no change — they're exclusive equality tests.
+  - New `sendCancellationEmail` (same sender/shape as the assignment notice,
+    best-effort so a mail failure can't fail the cancel) tells the specialist
+    it's off — they'd already had an assignment email and would otherwise
+    show up at the property.
+- **Crash/battery-death safety: `src/lib/inspection-drafts.ts`.** There was
+  **no local persistence of any kind** before this (no localStorage, no
+  IndexedDB, no offline queue). Two real holes: a comment typed but never
+  blurred was never sent at all (`onBlur` was the only trigger), and on a
+  failed save `ChecklistItemCard.persist()` reverts the UI and the answer was
+  simply gone. Answers are now mirrored to localStorage on every status tap
+  and every comment keystroke (debounced 400ms), kept when a save fails,
+  cleared when one succeeds, and offered back on next open via a Restore /
+  Discard banner.
+  - ⚠️ **Two invariants that must not be broken.** (1) It can never break the
+    app: every storage call is try/catch'd to a safe default, so private mode /
+    disabled storage / `QuotaExceededError` degrade to exactly the old
+    behavior — verified by executing the module with a throwing `localStorage`.
+    (2) It is never the source of truth: restore replays through the normal
+    `saveInspectionItem` action, so all server validation and the completed/
+    cancelled guards still apply, and nothing overwrites server data without
+    an explicit tap.
+  - **Photos are deliberately NOT drafted** — blobs would blow the ~5MB quota
+    and start throwing on every subsequent write. Photos already upload
+    straight to Storage. **Still unsolved: capturing a photo with no
+    connectivity.** That needs an IndexedDB queue + background sync and is a
+    separate project.
+  - The mount-time draft read uses an effect with a targeted
+    `react-hooks/set-state-in-effect` suppression — a lazy `useState`
+    initializer would read localStorage during the server render and cause a
+    hydration mismatch.
+
+**Action needed from the user:** apply
+`supabase/migrations/0006_inspection_cancellation.sql` in the Supabase SQL
+editor (idempotent). Until it is applied, cancelling fails — the
+`'cancelled'` status violates the old check constraint. Confirm `0001`–`0005`
+are actually on the live DB first (session 9 was an outage caused by assuming
+`0002` was applied).
+
+**Not verified by clicking through as a real logged-in user** — no
+browser-automation tool in this environment (same limitation as sessions
+2/3/12). Verified instead via `tsc`/`eslint`/`build` clean, the executed
+drafts test suite, and a live dev server confirming every touched route
+compiles and still redirects at the auth boundary. **Jerome's testing pass
+should cover:** cancelling from the inspections list and the edit page,
+that the specialist stops seeing it, restoring it, and the submit race
+(cancel an inspection a specialist has open, then have them hit Submit — it
+must refuse and send no email).
+
+`src/lib/actions/auth.ts` still carries the uncommitted, unreviewed
+network-vs-bad-password change first noted in session 12 — **again left
+uncommitted** this session, deliberately.
+
 ### 2026-08-07 — Removed the auto-scheduler, notes/days visible to specialists, reorderable checklists (session 12)
 Client call: the monthly auto-scheduler (dashboard "Schedule" panel — derived
 "due"/"overdue" rows from properties' weekly required-days, dismissable per
@@ -259,6 +351,32 @@ on port 3000 (not started by this session) was killed by a
 `pkill -f "next dev"` used to stop this session's own dev server on port
 3002. If that was someone else's active dev session, it will need
 restarting.
+
+**Shipped:** committed as `jeroomeb` (commit `4158de8`, "Remove
+auto-scheduler, surface property notes/days to specialists, reorderable
+checklists") and pushed straight to `main` on `jeroomeb/pps` — the client
+said to proceed, no separate review step this time. That auto-deploys to
+**https://portal.amenityops.app** per the existing Vercel Git integration;
+not independently re-confirmed live post-deploy (no way to check Vercel
+deploy status from this environment — the `vercel` CLI invocation itself was
+blocked by this session's auto-mode permissions). **Next session should
+open `https://vercel.com/jeroomeb-6771s-projects/amenityops` or just load
+the portal to confirm the deploy actually went `READY`** before assuming
+this is live — the Hobby-plan commit-author block (see the deployment
+bullet under session 8) is the usual failure mode, but this commit *was*
+correctly authored as `jeroomeb`, so it should have passed that gate.
+`src/lib/actions/auth.ts` had unrelated, already-modified/uncommitted
+changes at the start of this session (a network-vs-bad-password error
+distinction on sign-in) that were **deliberately left uncommitted** — not
+written by this session, not reviewed or tested here, still sitting as a
+local working-tree diff.
+
+One more handling note: the user pasted a GitHub PAT in plaintext this
+session to unblock the push (this environment's own git credentials didn't
+have access to the private repo). Used exactly once via a command-scoped
+`git -c http.extraheader=...`, never written to `.git/config`. **User was
+told to rotate it** — treat as compromised on principle per the standing
+practice from session 2.
 
 ### 2026-07-25 — Fixing the session-10 regressions the client immediately hit (session 11)
 Client tested session 10 as a **non-admin specialist** and hit four things.

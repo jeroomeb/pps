@@ -1,5 +1,5 @@
 export type UserRole = 'admin' | 'inspector'
-export type InspectionStatus = 'pending' | 'in_progress' | 'completed'
+export type InspectionStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled'
 export type ItemStatus = 'pass' | 'fail' | 'na'
 export type ScheduleEntry = { ordinal: number; weekday: number }
 
@@ -214,6 +214,9 @@ export interface Database {
           completed_at: string | null
           pdf_path: string | null
           scheduled_for: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancellation_reason: string | null
           email_status: 'sent' | 'failed' | null
           email_error: string | null
         }
@@ -227,6 +230,9 @@ export interface Database {
           completed_at?: string | null
           pdf_path?: string | null
           scheduled_for?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancellation_reason?: string | null
           email_status?: 'sent' | 'failed' | null
           email_error?: string | null
         }
@@ -240,6 +246,9 @@ export interface Database {
           completed_at?: string | null
           pdf_path?: string | null
           scheduled_for?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancellation_reason?: string | null
           email_status?: 'sent' | 'failed' | null
           email_error?: string | null
         }
@@ -261,6 +270,13 @@ export interface Database {
           {
             foreignKeyName: 'inspections_inspector_id_fkey'
             columns: ['inspector_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'inspections_cancelled_by_fkey'
+            columns: ['cancelled_by']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']

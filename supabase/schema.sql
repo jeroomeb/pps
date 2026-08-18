@@ -78,11 +78,17 @@ create table if not exists inspections (
   property_id uuid not null references properties (id) on delete cascade,
   template_id uuid not null references checklist_templates (id),
   inspector_id uuid not null references profiles (id),
-  status text not null check (status in ('pending', 'in_progress', 'completed')) default 'pending',
+  status text not null check (status in ('pending', 'in_progress', 'completed', 'cancelled')) default 'pending',
   created_at timestamptz not null default now(),
   completed_at timestamptz,
   pdf_path text,
   scheduled_for timestamptz,
+  -- An admin can cancel a scheduled/in-progress inspection. It is a soft state
+  -- change, not a delete — inspections are an audit record, so who cancelled
+  -- it, when, and why all survive.
+  cancelled_at timestamptz,
+  cancelled_by uuid references profiles (id) on delete set null,
+  cancellation_reason text,
   -- Whether the report email actually sent — surfaced on the Reports list
   -- instead of only a toast the specialist may have already dismissed.
   email_status text check (email_status in ('sent', 'failed')),
@@ -209,15 +215,26 @@ create policy "inspections_admin_delete" on inspections
 -- `with check` carries the same `status <> 'completed'` guard as `using` —
 -- omitting it let a row be updated INTO `completed` with none of the app's
 -- validation via a direct PostgREST call.
+--
+-- ⚠️ The cancelled guard is deliberately role-aware, not a blanket
+-- `status not in ('completed','cancelled')`. `with check` is evaluated
+-- against the NEW row, so a blanket guard would reject the cancel write
+-- itself (it is by definition producing a cancelled row) and the status
+-- would silently never change. Instead:
+--   using      (OLD row) — a cancelled inspection is editable only by an
+--                          admin, which is what makes "restore" possible.
+--   with check (NEW row) — only an admin can produce a cancelled row.
 drop policy if exists "inspections_update" on inspections;
 create policy "inspections_update" on inspections
   for update using (
     (inspector_id = auth.uid() or current_role_is_admin())
     and status <> 'completed'
+    and (status <> 'cancelled' or current_role_is_admin())
   )
   with check (
     (inspector_id = auth.uid() or current_role_is_admin())
     and status <> 'completed'
+    and (status <> 'cancelled' or current_role_is_admin())
   );
 
 -- inspection_items: visible/editable only through owning inspection
@@ -242,7 +259,8 @@ create policy "inspection_items_insert" on inspection_items
     current_role_is_admin()
     and exists (
       select 1 from inspections i
-      where i.id = inspection_items.inspection_id and i.status <> 'completed'
+      where i.id = inspection_items.inspection_id
+        and i.status not in ('completed', 'cancelled')
     )
   );
 
@@ -253,14 +271,14 @@ create policy "inspection_items_update" on inspection_items
       select 1 from inspections i
       where i.id = inspection_items.inspection_id
         and (i.inspector_id = auth.uid() or current_role_is_admin())
-        and i.status <> 'completed'
+        and i.status not in ('completed', 'cancelled')
     )
   ) with check (
     exists (
       select 1 from inspections i
       where i.id = inspection_items.inspection_id
         and (i.inspector_id = auth.uid() or current_role_is_admin())
-        and i.status <> 'completed'
+        and i.status not in ('completed', 'cancelled')
     )
   );
 
@@ -375,7 +393,7 @@ create policy "photos_write" on storage.objects
       select 1 from inspections i
       where i.id::text = (storage.foldername(name))[1]
         and (i.inspector_id = auth.uid() or current_role_is_admin())
-        and i.status <> 'completed'
+        and i.status not in ('completed', 'cancelled')
     )
   );
 
@@ -387,7 +405,7 @@ create policy "photos_update" on storage.objects
       select 1 from inspections i
       where i.id::text = (storage.foldername(name))[1]
         and (i.inspector_id = auth.uid() or current_role_is_admin())
-        and i.status <> 'completed'
+        and i.status not in ('completed', 'cancelled')
     )
   );
 

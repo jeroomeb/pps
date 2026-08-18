@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { Clock, ArrowLeft, MapPin, Phone } from 'lucide-react'
+import { Clock, ArrowLeft, MapPin, Phone, Ban } from 'lucide-react'
 import { getProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { ActiveInspectionChecklist } from '@/components/ActiveInspectionChecklist'
@@ -25,7 +25,7 @@ export default async function InspectionDetailPage({
   const { data: inspection } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, created_at, completed_at, scheduled_for, properties(name, address, phone, notes, required_schedule), checklist_templates(name), profiles(full_name)'
+      'id, status, inspector_id, created_at, completed_at, scheduled_for, cancellation_reason, properties(name, address, phone, notes, required_schedule), checklist_templates(name), profiles(full_name)'
     )
     .eq('id', id)
     .single()
@@ -43,6 +43,12 @@ export default async function InspectionDetailPage({
   // frozen once submitted.
   if (inspection.status === 'completed' && profile.role === 'admin') {
     redirect(`/admin/reports/${id}`)
+  }
+
+  // Cancelled: admins manage it from the record screen (which carries the
+  // Restore button); specialists get the dead-end-free notice below.
+  if (inspection.status === 'cancelled' && profile.role === 'admin') {
+    redirect(`/admin/inspections/${id}/edit`)
   }
 
   const { data: items } = await supabase
@@ -92,6 +98,46 @@ export default async function InspectionDetailPage({
         completedAt={inspection.completed_at}
         items={itemsWithUrls}
       />
+    )
+  }
+
+  // Cancelled while the specialist may still have had this open. Mirrors the
+  // scheduled-ahead screen below — never a dead end, always a way back.
+  if (inspection.status === 'cancelled') {
+    return (
+      <div className="max-w-lg">
+        <Link
+          href="/inspector"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+        >
+          <ArrowLeft size={16} />
+          Back to My Assignments
+        </Link>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-6 text-center">
+          <Ban size={40} className="mx-auto mb-4 text-on-surface-variant" />
+          <h1 className="font-headline text-2xl font-bold">{property.name}</h1>
+          <p className="mt-1 text-on-surface-variant">{template.name}</p>
+
+          <p className="mt-6 rounded-lg bg-surface-container-low px-4 py-3 text-sm">
+            This inspection has been{' '}
+            <span className="font-semibold">cancelled by an administrator</span>.
+            <br />
+            No action is needed — please don&apos;t attend.
+          </p>
+
+          {inspection.cancellation_reason && (
+            <div className="mt-4 border-t border-outline-variant pt-4 text-left">
+              <p className="label-tracked mb-1 text-center text-on-surface-variant">Reason</p>
+              <p className="text-sm">{inspection.cancellation_reason}</p>
+            </div>
+          )}
+
+          <p className="mt-4 border-t border-outline-variant pt-4 text-xs text-on-surface-variant">
+            It has been removed from your assignments. If you think this is a mistake, contact
+            your administrator.
+          </p>
+        </div>
+      </div>
     )
   }
 

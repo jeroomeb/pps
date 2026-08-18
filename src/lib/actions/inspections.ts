@@ -7,6 +7,7 @@ import { requireRole, getProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { cleanupInspectionStorage } from '@/lib/supabase/storage-cleanup'
 import { sendAssignmentEmail } from '@/lib/email/sendAssignmentEmail'
+import { sendCancellationEmail } from '@/lib/email/sendCancellationEmail'
 import { parseZonedDateTimeLocal } from '@/lib/timezone'
 import { isSafeObjectPath } from '@/lib/storage-paths'
 
@@ -181,6 +182,10 @@ export async function updateInspection(
   if (existing.status === 'completed') {
     return { error: 'This inspection is completed and can no longer be edited.' }
   }
+  // Cancelled inspections are frozen too — restore it first, then reschedule.
+  if (existing.status === 'cancelled') {
+    return { error: 'This inspection is cancelled. Restore it before rescheduling.' }
+  }
 
   const { error } = await supabase
     .from('inspections')
@@ -225,6 +230,152 @@ export async function updateInspection(
   revalidatePath(`/admin/properties/${existing.property_id}`)
   revalidatePath('/inspector')
   redirect(`/admin/properties/${existing.property_id}`)
+}
+
+/**
+ * Cancel a scheduled or in-progress inspection.
+ *
+ * This is a SOFT state change, not a delete: inspections are an audit record,
+ * so who cancelled it, when, and why all survive. `deleteInspection` below is
+ * still the escape hatch for a genuine mistake, and destroys everything.
+ *
+ * Once cancelled the inspection is frozen the same way a completed one is —
+ * enforced in three places, matching the existing completed-inspection
+ * pattern: RLS (`inspection_items` + `inspections_update`, migration 0006),
+ * `saveInspectionItem` below, and the submit route.
+ */
+export async function cancelInspection(
+  inspectionId: string,
+  _prevState: InspectionFormState,
+  formData: FormData
+): Promise<InspectionFormState> {
+  const profile = await requireRole('admin')
+
+  const rawReason = formData.get('reason')
+  const reason = typeof rawReason === 'string' ? rawReason.trim().slice(0, 500) : ''
+
+  const supabase = await createClient()
+
+  const { data: existing } = await supabase
+    .from('inspections')
+    .select('status, inspector_id, property_id, template_id, scheduled_for')
+    .eq('id', inspectionId)
+    .single()
+
+  if (!existing) {
+    return { error: 'Inspection not found.' }
+  }
+  if (existing.status === 'completed') {
+    return {
+      error:
+        'This inspection is already completed — its report is the record of truth. Delete it from Reports if it must be removed.',
+    }
+  }
+  if (existing.status === 'cancelled') {
+    return { error: 'This inspection is already cancelled.' }
+  }
+
+  const { error } = await supabase
+    .from('inspections')
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: profile.id,
+      cancellation_reason: reason || null,
+    })
+    .eq('id', inspectionId)
+    // Belt-and-suspenders against a race with a specialist submitting: never
+    // let a cancel land on a row that reached `completed` in the meantime.
+    .neq('status', 'completed')
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  // Tell the assigned specialist it's off — they already got an assignment
+  // email, and without this they'd show up at the property. Best-effort: a
+  // mail failure must never fail the cancellation.
+  if (existing.inspector_id !== profile.id) {
+    try {
+      const [{ data: assignee }, { data: property }, { data: template }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', existing.inspector_id)
+          .single(),
+        supabase.from('properties').select('name, address').eq('id', existing.property_id).single(),
+        supabase.from('checklist_templates').select('name').eq('id', existing.template_id).single(),
+      ])
+      if (assignee?.email) {
+        await sendCancellationEmail({
+          to: assignee.email,
+          specialistName: assignee.full_name,
+          propertyName: property?.name ?? 'a property',
+          propertyAddress: property?.address ?? '',
+          checklistName: template?.name ?? 'an inspection',
+          scheduledFor: existing.scheduled_for,
+          reason: reason || null,
+        })
+      }
+    } catch (err) {
+      console.error('Cancellation email failed:', err)
+    }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/inspections')
+  revalidatePath(`/admin/inspections/${inspectionId}/edit`)
+  revalidatePath(`/admin/properties/${existing.property_id}`)
+  revalidatePath('/inspector')
+  revalidatePath(`/inspector/inspections/${inspectionId}`)
+}
+
+/**
+ * Undo a cancellation. Restores to `pending`, never to `in_progress` —
+ * `saveInspectionItem` promotes pending → in_progress on the next item save
+ * (it is scoped `.eq('status','pending')`), so any answers captured before the
+ * cancellation are untouched and the status self-corrects on the next edit.
+ */
+export async function restoreInspection(
+  inspectionId: string
+): Promise<{ error?: string } | void> {
+  await requireRole('admin')
+  const supabase = await createClient()
+
+  const { data: existing } = await supabase
+    .from('inspections')
+    .select('status, property_id')
+    .eq('id', inspectionId)
+    .single()
+
+  if (!existing) {
+    return { error: 'Inspection not found.' }
+  }
+  if (existing.status !== 'cancelled') {
+    return { error: 'This inspection is not cancelled.' }
+  }
+
+  const { error } = await supabase
+    .from('inspections')
+    .update({
+      status: 'pending',
+      cancelled_at: null,
+      cancelled_by: null,
+      cancellation_reason: null,
+    })
+    .eq('id', inspectionId)
+    .eq('status', 'cancelled')
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/inspections')
+  revalidatePath(`/admin/inspections/${inspectionId}/edit`)
+  revalidatePath(`/admin/properties/${existing.property_id}`)
+  revalidatePath('/inspector')
+  revalidatePath(`/inspector/inspections/${inspectionId}`)
 }
 
 export async function deleteInspection(
@@ -294,6 +445,12 @@ export async function saveInspectionItem(
   }
   if (inspection.status === 'completed') {
     return { error: 'This inspection has already been submitted and can no longer be edited.' }
+  }
+  // Cancelled mid-inspection: a specialist may still have the checklist open
+  // from before the admin cancelled it. Stop the write here rather than
+  // letting them keep filling in an inspection that will never be submitted.
+  if (inspection.status === 'cancelled') {
+    return { error: 'This inspection has been cancelled by an administrator.' }
   }
   // Specialists can't start before the scheduled time; admins can (they own the
   // schedule and may need to run or correct an inspection early).

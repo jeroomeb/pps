@@ -1,13 +1,20 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, AlertTriangle, MapPin, Phone, Clock } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, MapPin, Phone, Clock, LifeBuoy } from 'lucide-react'
 import { ChecklistItemCard, type ChecklistItemData } from '@/components/ChecklistItemCard'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 import { validateInspectionItems } from '@/lib/inspection-validation'
+import { saveInspectionItem } from '@/lib/actions/inspections'
+import {
+  loadDraft,
+  clearDraft,
+  recoverableAnswers,
+  type RecoverableAnswer,
+} from '@/lib/inspection-drafts'
 
 export function ActiveInspectionChecklist({
   inspectionId,
@@ -42,11 +49,79 @@ export function ActiveInspectionChecklist({
   const [items, setItems] = useState(initialItems)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Answers found in localStorage that the server does NOT have — either typed
+  // but never blurred, or saved while offline and rejected. Empty in the
+  // normal case, in which case nothing about this screen changes.
+  const [recoverable, setRecoverable] = useState<RecoverableAnswer[]>([])
+  const [restoring, startRestore] = useTransition()
 
   function handleSaved(itemId: string, patch: Partial<ChecklistItemData>) {
     setItems((prev) =>
       prev.map((item) => (item.id === itemId ? { ...item, ...patch } : item))
     )
+  }
+
+  // Run once on mount against the SERVER's copy of the items. Anything the
+  // draft holds that matches the server is dropped silently — only genuine
+  // unsaved work is surfaced, and only as an offer.
+  //
+  // An effect is the correct tool here despite the lint rule below: localStorage
+  // does not exist during the server render, so reading it in a lazy `useState`
+  // initializer would make the client's first render disagree with the server's
+  // and produce a hydration mismatch. Reading after mount is the standard
+  // pattern for a browser-only store. It runs once and settles.
+  useEffect(() => {
+    const found = recoverableAnswers(loadDraft(inspectionId), initialItems)
+    if (found.length) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRecoverable(found)
+    }
+    // Deliberately mount-only: `initialItems` is the server snapshot this
+    // screen was rendered with, and re-running on every parent update would
+    // re-offer answers the specialist just restored or discarded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inspectionId])
+
+  // Replay the recovered answers through the normal server action, so every
+  // validation and the completed/cancelled guards still apply. Nothing is
+  // written straight to the database and nothing happens without this tap.
+  function handleRestore() {
+    startRestore(async () => {
+      const failed: RecoverableAnswer[] = []
+      for (const answer of recoverable) {
+        const result = await saveInspectionItem(answer.itemId, inspectionId, {
+          status: answer.status,
+          comment: answer.comment,
+        })
+        if (result?.error) {
+          failed.push(answer)
+          continue
+        }
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === answer.itemId
+              ? { ...item, status: answer.status, comment: answer.comment }
+              : item
+          )
+        )
+      }
+
+      if (failed.length) {
+        // Keep the ones that didn't land so they're still recoverable.
+        setRecoverable(failed)
+        showToast('error', `${failed.length} answer(s) could not be restored — check your connection.`)
+        return
+      }
+
+      clearDraft(inspectionId)
+      setRecoverable([])
+      showToast('success', 'Your unsaved answers were restored.')
+    })
+  }
+
+  function handleDiscardRecovered() {
+    clearDraft(inspectionId)
+    setRecoverable([])
   }
 
   const completedCount = items.filter((item) => item.status).length
@@ -89,6 +164,9 @@ export function ActiveInspectionChecklist({
       setSubmitting(false)
       return
     }
+
+    // Submitted — the server has everything, so the local copy is now noise.
+    clearDraft(inspectionId)
 
     if (data.warning) {
       showToast('error', data.warning)
@@ -194,6 +272,60 @@ export function ActiveInspectionChecklist({
           </div>
         </div>
       </Card>
+
+      {recoverable.length > 0 && (
+        <Card className="mb-6 border-primary-container bg-primary-container/20">
+          <p className="mb-2 flex items-center gap-1.5 font-headline text-sm font-semibold">
+            <LifeBuoy size={16} className="shrink-0 text-primary" />
+            {recoverable.length} unsaved answer{recoverable.length === 1 ? '' : 's'} recovered from
+            this device
+          </p>
+          <p className="mb-3 text-sm text-on-surface-variant">
+            These were entered on this phone but never reached the server — usually because the
+            app closed or the connection dropped. Nothing has been changed yet.
+          </p>
+          <ul className="mb-4 flex flex-col gap-1">
+            {recoverable.slice(0, 5).map((answer) => (
+              <li key={answer.itemId} className="text-sm">
+                <span className="font-semibold">{answer.itemName}</span>
+                {answer.status && (
+                  <span className="text-on-surface-variant"> — {answer.status.toUpperCase()}</span>
+                )}
+                {answer.comment.trim() && (
+                  <span className="text-on-surface-variant">
+                    {' '}
+                    — &ldquo;{answer.comment.trim().slice(0, 60)}
+                    {answer.comment.trim().length > 60 ? '…' : ''}&rdquo;
+                  </span>
+                )}
+              </li>
+            ))}
+            {recoverable.length > 5 && (
+              <li className="text-sm text-on-surface-variant">
+                and {recoverable.length - 5} more…
+              </li>
+            )}
+          </ul>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleRestore}
+              disabled={restoring}
+              className="min-h-11 rounded-lg bg-primary-container px-4 font-headline text-xs font-semibold uppercase tracking-wide text-on-primary-container transition hover:brightness-95 disabled:opacity-50"
+            >
+              {restoring ? 'Restoring…' : 'Restore These Answers'}
+            </button>
+            <button
+              type="button"
+              onClick={handleDiscardRecovered}
+              disabled={restoring}
+              className="min-h-11 rounded-lg border border-outline-variant px-4 font-headline text-xs font-semibold uppercase tracking-wide text-on-surface-variant transition hover:bg-surface-container disabled:opacity-50"
+            >
+              Discard
+            </button>
+          </div>
+        </Card>
+      )}
 
       <div className="flex flex-col gap-6">
         {[...grouped.entries()].map(([category, categoryItems]) => (

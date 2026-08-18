@@ -41,6 +41,16 @@ export async function POST(
     )
   }
 
+  // Cancelled after the specialist opened the checklist. Without this they
+  // could still submit from a stale page and trigger a real report email for
+  // a visit that was called off.
+  if (inspection.status === 'cancelled') {
+    return NextResponse.json(
+      { error: 'This inspection has been cancelled by an administrator and cannot be submitted.' },
+      { status: 409 }
+    )
+  }
+
   const { data: items, error: itemsError } = await supabase
     .from('inspection_items')
     .select('id, service_category, item_name, description, status, comment, photo_path, sort_order')
@@ -103,12 +113,15 @@ export async function POST(
   }
 
   // Compare-and-set: if a concurrent submit already completed it, bail before
-  // sending a duplicate email.
+  // sending a duplicate email. Scoped to the two OPEN statuses rather than
+  // `.neq('completed')` so an admin cancelling between the status check above
+  // and this write also loses the race — this client is the service role, so
+  // RLS is bypassed and this is the only thing standing in the way.
   const { data: updatedRows, error: updateError } = await admin
     .from('inspections')
     .update({ status: 'completed', completed_at: completedAt.toISOString(), pdf_path: pdfPath })
     .eq('id', inspectionId)
-    .neq('status', 'completed')
+    .in('status', ['pending', 'in_progress'])
     .select('id')
 
   if (updateError) {
@@ -116,7 +129,10 @@ export async function POST(
   }
   if (!updatedRows?.length) {
     return NextResponse.json(
-      { error: 'This inspection has already been submitted.' },
+      {
+        error:
+          'This inspection was already submitted or has been cancelled — it can no longer be submitted.',
+      },
       { status: 409 }
     )
   }

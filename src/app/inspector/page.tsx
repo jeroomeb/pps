@@ -15,6 +15,9 @@ export default async function InspectorDashboardPage() {
       'id, status, created_at, completed_at, scheduled_for, properties(name, address, phone), checklist_templates(name)'
     )
     .eq('inspector_id', profile.id)
+    // A cancelled inspection is not the specialist's problem any more — it
+    // leaves their board completely. Admins still see it under Inspections.
+    .neq('status', 'cancelled')
     .order('created_at', { ascending: false })
 
   // Flatten to plain, serializable rows for the client board (no lucide

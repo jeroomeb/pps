@@ -20,6 +20,7 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
+import { CancelInspectionButton } from '@/components/CancelInspectionButton'
 import { deleteProperty } from '@/lib/actions/properties'
 import { parseSchedule, scheduleEntryLabel, dueLabel } from '@/lib/schedule'
 import { zonedDate, formatDate, timeZoneAbbreviation } from '@/lib/timezone'
@@ -198,13 +199,19 @@ export default async function PropertyDetailPage({
                     full_name: string
                   } | null
                   const isCompleted = inspection.status === 'completed'
+                  const isCancelled = inspection.status === 'cancelled'
+                  // Cancelled → the record (with Restore), never the checklist.
                   const href = isCompleted
                     ? `/admin/reports/${inspection.id}`
-                    : `/inspector/inspections/${inspection.id}`
+                    : isCancelled
+                      ? `/admin/inspections/${inspection.id}/edit`
+                      : `/inspector/inspections/${inspection.id}`
                   const dateLabel = formatDate(inspection.completed_at ?? inspection.created_at)
                   const dateKind = inspection.completed_at ? 'Completed' : 'Created'
+                  // A cancelled inspection has no live due date — showing one
+                  // would read as still-outstanding work.
                   const due =
-                    inspection.scheduled_for && !isCompleted
+                    inspection.scheduled_for && !isCompleted && !isCancelled
                       ? dueLabel(zonedDate(new Date(inspection.scheduled_for)))
                       : null
                   return (
@@ -233,16 +240,20 @@ export default async function PropertyDetailPage({
                       </Link>
                       <div className="flex shrink-0 items-center gap-2 py-4 pr-4">
                         <StatusBadge status={inspection.status} />
-                        {/* Completed inspections are frozen — no edit path. */}
-                        {!isCompleted && (
-                          <Link
-                            href={`/admin/inspections/${inspection.id}/edit`}
-                            aria-label="Edit inspection"
-                            title="Edit schedule or specialist"
-                            className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
-                          >
-                            <PencilIcon size={14} />
-                          </Link>
+                        {/* Completed and cancelled inspections are frozen — no
+                            edit path. Cancel is offered on open rows only. */}
+                        {!isCompleted && !isCancelled && (
+                          <>
+                            <Link
+                              href={`/admin/inspections/${inspection.id}/edit`}
+                              aria-label="Edit inspection"
+                              title="Edit schedule or specialist"
+                              className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+                            >
+                              <PencilIcon size={14} />
+                            </Link>
+                            <CancelInspectionButton inspectionId={inspection.id} iconOnly />
+                          </>
                         )}
                         <ChevronRight
                           size={16}

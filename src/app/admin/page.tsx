@@ -44,9 +44,11 @@ export default async function AdminDashboardPage() {
   const inProgress = allInspections.filter((i) => i.status === 'in_progress')
 
   // Real scheduled inspections only — no derived/auto-generated due dates.
+  // Cancelled ones are excluded too, or a called-off visit keeps surfacing
+  // here as upcoming work.
   const now = zonedDate()
   const upcoming = allInspections
-    .filter((i) => i.status !== 'completed' && i.scheduled_for)
+    .filter((i) => i.status !== 'completed' && i.status !== 'cancelled' && i.scheduled_for)
     .map((i) => {
       const property = i.properties as unknown as { name: string } | null
       const template = i.checklist_templates as unknown as { name: string } | null

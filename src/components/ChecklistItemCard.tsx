@@ -1,9 +1,10 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { Camera, ImageOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { saveInspectionItem } from '@/lib/actions/inspections'
+import { saveDraftItem, clearDraftItem } from '@/lib/inspection-drafts'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 
@@ -60,13 +61,18 @@ export function ChecklistItemCard({
       }
 
       if (errorMessage === null) {
+        // The server now holds this answer, so the local draft copy is no
+        // longer needed — the draft only ever carries what the server lacks.
+        clearDraftItem(inspectionId, item.id)
         onSaved(item.id, patch)
         return
       }
 
       // Revert to the last successfully saved values (the parent only
       // updates `item` after a confirmed save) so the UI never shows an
-      // unsaved answer as saved.
+      // unsaved answer as saved. The draft written before this point is
+      // deliberately KEPT — it is now the only copy of the answer, and is
+      // offered back for recovery next time this inspection is opened.
       setStatus(item.status)
       setComment(item.comment ?? '')
       if (patch.photo_path !== undefined) {
@@ -79,12 +85,27 @@ export function ChecklistItemCard({
 
   function handleStatusChange(next: ItemStatus) {
     setStatus(next)
+    // Mirror locally BEFORE the network call, so a crash or a failed save
+    // between here and the server response is still recoverable.
+    saveDraftItem(inspectionId, item.id, { status: next, comment })
     persist({ status: next })
   }
 
   function handleCommentBlur() {
     persist({ comment })
   }
+
+  // The comment only reaches the SERVER on blur. If the battery dies with the
+  // field still focused, that text was previously lost outright — so mirror it
+  // locally as it's typed. Debounced so a long comment isn't a write per
+  // keystroke; the draft is tiny, but this runs on a phone.
+  useEffect(() => {
+    if (comment === (item.comment ?? '')) return
+    const timer = setTimeout(() => {
+      saveDraftItem(inspectionId, item.id, { status, comment })
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [comment, status, inspectionId, item.id, item.comment])
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
