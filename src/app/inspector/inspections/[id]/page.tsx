@@ -233,16 +233,14 @@ export default async function InspectionDetailPage({
       {isScheduledAhead && (
         <div className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-primary-container bg-primary-container/25 px-4 py-3 text-sm">
           <Clock size={16} className="shrink-0 text-primary" />
+          {/* No "Edit schedule" link here any more — the admin controls row on
+              the inspection card immediately below has Edit and Cancel, so a
+              second link to the same page one element away was just clutter.
+              This banner explains the situation; the card offers the actions. */}
           <span>
             Scheduled for <span className="font-semibold">{scheduledLabel}</span>. The assigned
             specialist can&apos;t start until then — you can, as an admin.
           </span>
-          <Link
-            href={`/admin/inspections/${id}/edit`}
-            className="font-semibold text-primary underline"
-          >
-            Edit schedule
-          </Link>
         </div>
       )}
       <ActiveInspectionChecklist

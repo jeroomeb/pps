@@ -190,6 +190,56 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-08-18 — 404 on every inspection page + cancellation UX (session 14)
+Follow-up to session 13, same day. Client reported "page not found" opening an
+inspection from the dashboard. `tsc`/`eslint`/`build` clean; the fix was
+additionally proven by executing all 8 affected query strings against the live
+DB (read-only), not inferred from a green build.
+
+- ⚠️ **THE LESSON: adding a second FK to a table silently breaks every
+  unqualified embedded join on it.** Migration 0006 added
+  `cancelled_by uuid references profiles(id)`, giving `inspections` a *second*
+  foreign key into `profiles` alongside `inspector_id`. Every query using the
+  shorthand `profiles(full_name)` — unambiguous with one FK — then failed with
+  **`PGRST201: more than one relationship was found`**. PostgREST will not
+  guess. Fixed by naming the constraint:
+  **`profiles!inspections_inspector_id_fkey(full_name)`**.
+  **Before adding any FK, grep for unqualified embeds on the target table.**
+- **The 404 was a failed query wearing a missing-page costume.** The affected
+  pages checked only `if (!data)`, never `error`, so a hard query failure was
+  indistinguishable from "no such row" and fell through to `notFound()`. This
+  is the *third* incident of this exact shape (session 9's "properties
+  invisible", session 13's near-miss). `inspector/inspections/[id]` now logs
+  the error before `notFound()`.
+- **Blast radius was 8 call sites, not the one that was reported.** Two were
+  silently broken with no visible symptom: **the submit pipeline**
+  (`complete/route.ts`) and **the resend route** — every checklist submission
+  was failing to load its own data. The list pages degraded quietly to a
+  missing specialist name rather than erroring, which is why only one symptom
+  surfaced. Full list: `inspector/inspections/[id]`, `admin/properties/[id]`,
+  `admin/inspections`, `admin/reports`, `admin/reports/[id]`,
+  `api/.../complete`, `api/.../resend`, `lib/pdf/generate.ts`.
+- **Cancellation reason was uncollectable in practice.** The `iconOnly` variant
+  (inspections list + property page) had no reason field at all — it cancelled
+  with an empty reason every time — and the full variant hid the field behind
+  the arm tap. Root cause was a pattern mismatch: two-tap arm-then-confirm
+  suits a delete (nothing to collect) but not a cancel (records a reason), and
+  a list row has nowhere for a textarea. Replaced with an explicit
+  **confirmation dialog** so every entry point shares one flow and always
+  offers the reason. Dialog mechanics follow `ZoomableImage` (portal, Escape,
+  backdrop, scroll lock); bottom sheet on mobile, centred on desktop.
+- **Cancel/Edit now on the inspection detail screen** (`ActiveInspectionChecklist`,
+  new `isAdmin` prop passed from the server's role check). Previously an admin
+  had to navigate back out to a list to reschedule or cancel. Removed the now
+  redundant "Edit schedule" link from the scheduled-ahead admin banner — the
+  controls row sits one element below it.
+
+**Still not verified by clicking through as a real logged-in user** (no browser
+automation in this environment). **Highest-value manual tests:** submit a real
+inspection end-to-end (that path was silently broken and a page load won't
+catch it), the admin "Resend Email" button, and the submit race from
+session 13.
+
 ### 2026-08-18 — Cancel a scheduled inspection + crash-safe local drafts (session 13)
 Two client asks. **Migration `0006_inspection_cancellation.sql` must be
 applied** (see below). `tsc`/`eslint`/`build` clean; the drafts module was
