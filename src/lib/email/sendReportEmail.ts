@@ -26,6 +26,9 @@ export async function sendReportEmail({
 
   const from = process.env.EMAIL_FROM || "Amenity Op's <reports@amenityops.app>"
   const cc = process.env.ADMIN_EMAIL ? [process.env.ADMIN_EMAIL] : undefined
+  // amenityops.app is send-only (no MX records) — a reply to `from` above has
+  // nowhere to land. hello@amenityops.com is a real mailbox.
+  const replyTo = process.env.EMAIL_REPLY_TO || 'hello@amenityops.com'
 
   // Resend's SDK resolves with { data, error } instead of throwing on API
   // errors (e.g. the sandbox-mode 403) — turn those into real exceptions so
@@ -34,6 +37,7 @@ export async function sendReportEmail({
     from,
     to,
     cc,
+    replyTo,
     subject: `Operations, Asset and Logistics Report — ${propertyName} (${checklistName})`,
     html: reportEmailHtml({ propertyName, checklistName, inspectorName, completedAt, logoCid }),
     attachments: [

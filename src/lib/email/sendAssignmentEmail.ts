@@ -32,6 +32,9 @@ export async function sendAssignmentEmail({
     process.env.EMAIL_FROM ||
     "Amenity Op's <inspections@amenityops.app>"
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://portal.amenityops.app'
+  // amenityops.app is send-only (no MX records) — a reply to `from` above has
+  // nowhere to land. hello@amenityops.com is a real mailbox.
+  const replyTo = process.env.EMAIL_REPLY_TO || 'hello@amenityops.com'
 
   const scheduledLabel = scheduledFor
     ? formatDateTimeLong(scheduledFor)
@@ -72,6 +75,7 @@ export async function sendAssignmentEmail({
   const result = await resend.emails.send({
     from,
     to,
+    replyTo,
     subject: `New inspection assigned — ${propertyName}`,
     html,
   })
