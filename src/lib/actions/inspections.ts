@@ -72,6 +72,7 @@ export async function createInspection(
       template_id: parsed.data.template_id,
       inspector_id: parsed.data.inspector_id,
       scheduled_for: scheduledForIso,
+      tenant_id: profile.tenant_id ?? null,
     })
     .select('id')
     .single()

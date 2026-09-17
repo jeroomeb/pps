@@ -2,10 +2,46 @@ export type UserRole = 'admin' | 'inspector'
 export type InspectionStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled'
 export type ItemStatus = 'pass' | 'fail' | 'na'
 export type ScheduleEntry = { ordinal: number; weekday: number }
+export type LicenseTier = 'starter' | 'standard' | 'pro' | 'enterprise'
+export type TenantStatus = 'active' | 'suspended' | 'trial'
+export type ProfileStatus = 'active' | 'inactive' | 'suspended'
 
 export interface Database {
   public: {
     Tables: {
+      tenants: {
+        Row: {
+          id: string
+          name: string
+          slug: string | null
+          license_tier: LicenseTier
+          max_property_licenses: number
+          status: TenantStatus
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug?: string | null
+          license_tier?: LicenseTier
+          max_property_licenses?: number
+          status?: TenantStatus
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string | null
+          license_tier?: LicenseTier
+          max_property_licenses?: number
+          status?: TenantStatus
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string
@@ -23,6 +59,10 @@ export interface Database {
           email: string | null
           id_front_path: string | null
           id_back_path: string | null
+          tenant_id: string | null
+          is_global_admin: boolean
+          is_contractor: boolean
+          status: ProfileStatus
         }
         Insert: {
           id: string
@@ -40,6 +80,10 @@ export interface Database {
           email?: string | null
           id_front_path?: string | null
           id_back_path?: string | null
+          tenant_id?: string | null
+          is_global_admin?: boolean
+          is_contractor?: boolean
+          status?: ProfileStatus
         }
         Update: {
           id?: string
@@ -57,26 +101,49 @@ export interface Database {
           email?: string | null
           id_front_path?: string | null
           id_back_path?: string | null
+          tenant_id?: string | null
+          is_global_admin?: boolean
+          is_contractor?: boolean
+          status?: ProfileStatus
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'profiles_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
       }
       checklist_templates: {
         Row: {
           id: string
           name: string
           created_at: string
+          tenant_id: string | null
         }
         Insert: {
           id?: string
           name: string
           created_at?: string
+          tenant_id?: string | null
         }
         Update: {
           id?: string
           name?: string
           created_at?: string
+          tenant_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'checklist_templates_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
       }
       checklist_template_items: {
         Row: {
@@ -129,6 +196,8 @@ export interface Database {
           phone: string | null
           notes: string | null
           required_schedule: ScheduleEntry[]
+          tenant_id: string | null
+          is_active: boolean
         }
         Insert: {
           id?: string
@@ -145,6 +214,8 @@ export interface Database {
           phone?: string | null
           notes?: string | null
           required_schedule?: ScheduleEntry[]
+          tenant_id?: string | null
+          is_active?: boolean
         }
         Update: {
           id?: string
@@ -161,8 +232,18 @@ export interface Database {
           phone?: string | null
           notes?: string | null
           required_schedule?: ScheduleEntry[]
+          tenant_id?: string | null
+          is_active?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'properties_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
       }
       schedule_dismissals: {
         Row: {
@@ -219,6 +300,7 @@ export interface Database {
           cancellation_reason: string | null
           email_status: 'sent' | 'failed' | null
           email_error: string | null
+          tenant_id: string | null
         }
         Insert: {
           id?: string
@@ -235,6 +317,7 @@ export interface Database {
           cancellation_reason?: string | null
           email_status?: 'sent' | 'failed' | null
           email_error?: string | null
+          tenant_id?: string | null
         }
         Update: {
           id?: string
@@ -251,6 +334,7 @@ export interface Database {
           cancellation_reason?: string | null
           email_status?: 'sent' | 'failed' | null
           email_error?: string | null
+          tenant_id?: string | null
         }
         Relationships: [
           {
@@ -279,6 +363,13 @@ export interface Database {
             columns: ['cancelled_by']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'inspections_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
             referencedColumns: ['id']
           },
         ]

@@ -22,7 +22,7 @@ export async function createTeamMember(
   _prevState: TeamMemberFormState,
   formData: FormData
 ): Promise<TeamMemberFormState> {
-  await requireRole('admin')
+  const profile = await requireRole('admin')
 
   const parsed = teamMemberSchema.safeParse({
     full_name: formData.get('full_name'),
@@ -52,11 +52,12 @@ export async function createTeamMember(
 
   // The handle_new_user trigger deliberately ignores metadata and always
   // creates the profile as 'inspector' (so public signup can never mint an
-  // admin), and copies the email. We add a human-readable OCS id here, and
-  // promote admins explicitly.
+  // admin), and copies the email. We add a human-readable OCS id here,
+  // associate their tenant_id, and promote admins explicitly.
   if (created.user) {
-    const patch: { role?: 'admin'; human_id: string } = {
+    const patch: { role?: 'admin'; human_id: string; tenant_id?: string | null } = {
       human_id: genSpecialistId(),
+      tenant_id: profile.tenant_id ?? null,
     }
     if (parsed.data.role === 'admin') patch.role = 'admin'
 

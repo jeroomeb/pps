@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { Building2, ChevronRight, Plus } from 'lucide-react'
+import { Building2, ChevronRight, Plus, KeyRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { getTenantLicenseSummary } from '@/lib/auth/dal'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -12,7 +13,10 @@ export default async function PropertiesPage({
   searchParams: Promise<{ state?: string; county?: string; zip?: string }>
 }) {
   const { state, county, zip } = await searchParams
-  const supabase = await createClient()
+  const [supabase, licenseSummary] = await Promise.all([
+    createClient(),
+    getTenantLicenseSummary(),
+  ])
 
   // Unfiltered set drives the filter dropdown options, so choosing one filter
   // never empties the others.
@@ -47,6 +51,30 @@ export default async function PropertiesPage({
           </Link>
         }
       />
+
+      {/* Property License SKU Usage Indicator */}
+      {licenseSummary && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3">
+          <div className="flex items-center gap-2">
+            <KeyRound size={16} className="text-primary" />
+            <span className="text-sm font-semibold text-on-surface">Property Licenses:</span>
+            <span className="text-sm text-on-surface-variant">
+              <span className="font-bold text-on-surface">{licenseSummary.usedProperties}</span> of{' '}
+              <span className="font-bold text-on-surface">{licenseSummary.maxProperties}</span> SKU units allocated (
+              <span className="capitalize">{licenseSummary.licenseTier}</span> Tier)
+            </span>
+          </div>
+          {licenseSummary.isAtCapacity ? (
+            <span className="rounded bg-error-container px-2.5 py-1 text-xs font-bold text-on-error-container">
+              Capacity Reached
+            </span>
+          ) : (
+            <span className="text-xs font-semibold text-primary">
+              {licenseSummary.remainingLicenses} license{licenseSummary.remainingLicenses === 1 ? '' : 's'} available
+            </span>
+          )}
+        </div>
+      )}
 
       <AddressFilterBar
         action="/admin/properties"

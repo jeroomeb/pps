@@ -1,10 +1,28 @@
--- PPS Inspections schema
+-- Amenity Op's schema (Multi-Tenant Architecture & Logical Isolation)
 -- Run this once in the Supabase SQL editor (or via `supabase db push`).
 
 create extension if not exists "pgcrypto";
 
 -- ============================================================
--- Tables
+-- 1. Tenants Table (Corporate Accounts & Licenses)
+-- ============================================================
+
+create table if not exists tenants (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  slug text unique,
+  license_tier text not null default 'standard' check (license_tier in ('starter', 'standard', 'pro', 'enterprise')),
+  max_property_licenses int not null default 5,
+  status text not null default 'active' check (status in ('active', 'suspended', 'trial')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists tenants_slug_idx on tenants (slug);
+create index if not exists tenants_status_idx on tenants (status);
+
+-- ============================================================
+-- 2. Core Tables
 -- ============================================================
 
 create table if not exists profiles (
@@ -24,13 +42,18 @@ create table if not exists profiles (
   county text,
   email text,
   id_front_path text,
-  id_back_path text
+  id_back_path text,
+  tenant_id uuid references tenants (id) on delete set null,
+  is_global_admin boolean not null default false,
+  is_contractor boolean not null default false,
+  status text not null default 'active' check (status in ('active', 'inactive', 'suspended'))
 );
 
 create table if not exists checklist_templates (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  tenant_id uuid references tenants (id) on delete cascade
 );
 
 create table if not exists checklist_template_items (
@@ -60,7 +83,9 @@ create table if not exists properties (
   notes text,
   -- Monthly first-weekday schedule: [{"ordinal":1,"weekday":1}, ...]
   -- ordinal is always 1 ("first <weekday> of the month"); weekday 0=Sun..6=Sat
-  required_schedule jsonb not null default '[]'::jsonb
+  required_schedule jsonb not null default '[]'::jsonb,
+  tenant_id uuid references tenants (id) on delete cascade,
+  is_active boolean not null default true
 );
 
 -- An admin-dismissed required-inspection day (stops it surfacing as overdue).
@@ -92,7 +117,8 @@ create table if not exists inspections (
   -- Whether the report email actually sent — surfaced on the Reports list
   -- instead of only a toast the specialist may have already dismissed.
   email_status text check (email_status in ('sent', 'failed')),
-  email_error text
+  email_error text,
+  tenant_id uuid references tenants (id) on delete cascade
 );
 
 create table if not exists inspection_items (
@@ -111,13 +137,22 @@ create table if not exists inspection_items (
 
 create index if not exists inspections_property_id_idx on inspections (property_id);
 create index if not exists inspections_inspector_id_idx on inspections (inspector_id);
+create index if not exists inspections_tenant_id_idx on inspections (tenant_id);
+create index if not exists properties_tenant_id_idx on properties (tenant_id);
+create index if not exists profiles_tenant_id_idx on profiles (tenant_id);
 create index if not exists inspection_items_inspection_id_idx on inspection_items (inspection_id);
 create index if not exists checklist_template_items_template_id_idx on checklist_template_items (template_id);
+create index if not exists checklist_templates_tenant_id_idx on checklist_templates (tenant_id);
 create index if not exists inspections_template_id_idx on inspections (template_id);
 create index if not exists inspection_items_template_item_id_idx on inspection_items (template_item_id);
 
+-- Default Tenant for initial setup
+insert into tenants (id, name, slug, license_tier, max_property_licenses, status)
+values ('00000000-0000-0000-0000-000000000001', 'Amenity Op''s HQ', 'amenityops-hq', 'enterprise', 100, 'active')
+on conflict (id) do nothing;
+
 -- ============================================================
--- Helper function: current user's role (avoids RLS recursion)
+-- Helper functions for RLS
 -- ============================================================
 
 create or replace function current_role_is_admin()
@@ -132,10 +167,33 @@ as $$
   );
 $$;
 
+create or replace function current_user_is_global_admin()
+returns boolean
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.profiles where id = auth.uid() and is_global_admin = true
+  );
+$$;
+
+create or replace function current_user_tenant_id()
+returns uuid
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select tenant_id from public.profiles where id = auth.uid();
+$$;
+
 -- ============================================================
 -- Row Level Security
 -- ============================================================
 
+alter table tenants enable row level security;
 alter table profiles enable row level security;
 alter table checklist_templates enable row level security;
 alter table checklist_template_items enable row level security;
@@ -144,23 +202,65 @@ alter table inspections enable row level security;
 alter table inspection_items enable row level security;
 alter table schedule_dismissals enable row level security;
 
--- profiles: everyone can read their own row; admins can read/write all
+-- tenants
+drop policy if exists "tenants_select" on tenants;
+create policy "tenants_select" on tenants
+  for select using (
+    current_user_is_global_admin()
+    or id = current_user_tenant_id()
+  );
+
+drop policy if exists "tenants_global_admin_write" on tenants;
+create policy "tenants_global_admin_write" on tenants
+  for all using (current_user_is_global_admin())
+  with check (current_user_is_global_admin());
+
+-- profiles: everyone can read their own row; admins can read/write their tenant's rows; global admins see all
 drop policy if exists "profiles_select_own_or_admin" on profiles;
 create policy "profiles_select_own_or_admin" on profiles
-  for select using (id = auth.uid() or current_role_is_admin());
+  for select using (
+    id = auth.uid()
+    or current_user_is_global_admin()
+    or (
+      current_role_is_admin()
+      and (
+        tenant_id = current_user_tenant_id()
+        or is_contractor = true
+      )
+    )
+  );
 
 drop policy if exists "profiles_admin_write" on profiles;
 create policy "profiles_admin_write" on profiles
-  for all using (current_role_is_admin()) with check (current_role_is_admin());
+  for all using (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  ) with check (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
 
--- checklist_templates: readable by any authenticated user, writable by admins
+-- checklist_templates: readable by any authenticated user (global or within tenant)
 drop policy if exists "templates_select_all" on checklist_templates;
 create policy "templates_select_all" on checklist_templates
-  for select using (auth.uid() is not null);
+  for select using (
+    auth.uid() is not null
+    and (
+      tenant_id is null
+      or tenant_id = current_user_tenant_id()
+      or current_user_is_global_admin()
+    )
+  );
 
 drop policy if exists "templates_admin_write" on checklist_templates;
 create policy "templates_admin_write" on checklist_templates
-  for all using (current_role_is_admin()) with check (current_role_is_admin());
+  for all using (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  ) with check (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
 
 drop policy if exists "template_items_select_all" on checklist_template_items;
 create policy "template_items_select_all" on checklist_template_items
@@ -170,13 +270,21 @@ drop policy if exists "template_items_admin_write" on checklist_template_items;
 create policy "template_items_admin_write" on checklist_template_items
   for all using (current_role_is_admin()) with check (current_role_is_admin());
 
--- properties: readable by admins, or by inspectors assigned an inspection at
--- that property (not every property — that leaked every property's private
--- email/phone/notes to every specialist). Writable by admins only.
+-- properties: scoped to tenant admin, global admin, or assigned specialist
 drop policy if exists "properties_select_all" on properties;
 create policy "properties_select_all" on properties
   for select using (
-    current_role_is_admin()
+    current_user_is_global_admin()
+    or (
+      tenant_id = current_user_tenant_id()
+      and (
+        current_role_is_admin()
+        or exists (
+          select 1 from inspections i
+          where i.property_id = properties.id and i.inspector_id = auth.uid()
+        )
+      )
+    )
     or exists (
       select 1 from inspections i
       where i.property_id = properties.id and i.inspector_id = auth.uid()
@@ -185,7 +293,13 @@ create policy "properties_select_all" on properties
 
 drop policy if exists "properties_admin_write" on properties;
 create policy "properties_admin_write" on properties
-  for all using (current_role_is_admin()) with check (current_role_is_admin());
+  for all using (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  ) with check (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
 
 -- schedule_dismissals: readable by any authenticated user, admin-managed
 drop policy if exists "schedule_dismissals_select" on schedule_dismissals;
@@ -196,43 +310,46 @@ drop policy if exists "schedule_dismissals_admin_write" on schedule_dismissals;
 create policy "schedule_dismissals_admin_write" on schedule_dismissals
   for all using (current_role_is_admin()) with check (current_role_is_admin());
 
--- inspections: admins see/manage all; inspectors see/update only their own
+-- inspections: admins see/manage tenant's all; global admin sees all; inspectors see/update only their own
 drop policy if exists "inspections_select" on inspections;
 create policy "inspections_select" on inspections
-  for select using (inspector_id = auth.uid() or current_role_is_admin());
+  for select using (
+    inspector_id = auth.uid()
+    or current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
 
 drop policy if exists "inspections_admin_insert" on inspections;
 create policy "inspections_admin_insert" on inspections
-  for insert with check (current_role_is_admin());
+  for insert with check (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
 
 drop policy if exists "inspections_admin_delete" on inspections;
 create policy "inspections_admin_delete" on inspections
-  for delete using (current_role_is_admin());
+  for delete using (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
 
--- Completed inspections are frozen: the emailed report is the record of
--- truth, so nobody edits them through the app's user-scoped client.
--- (The submit pipeline itself runs on the service role and is unaffected.)
--- `with check` carries the same `status <> 'completed'` guard as `using` —
--- omitting it let a row be updated INTO `completed` with none of the app's
--- validation via a direct PostgREST call.
---
--- ⚠️ The cancelled guard is deliberately role-aware, not a blanket
--- `status not in ('completed','cancelled')`. `with check` is evaluated
--- against the NEW row, so a blanket guard would reject the cancel write
--- itself (it is by definition producing a cancelled row) and the status
--- would silently never change. Instead:
---   using      (OLD row) — a cancelled inspection is editable only by an
---                          admin, which is what makes "restore" possible.
---   with check (NEW row) — only an admin can produce a cancelled row.
 drop policy if exists "inspections_update" on inspections;
 create policy "inspections_update" on inspections
   for update using (
-    (inspector_id = auth.uid() or current_role_is_admin())
+    (
+      inspector_id = auth.uid()
+      or current_user_is_global_admin()
+      or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+    )
     and status <> 'completed'
     and (status <> 'cancelled' or current_role_is_admin())
   )
   with check (
-    (inspector_id = auth.uid() or current_role_is_admin())
+    (
+      inspector_id = auth.uid()
+      or current_user_is_global_admin()
+      or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+    )
     and status <> 'completed'
     and (status <> 'cancelled' or current_role_is_admin())
   );
@@ -244,16 +361,15 @@ create policy "inspection_items_select" on inspection_items
     exists (
       select 1 from inspections i
       where i.id = inspection_items.inspection_id
-        and (i.inspector_id = auth.uid() or current_role_is_admin())
+        and (
+          i.inspector_id = auth.uid()
+          or current_user_is_global_admin()
+          or (current_role_is_admin() and i.tenant_id = current_user_tenant_id())
+        )
     )
   );
 
--- Insert is admin-only (despite the old policy's name, it also granted the
--- assigned inspector insert with no completed-status guard — forged rows
--- could be added to a completed inspection). Only createInspection ever
--- inserts items, and it's an admin-only server action on the user-scoped
--- client, so this doesn't touch app behavior.
-drop policy if exists "inspection_items_admin_insert" on inspection_items;
+drop policy if exists "inspection_items_insert" on inspection_items;
 create policy "inspection_items_insert" on inspection_items
   for insert with check (
     current_role_is_admin()
@@ -270,14 +386,22 @@ create policy "inspection_items_update" on inspection_items
     exists (
       select 1 from inspections i
       where i.id = inspection_items.inspection_id
-        and (i.inspector_id = auth.uid() or current_role_is_admin())
+        and (
+          i.inspector_id = auth.uid()
+          or current_user_is_global_admin()
+          or (current_role_is_admin() and i.tenant_id = current_user_tenant_id())
+        )
         and i.status not in ('completed', 'cancelled')
     )
   ) with check (
     exists (
       select 1 from inspections i
       where i.id = inspection_items.inspection_id
-        and (i.inspector_id = auth.uid() or current_role_is_admin())
+        and (
+          i.inspector_id = auth.uid()
+          or current_user_is_global_admin()
+          or (current_role_is_admin() and i.tenant_id = current_user_tenant_id())
+        )
         and i.status not in ('completed', 'cancelled')
     )
   );
@@ -286,11 +410,6 @@ create policy "inspection_items_update" on inspection_items
 -- New auth user -> profile row (defaults to inspector; promote admins manually)
 -- ============================================================
 
--- SECURITY: always 'inspector'. Never trust raw_user_meta_data for the role —
--- it is client-supplied at signup, so honoring it would let anyone who can
--- reach the public signup endpoint mint themselves an admin account.
--- Admin-created team members are promoted explicitly by the createTeamMember
--- server action (service role) after the user is created.
 create or replace function handle_new_user()
 returns trigger
 language plpgsql
@@ -315,19 +434,13 @@ create trigger on_auth_user_created
   for each row execute function handle_new_user();
 
 -- Specialists may edit their OWN profile (address/phone/ID docs) but not their
--- role/human_id/email — those privileged columns are reset for non-admins by
+-- role/human_id/email/tenant_id — those privileged columns are reset for non-admins by
 -- the guard trigger, so the own-row policy can't be used to self-escalate.
 drop policy if exists "profiles_update_own" on profiles;
 create policy "profiles_update_own" on profiles
   for update using (id = auth.uid())
   with check (id = auth.uid());
 
--- Exempts the service role: triggers always fire regardless of the calling
--- role, and a service-role request has no auth.uid(), so
--- current_role_is_admin() reads false for it — this trigger was silently
--- reverting the role/human_id that createTeamMember's admin-client writes
--- set on new admin accounts. Service-role writes are already fully trusted
--- (they run our own server code, gated by requireRole('admin') beforehand).
 create or replace function guard_profile_self_update()
 returns trigger
 language plpgsql
@@ -338,13 +451,19 @@ begin
   if coalesce(current_setting('request.jwt.claims', true)::jsonb->>'role', '') = 'service_role' then
     return new;
   end if;
-  -- Explicitly schema-qualified: this function's own `search_path = ''`
-  -- means an unqualified call here would fail to resolve.
+
   if not public.current_role_is_admin() then
     new.role := old.role;
     new.human_id := old.human_id;
     new.email := old.email;
     new.id := old.id;
+    new.tenant_id := old.tenant_id;
+    new.is_global_admin := old.is_global_admin;
+    new.is_contractor := old.is_contractor;
+    new.status := old.status;
+  elsif not public.current_user_is_global_admin() then
+    new.is_global_admin := old.is_global_admin;
+    new.tenant_id := old.tenant_id;
   end if;
   return new;
 end;
@@ -367,10 +486,10 @@ insert into storage.buckets (id, name, public)
 values ('reports', 'reports', false)
 on conflict (id) do nothing;
 
--- Photo objects live under `${inspectionId}/...` — scope read/write to the
--- owning inspection's assigned inspector (or an admin), not every
--- authenticated user, so one specialist can't read or overwrite another's
--- evidence photos (including on a completed/frozen inspection).
+insert into storage.buckets (id, name, public)
+values ('documents', 'documents', false)
+on conflict (id) do nothing;
+
 drop policy if exists "photos_read" on storage.objects;
 create policy "photos_read" on storage.objects
   for select using (
@@ -409,8 +528,6 @@ create policy "photos_update" on storage.objects
     )
   );
 
--- Report objects are named `${inspectionId}.pdf` (no folder) — scope reads to
--- the same inspector-or-admin rule instead of every authenticated user.
 drop policy if exists "reports_read" on storage.objects;
 create policy "reports_read" on storage.objects
   for select using (
@@ -429,12 +546,6 @@ drop policy if exists "reports_write" on storage.objects;
 create policy "reports_write" on storage.objects
   for all using (bucket_id = 'reports' and current_role_is_admin())
   with check (bucket_id = 'reports' and current_role_is_admin());
-
--- documents: specialists' ID/driver's-license uploads. Owner-or-admin read;
--- owner writes under their own `${uid}/` folder.
-insert into storage.buckets (id, name, public)
-values ('documents', 'documents', false)
-on conflict (id) do nothing;
 
 drop policy if exists "documents_read" on storage.objects;
 create policy "documents_read" on storage.objects

@@ -7,6 +7,7 @@ import {
   FileText,
   ClipboardCheck,
   UserCircle,
+  ShieldCheck,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -29,6 +30,16 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin/team', label: 'Team', icon: Users },
 ]
 
+export const GLOBAL_ADMIN_NAV_ITEMS: NavItem[] = [
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/inspector', label: 'My Inspections', shortLabel: 'My Work', icon: ClipboardCheck },
+  { href: '/admin/properties', label: 'Properties', icon: Building2 },
+  { href: '/admin/tenants', label: 'Tenants & Licenses', shortLabel: 'Tenants', icon: ShieldCheck },
+  { href: '/admin/reports', label: 'Reports', icon: FileText },
+  { href: '/admin/checklists', label: 'Checklists', shortLabel: 'Lists', icon: ClipboardList },
+  { href: '/admin/team', label: 'Team', icon: Users },
+]
+
 // `/inspector` is the specialist's landing/assignments page — it prefix-matches
 // so it stays lit inside `/inspector/inspections/[id]` too. `/inspector/profile`
 // is nested under it, which is exactly why `resolveActiveNavHref` below picks
@@ -37,6 +48,11 @@ export const INSPECTOR_NAV_ITEMS: NavItem[] = [
   { href: '/inspector', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/inspector/profile', label: 'Profile', icon: UserCircle },
 ]
+
+export function getNavItems(role: 'admin' | 'inspector', isGlobalAdmin?: boolean): NavItem[] {
+  if (role === 'inspector') return INSPECTOR_NAV_ITEMS
+  return isGlobalAdmin ? GLOBAL_ADMIN_NAV_ITEMS : ADMIN_NAV_ITEMS
+}
 
 /** Does this item match the path at all? Not "is it THE active one" — see
  * `resolveActiveNavHref`, which disambiguates between overlapping matches. */

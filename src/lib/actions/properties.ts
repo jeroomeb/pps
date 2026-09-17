@@ -62,7 +62,7 @@ export async function createProperty(
   _prevState: PropertyFormState,
   formData: FormData
 ): Promise<PropertyFormState> {
-  await requireRole('admin')
+  const profile = await requireRole('admin')
 
   const parsed = propertySchema.safeParse(propertyFormFields(formData))
 
@@ -71,6 +71,32 @@ export async function createProperty(
   }
 
   const supabase = await createClient()
+
+  // Enforce Tenant Property License SKU limits (Shared DB, Shared Schema Isolation)
+  if (profile.tenant_id) {
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('id, name, max_property_licenses, status')
+      .eq('id', profile.tenant_id)
+      .single()
+
+    if (tenant) {
+      if (tenant.status === 'suspended') {
+        return { error: 'Your organization account is suspended. Please contact support.' }
+      }
+      const { count } = await supabase
+        .from('properties')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenant.id)
+
+      if ((count ?? 0) >= tenant.max_property_licenses) {
+        return {
+          error: `License limit reached: You have allocated all ${tenant.max_property_licenses} property licenses on your plan. Upgrade your license to add more properties.`,
+        }
+      }
+    }
+  }
+
   const insertRow = {
     name: parsed.data.name,
     ...addressColumns(parsed.data),
@@ -79,6 +105,7 @@ export async function createProperty(
     notes: parsed.data.notes || null,
     required_schedule: parseScheduleFromForm(formData),
     human_id: genPropertyId(),
+    tenant_id: profile.tenant_id ?? null,
   }
 
   // Retry once on the (astronomically unlikely) human_id collision.

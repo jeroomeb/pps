@@ -14,10 +14,17 @@ export default async function AdminLayout({
   return (
     <>
       <Header title="Amenity Op's — Admin" fullName={profile.full_name} />
-      <AppShell role="admin" fullName={profile.full_name} showStartAudit signOutAction={signOut}>
+      <AppShell
+        role="admin"
+        fullName={profile.full_name}
+        isGlobalAdmin={profile.is_global_admin}
+        tenantName={profile.tenant?.name ?? null}
+        showStartAudit
+        signOutAction={signOut}
+      >
         {children}
       </AppShell>
-      <BottomNav role="admin" />
+      <BottomNav role="admin" isGlobalAdmin={profile.is_global_admin} />
     </>
   )
 }
