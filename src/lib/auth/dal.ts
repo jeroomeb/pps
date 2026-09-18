@@ -24,6 +24,7 @@ export type ProfileWithTenant = {
   is_global_admin: boolean
   is_contractor: boolean
   status: string
+  must_reset_password: boolean
   tenant: TenantInfo | null
 }
 
@@ -67,7 +68,7 @@ export const getProfile = cache(async (): Promise<ProfileWithTenant> => {
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id, full_name, role, tenant_id, is_global_admin, is_contractor, status, tenants(id, name, slug, license_tier, max_property_licenses, status)')
+    .select('id, full_name, role, tenant_id, is_global_admin, is_contractor, status, must_reset_password, tenants(id, name, slug, license_tier, max_property_licenses, status)')
     .eq('id', user.id)
     .single()
 
@@ -92,6 +93,7 @@ export const getProfile = cache(async (): Promise<ProfileWithTenant> => {
         is_global_admin: basicProfile.role === 'admin',
         is_contractor: false,
         status: 'active',
+        must_reset_password: false,
         tenant: null,
       }
     }
@@ -110,6 +112,7 @@ export const getProfile = cache(async (): Promise<ProfileWithTenant> => {
     is_global_admin: profile.is_global_admin ?? false,
     is_contractor: profile.is_contractor ?? false,
     status: profile.status ?? 'active',
+    must_reset_password: profile.must_reset_password ?? false,
     tenant: tenant ?? null,
   }
 })
@@ -120,6 +123,9 @@ export async function requireRole(role: UserRole) {
     const supabase = await createClient()
     await supabase.auth.signOut()
     redirect('/login')
+  }
+  if (profile.must_reset_password) {
+    redirect('/force-password-change')
   }
   if (profile.role !== role) {
     redirect(profile.role === 'admin' ? '/admin' : '/inspector')

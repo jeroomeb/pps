@@ -47,7 +47,8 @@ create table if not exists profiles (
   tenant_id uuid references tenants (id) on delete set null,
   is_global_admin boolean not null default false,
   is_contractor boolean not null default false,
-  status text not null default 'active' check (status in ('active', 'inactive', 'suspended'))
+  status text not null default 'active' check (status in ('active', 'inactive', 'suspended')),
+  must_reset_password boolean not null default true
 );
 
 create table if not exists checklist_templates (
@@ -461,12 +462,13 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.profiles (id, full_name, role, email)
+  insert into public.profiles (id, full_name, role, email, must_reset_password)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', new.email),
     'inspector',
-    new.email
+    new.email,
+    true
   );
   return new;
 end;
@@ -505,6 +507,7 @@ begin
     new.is_global_admin := old.is_global_admin;
     new.is_contractor := old.is_contractor;
     new.status := old.status;
+    new.must_reset_password := old.must_reset_password;
   elsif not public.current_user_is_global_admin() then
     new.is_global_admin := old.is_global_admin;
     new.tenant_id := old.tenant_id;

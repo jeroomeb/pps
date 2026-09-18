@@ -67,6 +67,7 @@ export interface Database {
           is_global_admin: boolean
           is_contractor: boolean
           status: ProfileStatus
+          must_reset_password: boolean
         }
         Insert: {
           id: string
@@ -88,6 +89,7 @@ export interface Database {
           is_global_admin?: boolean
           is_contractor?: boolean
           status?: ProfileStatus
+          must_reset_password?: boolean
         }
         Update: {
           id?: string
@@ -109,6 +111,7 @@ export interface Database {
           is_global_admin?: boolean
           is_contractor?: boolean
           status?: ProfileStatus
+          must_reset_password?: boolean
         }
         Relationships: [
           {

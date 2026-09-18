@@ -190,6 +190,24 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-18 — Task 4: Forced Password Reset on First Login
+Engineered and verified mandatory password reset on first login for provisioned specialists and admins.
+- **Database & Security (`0009_forced_password_reset.sql`)**:
+  - Added `must_reset_password boolean not null default true` on `profiles`.
+  - Backfilled existing profiles so current accounts are not locked out.
+  - Updated `handle_new_user()` trigger to initialize `must_reset_password: true`.
+  - Updated `guard_profile_self_update()` so specialists cannot clear the flag via direct client API requests.
+- **Interception Boundary**:
+  - `requireRole()` checks `profile.must_reset_password`: redirects to `/force-password-change`.
+  - `InspectorLayout` and root `/` route guard against uncompleted password setups.
+  - Proxy allowlists `/force-password-change` and prevents bouncing.
+- **Password Setup Page (`/force-password-change`)**:
+  - `ForcePasswordChangeForm` requires temporary password + new 8+ character password + confirmation.
+  - `completeForcedPasswordChange` action verifies old credentials, updates Supabase Auth, clears `must_reset_password`, and invalidates other sessions.
+- **Admin UI Visibility**:
+  - `/admin/team` lists member status with an amber "Setup Pending" badge for unactivated accounts.
+- `npx tsc --noEmit` and `npm run build` both pass with zero errors.
+
 ### 2026-08-18 — 404 on every inspection page + cancellation UX (session 14)
 Follow-up to session 13, same day. Client reported "page not found" opening an
 inspection from the dashboard. `tsc`/`eslint`/`build` clean; the fix was

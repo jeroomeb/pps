@@ -10,8 +10,8 @@ const ALLOW_LOGGED_OUT = [
   '/auth/callback',
 ]
 // Of those, the ones a logged-in user should be bounced away from. NOT
-// reset-password — a recovery link establishes a session, and the user must
-// stay on that page to actually set a new password.
+// reset-password or force-password-change — recovery/setup sessions must stay
+// on those pages to actually complete password creation.
 const REDIRECT_IF_LOGGED_IN = ['/login', '/forgot-password']
 
 export async function updateSession(request: NextRequest) {

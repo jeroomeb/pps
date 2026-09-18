@@ -35,7 +35,7 @@ export default async function TeamPage({
 
   let query = supabase
     .from('profiles')
-    .select('id, full_name, role, human_id, email, phone, city, state, county, status')
+    .select('id, full_name, role, human_id, email, phone, city, state, county, status, must_reset_password')
     .order('full_name')
 
   if (state) query = query.eq('state', state)
@@ -75,6 +75,11 @@ export default async function TeamPage({
                         {member.status === 'inactive' && (
                           <span className="rounded bg-error-container px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-error-container">
                             Inactive
+                          </span>
+                        )}
+                        {member.must_reset_password && (
+                          <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                            Setup Pending
                           </span>
                         )}
                         {(openCounts.get(member.id) ?? 0) > 0 && (

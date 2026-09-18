@@ -54,10 +54,13 @@ export async function createTeamMember(
   // creates the profile as 'inspector' (so public signup can never mint an
   // admin), and copies the email. We add a human-readable OCS id here,
   // associate their tenant_id, and promote admins explicitly.
+  // Explicitly set must_reset_password: true so newly provisioned accounts
+  // are forced to configure their own private password upon first sign-in.
   if (created.user) {
-    const patch: { role?: 'admin'; human_id: string; tenant_id?: string | null } = {
+    const patch: { role?: 'admin'; human_id: string; tenant_id?: string | null; must_reset_password: boolean } = {
       human_id: genSpecialistId(),
       tenant_id: profile.tenant_id ?? null,
+      must_reset_password: true,
     }
     if (parsed.data.role === 'admin') patch.role = 'admin'
 

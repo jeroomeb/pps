@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { isRecoverySession } from '@/lib/auth/session'
 
 export type SignInState = { error?: string } | undefined
@@ -126,9 +126,85 @@ export async function updatePassword(
     return { error: error.message }
   }
 
+  // Clear must_reset_password flag so the user can access the app normally
+  await supabase
+    .from('profiles')
+    .update({ must_reset_password: false })
+    .eq('id', session.user.id)
+
   // Evict any other active sessions (e.g. a stolen cookie elsewhere) now
   // that the password has changed.
   await supabase.auth.signOut({ scope: 'others' })
 
+  redirect('/')
+}
+
+/**
+ * Handles mandatory first-login password changes for provisioned accounts.
+ * Validates the temporary initial password, updates to the new secure password,
+ * clears must_reset_password = false, and signs out other sessions.
+ */
+export async function completeForcedPasswordChange(
+  _prevState: SignInState,
+  formData: FormData
+): Promise<SignInState> {
+  const currentPassword = String(formData.get('current_password') ?? '')
+  const password = String(formData.get('password') ?? '')
+  const confirm = String(formData.get('confirm') ?? '')
+
+  if (!currentPassword) {
+    return { error: 'Please enter your temporary initial password.' }
+  }
+  if (password.length < 8) {
+    return { error: 'New password must be at least 8 characters long.' }
+  }
+  if (password === currentPassword) {
+    return { error: 'New password must be different from your temporary password.' }
+  }
+  if (password !== confirm) {
+    return { error: 'Passwords do not match.' }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user?.email) {
+    return { error: 'Session expired. Please sign in again with your temporary password.' }
+  }
+
+  // Verify current/temporary password
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  })
+
+  if (verifyError) {
+    return { error: 'Current temporary password is incorrect.' }
+  }
+
+  // Update password in Supabase Auth
+  const { error: updateAuthError } = await supabase.auth.updateUser({ password })
+  if (updateAuthError) {
+    return { error: updateAuthError.message }
+  }
+
+  // Clear must_reset_password flag on profiles table
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ must_reset_password: false })
+    .eq('id', user.id)
+
+  if (profileError) {
+    // If RLS blocked client update, use admin client to guarantee flag clearance
+    const admin = createAdminClient()
+    await admin
+      .from('profiles')
+      .update({ must_reset_password: false })
+      .eq('id', user.id)
+  }
+
+  await supabase.auth.signOut({ scope: 'others' })
   redirect('/')
 }

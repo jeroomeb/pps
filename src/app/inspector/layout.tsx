@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { getProfile } from '@/lib/auth/dal'
 import { Header } from '@/components/Header'
 import { BottomNav } from '@/components/BottomNav'
@@ -12,6 +13,10 @@ export default async function InspectorLayout({
   // Any authenticated user (inspector or admin) can view/complete their own
   // assigned inspections here — admins can double as inspectors.
   const profile = await getProfile()
+
+  if (profile.must_reset_password) {
+    redirect('/force-password-change')
+  }
 
   return (
     <>
