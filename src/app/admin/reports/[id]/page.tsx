@@ -7,6 +7,7 @@ import { requireRole } from '@/lib/auth/dal'
 import { Card } from '@/components/ui/Card'
 import { ResendEmailButton } from '@/components/ResendEmailButton'
 import { ZoomableImage } from '@/components/ZoomableImage'
+import { InspectionGeoTelemetryCard, type GeoLogEntry } from '@/components/InspectionGeoTelemetryCard'
 import { formatDateTime } from '@/lib/timezone'
 
 export default async function ReportViewPage({
@@ -23,7 +24,7 @@ export default async function ReportViewPage({
   const { data: inspection } = await admin
     .from('inspections')
     .select(
-      'id, status, created_at, completed_at, scheduled_for, email_status, email_error, properties(name, address, email, phone, human_id), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, created_at, completed_at, scheduled_for, email_status, email_error, arrived_at, departed_at, dwell_time_seconds, geofence_status, properties(name, address, email, phone, human_id, enable_gps_geofencing, latitude, longitude, geofence_radius_meters), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', id)
     .single()
@@ -32,11 +33,18 @@ export default async function ReportViewPage({
     notFound()
   }
 
-  const { data: items } = await admin
-    .from('inspection_items')
-    .select('id, service_category, item_name, description, status, comment, photo_path, sort_order')
-    .eq('inspection_id', id)
-    .order('sort_order')
+  const [{ data: items }, { data: geoLogs }] = await Promise.all([
+    admin
+      .from('inspection_items')
+      .select('id, service_category, item_name, description, status, comment, photo_path, sort_order')
+      .eq('inspection_id', id)
+      .order('sort_order'),
+    admin
+      .from('inspection_geo_logs')
+      .select('*')
+      .eq('inspection_id', id)
+      .order('logged_at', { ascending: true }),
+  ])
 
   const itemsWithUrls = await Promise.all(
     (items ?? []).map(async (item) => {
@@ -55,6 +63,10 @@ export default async function ReportViewPage({
     email: string
     phone: string | null
     human_id: string | null
+    enable_gps_geofencing: boolean
+    latitude: number | null
+    longitude: number | null
+    geofence_radius_meters: number
   }
   const template = inspection.checklist_templates as unknown as { name: string }
   const inspector = inspection.profiles as unknown as { full_name: string }
@@ -143,6 +155,18 @@ export default async function ReportViewPage({
             </p>
           </div>
         </div>
+
+        {/* Task 6: Audit On-Site Presence & Telemetry Verification */}
+        <InspectionGeoTelemetryCard
+          arrivedAt={inspection.arrived_at}
+          departedAt={inspection.departed_at || inspection.completed_at}
+          dwellTimeSeconds={inspection.dwell_time_seconds}
+          geofenceStatus={inspection.geofence_status}
+          geofenceRadiusMeters={property.geofence_radius_meters ?? 100}
+          propertyLatitude={property.latitude}
+          propertyLongitude={property.longitude}
+          geoLogs={(geoLogs as GeoLogEntry[]) ?? []}
+        />
 
         {failures.length > 0 && (
           <section className="mb-8">

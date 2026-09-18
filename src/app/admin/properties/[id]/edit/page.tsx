@@ -14,7 +14,7 @@ export default async function EditPropertyPage({
   const { data: property } = await supabase
     .from('properties')
     .select(
-      'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule, require_id_photo'
+      'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule, require_id_photo, enable_gps_geofencing, latitude, longitude, geofence_radius_meters'
     )
     .eq('id', id)
     .single()
@@ -46,6 +46,10 @@ export default async function EditPropertyPage({
           humanId: property.human_id,
           schedule: property.required_schedule ?? [],
           requireIdPhoto: property.require_id_photo ?? true,
+          enableGpsGeofencing: property.enable_gps_geofencing ?? true,
+          latitude: property.latitude,
+          longitude: property.longitude,
+          geofenceRadiusMeters: property.geofence_radius_meters ?? 100,
         }}
       />
     </div>

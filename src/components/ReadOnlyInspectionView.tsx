@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, Lock, MapPin, Phone, Download } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { ZoomableImage } from '@/components/ZoomableImage'
+import { InspectionGeoTelemetryCard, type GeoLogEntry } from '@/components/InspectionGeoTelemetryCard'
 import { formatDateTime } from '@/lib/timezone'
 
 type ReadOnlyItem = {
@@ -39,6 +40,14 @@ export function ReadOnlyInspectionView({
   inspectorName,
   completedAt,
   items,
+  arrivedAt = null,
+  departedAt = null,
+  dwellTimeSeconds = null,
+  geofenceStatus = 'pending',
+  geofenceRadiusMeters = 100,
+  propertyLatitude = null,
+  propertyLongitude = null,
+  geoLogs = [],
 }: {
   inspectionId: string
   propertyName: string
@@ -51,6 +60,14 @@ export function ReadOnlyInspectionView({
   inspectorName: string
   completedAt: string | null
   items: ReadOnlyItem[]
+  arrivedAt?: string | null
+  departedAt?: string | null
+  dwellTimeSeconds?: number | null
+  geofenceStatus?: 'pending' | 'verified' | 'outside' | 'exempt'
+  geofenceRadiusMeters?: number
+  propertyLatitude?: number | null
+  propertyLongitude?: number | null
+  geoLogs?: GeoLogEntry[]
 }) {
   const failures = items.filter((item) => item.status === 'fail')
   const grouped = new Map<string, ReadOnlyItem[]>()
@@ -158,6 +175,18 @@ export function ReadOnlyInspectionView({
           This inspection has been submitted and can no longer be edited.
         </p>
       </Card>
+
+      {/* Task 6: Audit On-Site Presence & Telemetry Verification */}
+      <InspectionGeoTelemetryCard
+        arrivedAt={arrivedAt}
+        departedAt={departedAt || completedAt}
+        dwellTimeSeconds={dwellTimeSeconds}
+        geofenceStatus={geofenceStatus}
+        geofenceRadiusMeters={geofenceRadiusMeters}
+        propertyLatitude={propertyLatitude}
+        propertyLongitude={propertyLongitude}
+        geoLogs={geoLogs}
+      />
 
       <div className="flex flex-col gap-6">
         {[...grouped.entries()].map(([category, categoryItems]) => (

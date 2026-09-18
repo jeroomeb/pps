@@ -21,6 +21,10 @@ const propertySchema = z.object({
   phone: z.string().trim().optional(),
   notes: z.string().trim().optional(),
   require_id_photo: z.coerce.boolean().default(true),
+  enable_gps_geofencing: z.coerce.boolean().default(true),
+  latitude: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().nullable().optional()),
+  longitude: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().nullable().optional()),
+  geofence_radius_meters: z.coerce.number().min(10, 'Geofence radius must be at least 10 meters').default(100),
 })
 
 export type PropertyFormState = { error?: string } | undefined
@@ -57,6 +61,10 @@ function propertyFormFields(formData: FormData) {
     phone: formData.get('phone'),
     notes: formData.get('notes'),
     require_id_photo: formData.get('require_id_photo') === 'on' || formData.get('require_id_photo') === 'true',
+    enable_gps_geofencing: formData.get('enable_gps_geofencing') === 'on' || formData.get('enable_gps_geofencing') === 'true',
+    latitude: formData.get('latitude'),
+    longitude: formData.get('longitude'),
+    geofence_radius_meters: formData.get('geofence_radius_meters') || 100,
   }
 }
 
@@ -109,6 +117,10 @@ export async function createProperty(
     human_id: genPropertyId(),
     tenant_id: profile.tenant_id ?? null,
     require_id_photo: parsed.data.require_id_photo,
+    enable_gps_geofencing: parsed.data.enable_gps_geofencing,
+    latitude: parsed.data.latitude ?? null,
+    longitude: parsed.data.longitude ?? null,
+    geofence_radius_meters: parsed.data.geofence_radius_meters,
   }
 
   // Retry once on the (astronomically unlikely) human_id collision.
@@ -157,6 +169,10 @@ export async function updateProperty(
       notes: parsed.data.notes || null,
       required_schedule: parseScheduleFromForm(formData),
       require_id_photo: parsed.data.require_id_photo,
+      enable_gps_geofencing: parsed.data.enable_gps_geofencing,
+      latitude: parsed.data.latitude ?? null,
+      longitude: parsed.data.longitude ?? null,
+      geofence_radius_meters: parsed.data.geofence_radius_meters,
     })
     .eq('id', propertyId)
 

@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
+import { MapPin, Navigation, Crosshair, ShieldCheck } from 'lucide-react'
 import { SubmitButton } from '@/components/SubmitButton'
 import { AddressFields } from '@/components/AddressFields'
 import { Card } from '@/components/ui/Card'
@@ -25,12 +26,47 @@ export function PropertyForm({
     humanId?: string | null
     schedule?: ScheduleEntry[]
     requireIdPhoto?: boolean
+    enableGpsGeofencing?: boolean
+    latitude?: number | null
+    longitude?: number | null
+    geofenceRadiusMeters?: number
   }
 }) {
   const [state, formAction] = useActionState<PropertyFormState, FormData>(action, undefined)
 
+  const [lat, setLat] = useState<string>(defaultValues?.latitude?.toString() ?? '')
+  const [lon, setLon] = useState<string>(defaultValues?.longitude?.toString() ?? '')
+  const [detectingGps, setDetectingGps] = useState(false)
+  const [gpsNotice, setGpsNotice] = useState<string | null>(null)
+
   // Schedule is first-of-month only, so a weekday is either on or off.
   const checkedDays = new Set((defaultValues?.schedule ?? []).map((e) => e.weekday))
+
+  function handleDetectCurrentLocation() {
+    if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+      setGpsNotice('Geolocation is not supported by your browser.')
+      return
+    }
+
+    setDetectingGps(true)
+    setGpsNotice(null)
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setDetectingGps(false)
+        const detectedLat = position.coords.latitude.toFixed(6)
+        const detectedLon = position.coords.longitude.toFixed(6)
+        setLat(detectedLat)
+        setLon(detectedLon)
+        setGpsNotice(`Coordinates captured: ${detectedLat}, ${detectedLon} (±${Math.round(position.coords.accuracy)}m accuracy)`)
+      },
+      (error) => {
+        setDetectingGps(false)
+        setGpsNotice(`Could not detect location: ${error.message}`)
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    )
+  }
 
   return (
     <Card>
@@ -59,19 +95,20 @@ export function PropertyForm({
               type="email"
               required
               defaultValue={defaultValues?.email}
+              placeholder="reports@property.com"
               className={INPUT}
             />
-            <p className="text-xs text-on-surface-variant">
-              Completed inspection reports are emailed here.
-            </p>
           </div>
         </div>
 
-        <AddressFields defaults={defaultValues} requireStreet />
+        <AddressFields
+          defaults={defaultValues}
+          requireStreet={true}
+        />
 
         <div className="flex flex-col gap-1">
           <label htmlFor="phone" className={LABEL}>
-            Phone Number
+            Property Phone
           </label>
           <input
             id="phone"
@@ -94,6 +131,104 @@ export function PropertyForm({
             placeholder="Notes visible to admins and the assigned specialist…"
             className="w-full rounded border border-outline-variant px-3 py-2 text-sm focus:border-primary-container focus:outline-none"
           />
+        </div>
+
+        {/* Task 6: GPS Tracking & Virtual Geofencing Configuration */}
+        <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Navigation size={18} className="text-primary" />
+            <h3 className="font-headline font-semibold text-sm text-on-surface">
+              GPS Tracking & Virtual Geofencing Perimeter
+            </h3>
+          </div>
+          <p className="text-xs text-on-surface-variant mb-4">
+            Verify specialists are physically on-site during audits, track dwell duration, and capture automatic arrival timestamps.
+          </p>
+
+          <label className="flex cursor-pointer items-start gap-3 mb-4">
+            <input
+              type="checkbox"
+              name="enable_gps_geofencing"
+              defaultChecked={defaultValues?.enableGpsGeofencing ?? true}
+              className="mt-1 h-4 w-4 accent-[#ee8a4b]"
+            />
+            <div>
+              <p className="text-sm font-semibold text-on-surface">
+                Enable On-Site GPS Geofence Verification
+              </p>
+              <p className="text-xs text-on-surface-variant">
+                When enabled, the app tracks the specialist&apos;s proximity to the property boundary and records entry/exit telemetry.
+              </p>
+            </div>
+          </label>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-3 border-t border-outline-variant">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="latitude" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Latitude (Center)
+              </label>
+              <input
+                id="latitude"
+                name="latitude"
+                type="number"
+                step="any"
+                value={lat}
+                onChange={(e) => setLat(e.target.value)}
+                placeholder="e.g. 40.712776"
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="longitude" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Longitude (Center)
+              </label>
+              <input
+                id="longitude"
+                name="longitude"
+                type="number"
+                step="any"
+                value={lon}
+                onChange={(e) => setLon(e.target.value)}
+                placeholder="e.g. -74.005974"
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="geofence_radius_meters" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                Geofence Perimeter Radius
+              </label>
+              <select
+                id="geofence_radius_meters"
+                name="geofence_radius_meters"
+                defaultValue={defaultValues?.geofenceRadiusMeters ?? 100}
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              >
+                <option value={50}>50 meters (~160 ft - Tight building perimeter)</option>
+                <option value={100}>100 meters (~330 ft - Standard property)</option>
+                <option value={200}>200 meters (~650 ft - Large multi-acre complex)</option>
+                <option value={500}>500 meters (~1640 ft - Expansive campus / resort)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleDetectCurrentLocation}
+              disabled={detectingGps}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant bg-surface px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container transition disabled:opacity-50"
+            >
+              <Crosshair size={14} className={detectingGps ? 'animate-spin text-primary' : 'text-primary'} />
+              {detectingGps ? 'Pinpointing GPS…' : 'Set to Current Device Location'}
+            </button>
+            {gpsNotice && (
+              <span className="text-xs text-primary font-medium">
+                {gpsNotice}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Client Feature: Photo ID Verification Toggle */}

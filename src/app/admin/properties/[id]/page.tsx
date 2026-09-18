@@ -12,6 +12,7 @@ import {
   Clock,
   Landmark,
   Shield,
+  Navigation,
   Pencil as PencilIcon,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
@@ -146,6 +147,16 @@ export default async function PropertyDetailPage({
             }`}>
               <Shield size={12} className={property.require_id_photo !== false ? 'text-primary' : ''} />
               {property.require_id_photo !== false ? 'Photo ID Required' : 'Photo ID Exempt'}
+            </span>
+            <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold ${
+              property.enable_gps_geofencing !== false
+                ? 'bg-emerald-100 text-emerald-950'
+                : 'bg-surface-container-highest text-on-surface-variant'
+            }`}>
+              <Navigation size={12} className={property.enable_gps_geofencing !== false ? 'text-emerald-700' : ''} />
+              {property.enable_gps_geofencing !== false
+                ? `GPS Geofenced (${property.geofence_radius_meters ?? 100}m)`
+                : 'GPS Tracking Exempt'}
             </span>
           </span>
         }

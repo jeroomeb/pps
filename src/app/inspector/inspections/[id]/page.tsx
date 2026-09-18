@@ -25,7 +25,7 @@ export default async function InspectionDetailPage({
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, created_at, completed_at, scheduled_for, cancellation_reason, properties(name, address, phone, notes, required_schedule), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, created_at, completed_at, scheduled_for, cancellation_reason, arrived_at, departed_at, dwell_time_seconds, geofence_status, properties(id, name, address, phone, notes, required_schedule, enable_gps_geofencing, latitude, longitude, geofence_radius_meters), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', id)
     .single()
@@ -75,11 +75,16 @@ export default async function InspectionDetailPage({
   )
 
   const property = inspection.properties as unknown as {
+    id: string
     name: string
     address: string | null
     phone: string | null
     notes: string | null
     required_schedule: unknown
+    enable_gps_geofencing: boolean
+    latitude: number | null
+    longitude: number | null
+    geofence_radius_meters: number
   }
   const template = inspection.checklist_templates as unknown as { name: string }
   const inspector = inspection.profiles as unknown as { full_name: string }
@@ -89,6 +94,12 @@ export default async function InspectionDetailPage({
   const inspectionDays = parseSchedule(property.required_schedule).map(scheduleEntryLabel)
 
   if (inspection.status === 'completed') {
+    const { data: geoLogs } = await supabase
+      .from('inspection_geo_logs')
+      .select('*')
+      .eq('inspection_id', id)
+      .order('logged_at', { ascending: true })
+
     return (
       <ReadOnlyInspectionView
         inspectionId={id}
@@ -101,6 +112,14 @@ export default async function InspectionDetailPage({
         inspectorName={inspector.full_name}
         completedAt={inspection.completed_at}
         items={itemsWithUrls}
+        arrivedAt={inspection.arrived_at}
+        departedAt={inspection.departed_at || inspection.completed_at}
+        dwellTimeSeconds={inspection.dwell_time_seconds}
+        geofenceStatus={inspection.geofence_status}
+        geofenceRadiusMeters={property.geofence_radius_meters ?? 100}
+        propertyLatitude={property.latitude}
+        propertyLongitude={property.longitude}
+        geoLogs={geoLogs ?? []}
       />
     )
   }
@@ -245,6 +264,7 @@ export default async function InspectionDetailPage({
       )}
       <ActiveInspectionChecklist
         inspectionId={id}
+        propertyId={inspection.property_id}
         propertyName={property.name}
         propertyAddress={property.address}
         propertyPhone={property.phone}
@@ -259,6 +279,10 @@ export default async function InspectionDetailPage({
         scheduledLabel={scheduledAt ? formatDateTime(scheduledAt) : null}
         initialItems={itemsWithUrls}
         isAdmin={profile.role === 'admin'}
+        enableGpsGeofencing={property.enable_gps_geofencing}
+        propertyLatitude={property.latitude}
+        propertyLongitude={property.longitude}
+        geofenceRadiusMeters={property.geofence_radius_meters}
       />
     </>
   )

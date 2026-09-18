@@ -21,7 +21,7 @@ export async function POST(
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, template_id, tenant_id, properties(name, address, email, custom_payout_rate), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, properties(name, address, email, custom_payout_rate), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()
@@ -112,6 +112,14 @@ export async function POST(
     return NextResponse.json({ error: uploadError.message }, { status: 500 })
   }
 
+  let dwellTimeSeconds: number | null = null
+  if (inspection.arrived_at) {
+    dwellTimeSeconds = Math.max(
+      0,
+      Math.round((completedAt.getTime() - new Date(inspection.arrived_at).getTime()) / 1000)
+    )
+  }
+
   // Compare-and-set: if a concurrent submit already completed it, bail before
   // sending a duplicate email. Scoped to the two OPEN statuses rather than
   // `.neq('completed')` so an admin cancelling between the status check above
@@ -119,7 +127,13 @@ export async function POST(
   // RLS is bypassed and this is the only thing standing in the way.
   const { data: updatedRows, error: updateError } = await admin
     .from('inspections')
-    .update({ status: 'completed', completed_at: completedAt.toISOString(), pdf_path: pdfPath })
+    .update({
+      status: 'completed',
+      completed_at: completedAt.toISOString(),
+      pdf_path: pdfPath,
+      departed_at: completedAt.toISOString(),
+      dwell_time_seconds: dwellTimeSeconds,
+    })
     .eq('id', inspectionId)
     .in('status', ['pending', 'in_progress'])
     .select('id')

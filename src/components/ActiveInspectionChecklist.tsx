@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, AlertTriangle, MapPin, Phone, Clock, LifeBuoy, Pencil } from 'lucide-react'
 import { ChecklistItemCard, type ChecklistItemData } from '@/components/ChecklistItemCard'
 import { CancelInspectionButton } from '@/components/CancelInspectionButton'
+import { GpsTelemetryTracker } from '@/components/GpsTelemetryTracker'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 import { validateInspectionItems } from '@/lib/inspection-validation'
@@ -19,6 +20,7 @@ import {
 
 export function ActiveInspectionChecklist({
   inspectionId,
+  propertyId,
   propertyName,
   propertyAddress,
   propertyPhone,
@@ -30,8 +32,13 @@ export function ActiveInspectionChecklist({
   scheduledLabel,
   initialItems,
   isAdmin = false,
+  enableGpsGeofencing = true,
+  propertyLatitude = null,
+  propertyLongitude = null,
+  geofenceRadiusMeters = 100,
 }: {
   inspectionId: string
+  propertyId: string
   propertyName: string
   propertyAddress?: string | null
   propertyPhone?: string | null
@@ -47,6 +54,10 @@ export function ActiveInspectionChecklist({
   initialItems: (ChecklistItemData & { service_category: string })[]
   /** Admins get reschedule/cancel controls inline; specialists never do. */
   isAdmin?: boolean
+  enableGpsGeofencing?: boolean
+  propertyLatitude?: number | null
+  propertyLongitude?: number | null
+  geofenceRadiusMeters?: number
 }) {
   const router = useRouter()
   const showToast = useToast()
@@ -295,6 +306,17 @@ export function ActiveInspectionChecklist({
           </div>
         </div>
       </Card>
+
+      {/* Real-Time GPS Geofence & Shift Telemetry Tracking */}
+      <GpsTelemetryTracker
+        inspectionId={inspectionId}
+        propertyId={propertyId}
+        propertyName={propertyName}
+        enableGpsGeofencing={enableGpsGeofencing}
+        propertyLatitude={propertyLatitude}
+        propertyLongitude={propertyLongitude}
+        geofenceRadiusMeters={geofenceRadiusMeters}
+      />
 
       {recoverable.length > 0 && (
         <Card className="mb-6 border-primary-container bg-primary-container/20">
