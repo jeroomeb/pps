@@ -10,6 +10,7 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   const profile = await requireRole('admin')
+  const enablePayouts = profile.tenant?.enable_payouts ?? false
 
   return (
     <>
@@ -19,12 +20,13 @@ export default async function AdminLayout({
         fullName={profile.full_name}
         isGlobalAdmin={profile.is_global_admin}
         tenantName={profile.tenant?.name ?? null}
+        enablePayouts={enablePayouts}
         showStartAudit
         signOutAction={signOut}
       >
         {children}
       </AppShell>
-      <BottomNav role="admin" isGlobalAdmin={profile.is_global_admin} />
+      <BottomNav role="admin" isGlobalAdmin={profile.is_global_admin} enablePayouts={enablePayouts} />
     </>
   )
 }

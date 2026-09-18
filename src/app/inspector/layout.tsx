@@ -18,18 +18,27 @@ export default async function InspectorLayout({
     redirect('/force-password-change')
   }
 
+  const enablePayouts = profile.tenant?.enable_payouts ?? false
+
   return (
     <>
       <Header title="Amenity Op's" fullName={profile.full_name} />
       <AppShell
         role={profile.role}
         fullName={profile.full_name}
+        isGlobalAdmin={profile.is_global_admin}
+        tenantName={profile.tenant?.name ?? null}
+        enablePayouts={enablePayouts}
         showStartAudit={profile.role === 'admin'}
         signOutAction={signOut}
       >
         {children}
       </AppShell>
-      <BottomNav role={profile.role} />
+      <BottomNav
+        role={profile.role}
+        isGlobalAdmin={profile.is_global_admin}
+        enablePayouts={enablePayouts}
+      />
     </>
   )
 }

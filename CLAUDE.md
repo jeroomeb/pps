@@ -190,6 +190,21 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-18 — Task 5: Specialist Compensation & Payouts Section
+Built full financial ledger and disbursement management system with organization-level enable/disable toggle.
+- **Database & Migration (`0010_specialist_payouts.sql`)**:
+  - Added `tenants.enable_payouts boolean not null default false` and `default_payout_rate numeric(10,2) not null default 75.00`.
+  - Added `properties.custom_payout_rate numeric(10,2)` for property-specific compensation overrides.
+  - Created `specialist_payouts` ledger table (`amount`, `status`, `approved_at`, `paid_at`, `payment_reference`, `notes`) with RLS.
+- **Completion Hook (`/api/inspections/[id]/complete`)**:
+  - Automatically generates a pending payout record upon audit completion if tenant has payouts enabled.
+- **Dynamic Navigation (`src/lib/nav-items.ts`, `AppShell.tsx`, `BottomNav.tsx`)**:
+  - Conditionally renders `/admin/payouts` and `/inspector/payouts` when `enable_payouts === true`; hides them entirely when disabled.
+- **Portals & Server Actions (`src/lib/actions/payouts.ts`)**:
+  - Admin portal (`/admin/payouts` & `AdminPayoutsManager.tsx`): Feature flag switch, rate config, KPI strip, filters, batch approval, and settlement modal.
+  - Specialist portal (`/inspector/payouts`): Personal KPI cards, audit earnings breakdown, and status tracking.
+- `npx tsc --noEmit` and `npm run build` both clean (0 errors, 24 routes).
+
 ### 2026-09-18 — Task 4: Forced Password Reset on First Login
 Engineered and verified mandatory password reset on first login for provisioned specialists and admins.
 - **Database & Security (`0009_forced_password_reset.sql`)**:

@@ -11,6 +11,7 @@ export function AppShell({
   fullName,
   isGlobalAdmin = false,
   tenantName,
+  enablePayouts = false,
   showStartAudit,
   signOutAction,
   children,
@@ -19,12 +20,13 @@ export function AppShell({
   fullName: string
   isGlobalAdmin?: boolean
   tenantName?: string | null
+  enablePayouts?: boolean
   showStartAudit?: boolean
   signOutAction: () => void | Promise<void>
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const navItems = getNavItems(role, isGlobalAdmin)
+  const navItems = getNavItems(role, isGlobalAdmin, enablePayouts)
   // Resolved once for the whole list so exactly one tab can be active, even
   // where hrefs nest (e.g. /inspector and /inspector/profile).
   const activeHref = resolveActiveNavHref(pathname, navItems)

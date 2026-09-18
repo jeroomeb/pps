@@ -13,6 +13,8 @@ export type TenantInfo = {
   license_tier: LicenseTier
   max_property_licenses: number
   status: TenantStatus
+  enable_payouts?: boolean
+  default_payout_rate?: number
 }
 
 export type ProfileWithTenant = {
@@ -68,7 +70,7 @@ export const getProfile = cache(async (): Promise<ProfileWithTenant> => {
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id, full_name, role, tenant_id, is_global_admin, is_contractor, status, must_reset_password, tenants(id, name, slug, license_tier, max_property_licenses, status)')
+    .select('id, full_name, role, tenant_id, is_global_admin, is_contractor, status, must_reset_password, tenants(id, name, slug, license_tier, max_property_licenses, status, enable_payouts, default_payout_rate)')
     .eq('id', user.id)
     .single()
 

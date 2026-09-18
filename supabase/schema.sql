@@ -15,6 +15,8 @@ create table if not exists tenants (
   max_property_licenses int not null default 5,
   status text not null default 'active' check (status in ('active', 'suspended', 'trial')),
   require_id_photo boolean not null default true,
+  enable_payouts boolean not null default false,
+  default_payout_rate numeric(10, 2) not null default 75.00,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -88,7 +90,8 @@ create table if not exists properties (
   required_schedule jsonb not null default '[]'::jsonb,
   tenant_id uuid references tenants (id) on delete cascade,
   is_active boolean not null default true,
-  require_id_photo boolean not null default true
+  require_id_photo boolean not null default true,
+  custom_payout_rate numeric(10, 2)
 );
 
 create table if not exists property_specialist_assignments (
@@ -163,6 +166,30 @@ create index if not exists checklist_templates_tenant_id_idx on checklist_templa
 create index if not exists inspections_template_id_idx on inspections (template_id);
 create index if not exists inspection_items_template_item_id_idx on inspection_items (template_item_id);
 
+-- Specialist Payouts Ledger
+create table if not exists specialist_payouts (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references tenants (id) on delete cascade,
+  inspection_id uuid not null references inspections (id) on delete cascade,
+  specialist_id uuid not null references profiles (id) on delete cascade,
+  property_id uuid not null references properties (id) on delete cascade,
+  amount numeric(10, 2) not null default 0.00,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'paid', 'cancelled')),
+  approved_at timestamptz,
+  approved_by uuid references profiles (id) on delete set null,
+  paid_at timestamptz,
+  payment_reference text,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint specialist_payouts_inspection_id_unique unique (inspection_id)
+);
+
+create index if not exists specialist_payouts_tenant_id_idx on specialist_payouts (tenant_id);
+create index if not exists specialist_payouts_specialist_id_idx on specialist_payouts (specialist_id);
+create index if not exists specialist_payouts_property_id_idx on specialist_payouts (property_id);
+create index if not exists specialist_payouts_status_idx on specialist_payouts (status);
+
 -- Default Tenant for initial setup
 insert into tenants (id, name, slug, license_tier, max_property_licenses, status)
 values ('00000000-0000-0000-0000-000000000001', 'Amenity Op''s HQ', 'amenityops-hq', 'enterprise', 100, 'active')
@@ -219,6 +246,26 @@ alter table property_specialist_assignments enable row level security;
 alter table inspections enable row level security;
 alter table inspection_items enable row level security;
 alter table schedule_dismissals enable row level security;
+alter table specialist_payouts enable row level security;
+
+-- specialist_payouts
+drop policy if exists "payouts_select" on specialist_payouts;
+create policy "payouts_select" on specialist_payouts
+  for select using (
+    current_user_is_global_admin()
+    or specialist_id = auth.uid()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
+
+drop policy if exists "payouts_admin_write" on specialist_payouts;
+create policy "payouts_admin_write" on specialist_payouts
+  for all using (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  ) with check (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
 
 -- tenants
 drop policy if exists "tenants_select" on tenants;

@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   UserCircle,
   ShieldCheck,
+  CircleDollarSign,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -25,6 +26,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/inspector', label: 'My Inspections', shortLabel: 'My Work', icon: ClipboardCheck },
   { href: '/admin/properties', label: 'Properties', icon: Building2 },
   { href: '/admin/reports', label: 'Reports', icon: FileText },
+  { href: '/admin/payouts', label: 'Payouts', icon: CircleDollarSign },
   // Checklists is second-to-last, Team is last — per client request.
   { href: '/admin/checklists', label: 'Checklists', shortLabel: 'Lists', icon: ClipboardList },
   { href: '/admin/team', label: 'Team', icon: Users },
@@ -36,6 +38,7 @@ export const GLOBAL_ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin/properties', label: 'Properties', icon: Building2 },
   { href: '/admin/tenants', label: 'Tenants & Licenses', shortLabel: 'Tenants', icon: ShieldCheck },
   { href: '/admin/reports', label: 'Reports', icon: FileText },
+  { href: '/admin/payouts', label: 'Payouts', icon: CircleDollarSign },
   { href: '/admin/checklists', label: 'Checklists', shortLabel: 'Lists', icon: ClipboardList },
   { href: '/admin/team', label: 'Team', icon: Users },
 ]
@@ -49,8 +52,31 @@ export const INSPECTOR_NAV_ITEMS: NavItem[] = [
   { href: '/inspector/profile', label: 'Profile', icon: UserCircle },
 ]
 
-export function getNavItems(role: 'admin' | 'inspector', isGlobalAdmin?: boolean): NavItem[] {
-  if (role === 'inspector') return INSPECTOR_NAV_ITEMS
+const EARNINGS_INSPECTOR_NAV_ITEM: NavItem = {
+  href: '/inspector/payouts',
+  label: 'Earnings',
+  shortLabel: 'Earnings',
+  icon: CircleDollarSign,
+}
+
+export function getNavItems(
+  role: 'admin' | 'inspector',
+  isGlobalAdmin?: boolean,
+  enablePayouts?: boolean
+): NavItem[] {
+  if (role === 'inspector') {
+    if (enablePayouts) {
+      return [
+        INSPECTOR_NAV_ITEMS[0],
+        EARNINGS_INSPECTOR_NAV_ITEM,
+        INSPECTOR_NAV_ITEMS[1],
+      ]
+    }
+    return INSPECTOR_NAV_ITEMS
+  }
+
+  // Admins & Global/Super Admins always have access to the Payouts module in the menu
+  // so they can access settings, view records, or toggle the feature on/off anytime.
   return isGlobalAdmin ? GLOBAL_ADMIN_NAV_ITEMS : ADMIN_NAV_ITEMS
 }
 

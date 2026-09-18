@@ -21,7 +21,7 @@ export async function POST(
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, template_id, properties(name, address, email), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, template_id, tenant_id, properties(name, address, email, custom_payout_rate), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()
@@ -142,6 +142,42 @@ export async function POST(
   revalidatePath('/admin/reports')
   revalidatePath(`/admin/properties/${inspection.property_id}`)
   revalidatePath('/inspector')
+  revalidatePath('/inspector/payouts')
+  revalidatePath('/admin/payouts')
+
+  // Automatic Payout Ledger Entry (Task 5):
+  // If the tenant organization has enabled the payouts module, log an earnings record
+  if (inspection.tenant_id) {
+    try {
+      const { data: tenant } = await admin
+        .from('tenants')
+        .select('enable_payouts, default_payout_rate')
+        .eq('id', inspection.tenant_id)
+        .single()
+
+      if (tenant?.enable_payouts) {
+        const prop = inspection.properties as unknown as { custom_payout_rate?: number | null } | null
+        const payoutAmount =
+          typeof prop?.custom_payout_rate === 'number'
+            ? prop.custom_payout_rate
+            : Number(tenant.default_payout_rate ?? 75.0)
+
+        await admin.from('specialist_payouts').upsert(
+          {
+            tenant_id: inspection.tenant_id,
+            inspection_id: inspectionId,
+            specialist_id: inspection.inspector_id,
+            property_id: inspection.property_id,
+            amount: payoutAmount,
+            status: 'pending',
+          },
+          { onConflict: 'inspection_id' }
+        )
+      }
+    } catch (payoutErr) {
+      console.error('Failed to create automatic payout record:', payoutErr)
+    }
+  }
 
   try {
     await sendReportEmail({

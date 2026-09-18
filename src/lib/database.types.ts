@@ -6,6 +6,7 @@ export type LicenseTier = 'starter' | 'standard' | 'pro' | 'enterprise'
 export type TenantStatus = 'active' | 'suspended' | 'trial'
 export type ProfileStatus = 'active' | 'inactive' | 'suspended'
 export type SpecialistAssignmentRole = 'primary' | 'backup' | 'staff'
+export type PayoutStatus = 'pending' | 'approved' | 'paid' | 'cancelled'
 
 export interface Database {
   public: {
@@ -19,6 +20,8 @@ export interface Database {
           max_property_licenses: number
           status: TenantStatus
           require_id_photo: boolean
+          enable_payouts: boolean
+          default_payout_rate: number
           created_at: string
           updated_at: string
         }
@@ -30,6 +33,8 @@ export interface Database {
           max_property_licenses?: number
           status?: TenantStatus
           require_id_photo?: boolean
+          enable_payouts?: boolean
+          default_payout_rate?: number
           created_at?: string
           updated_at?: string
         }
@@ -41,6 +46,8 @@ export interface Database {
           max_property_licenses?: number
           status?: TenantStatus
           require_id_photo?: boolean
+          enable_payouts?: boolean
+          default_payout_rate?: number
           created_at?: string
           updated_at?: string
         }
@@ -206,6 +213,7 @@ export interface Database {
           tenant_id: string | null
           is_active: boolean
           require_id_photo: boolean
+          custom_payout_rate: number | null
         }
         Insert: {
           id?: string
@@ -225,6 +233,7 @@ export interface Database {
           tenant_id?: string | null
           is_active?: boolean
           require_id_photo?: boolean
+          custom_payout_rate?: number | null
         }
         Update: {
           id?: string
@@ -244,6 +253,7 @@ export interface Database {
           tenant_id?: string | null
           is_active?: boolean
           require_id_photo?: boolean
+          custom_payout_rate?: number | null
         }
         Relationships: [
           {
@@ -483,6 +493,93 @@ export interface Database {
             columns: ['template_item_id']
             isOneToOne: false
             referencedRelation: 'checklist_template_items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      specialist_payouts: {
+        Row: {
+          id: string
+          tenant_id: string | null
+          inspection_id: string
+          specialist_id: string
+          property_id: string
+          amount: number
+          status: PayoutStatus
+          approved_at: string | null
+          approved_by: string | null
+          paid_at: string | null
+          payment_reference: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id?: string | null
+          inspection_id: string
+          specialist_id: string
+          property_id: string
+          amount?: number
+          status?: PayoutStatus
+          approved_at?: string | null
+          approved_by?: string | null
+          paid_at?: string | null
+          payment_reference?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string | null
+          inspection_id?: string
+          specialist_id?: string
+          property_id?: string
+          amount?: number
+          status?: PayoutStatus
+          approved_at?: string | null
+          approved_by?: string | null
+          paid_at?: string | null
+          payment_reference?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'specialist_payouts_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'specialist_payouts_inspection_id_fkey'
+            columns: ['inspection_id']
+            isOneToOne: true
+            referencedRelation: 'inspections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'specialist_payouts_specialist_id_fkey'
+            columns: ['specialist_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'specialist_payouts_property_id_fkey'
+            columns: ['property_id']
+            isOneToOne: false
+            referencedRelation: 'properties'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'specialist_payouts_approved_by_fkey'
+            columns: ['approved_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
