@@ -91,7 +91,11 @@ create table if not exists properties (
   tenant_id uuid references tenants (id) on delete cascade,
   is_active boolean not null default true,
   require_id_photo boolean not null default true,
-  custom_payout_rate numeric(10, 2)
+  custom_payout_rate numeric(10, 2),
+  enable_gps_geofencing boolean not null default true,
+  latitude double precision,
+  longitude double precision,
+  geofence_radius_meters integer not null default 100
 );
 
 create table if not exists property_specialist_assignments (
@@ -138,7 +142,12 @@ create table if not exists inspections (
   -- instead of only a toast the specialist may have already dismissed.
   email_status text check (email_status in ('sent', 'failed')),
   email_error text,
-  tenant_id uuid references tenants (id) on delete cascade
+  tenant_id uuid references tenants (id) on delete cascade,
+  -- GPS Geofencing, On-Site Arrival/Departure timestamps & Dwell Time
+  arrived_at timestamptz,
+  departed_at timestamptz,
+  dwell_time_seconds integer,
+  geofence_status text not null default 'pending' check (geofence_status in ('pending', 'verified', 'outside', 'exempt'))
 );
 
 create table if not exists inspection_items (
@@ -165,6 +174,9 @@ create index if not exists checklist_template_items_template_id_idx on checklist
 create index if not exists checklist_templates_tenant_id_idx on checklist_templates (tenant_id);
 create index if not exists inspections_template_id_idx on inspections (template_id);
 create index if not exists inspection_items_template_item_id_idx on inspection_items (template_item_id);
+create index if not exists inspections_analytics_completed_idx on inspections (tenant_id, status, completed_at);
+create index if not exists inspections_specialist_perf_idx on inspections (inspector_id, status, completed_at);
+create index if not exists inspection_items_status_analytics_idx on inspection_items (inspection_id, status);
 
 -- Specialist Payouts Ledger
 create table if not exists specialist_payouts (
@@ -189,6 +201,28 @@ create index if not exists specialist_payouts_tenant_id_idx on specialist_payout
 create index if not exists specialist_payouts_specialist_id_idx on specialist_payouts (specialist_id);
 create index if not exists specialist_payouts_property_id_idx on specialist_payouts (property_id);
 create index if not exists specialist_payouts_status_idx on specialist_payouts (status);
+
+-- Inspection Geo-Telemetry Breadcrumb Logs
+create table if not exists inspection_geo_logs (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references tenants (id) on delete cascade,
+  inspection_id uuid not null references inspections (id) on delete cascade,
+  specialist_id uuid not null references profiles (id) on delete cascade,
+  property_id uuid not null references properties (id) on delete cascade,
+  latitude double precision not null,
+  longitude double precision not null,
+  speed_meters_per_sec double precision,
+  accuracy_meters double precision,
+  distance_to_center_meters double precision,
+  is_inside_geofence boolean not null default false,
+  logged_at timestamptz not null default now()
+);
+
+create index if not exists geo_logs_inspection_id_idx on inspection_geo_logs (inspection_id);
+create index if not exists geo_logs_specialist_id_idx on inspection_geo_logs (specialist_id);
+create index if not exists geo_logs_property_id_idx on inspection_geo_logs (property_id);
+create index if not exists geo_logs_tenant_id_idx on inspection_geo_logs (tenant_id);
+create index if not exists geo_logs_logged_at_idx on inspection_geo_logs (logged_at);
 
 -- Default Tenant for initial setup
 insert into tenants (id, name, slug, license_tier, max_property_licenses, status)
@@ -247,6 +281,24 @@ alter table inspections enable row level security;
 alter table inspection_items enable row level security;
 alter table schedule_dismissals enable row level security;
 alter table specialist_payouts enable row level security;
+alter table inspection_geo_logs enable row level security;
+
+-- inspection_geo_logs
+drop policy if exists "geo_logs_select" on inspection_geo_logs;
+create policy "geo_logs_select" on inspection_geo_logs
+  for select using (
+    current_user_is_global_admin()
+    or specialist_id = auth.uid()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
+
+drop policy if exists "geo_logs_insert" on inspection_geo_logs;
+create policy "geo_logs_insert" on inspection_geo_logs
+  for insert with check (
+    current_user_is_global_admin()
+    or specialist_id = auth.uid()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
 
 -- specialist_payouts
 drop policy if exists "payouts_select" on specialist_payouts;

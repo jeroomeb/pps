@@ -190,6 +190,38 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-18 — Task 8: Specialist Performance & Operational Tracking Metrics
+Built operational analytics intelligence suite, time-horizon aggregations, checklist distribution breakdowns, and specialist scorecards.
+- **Database & Migration (`0012_operational_analytics_indexes.sql`)**:
+  - Added high-performance composite indexes on `inspections` and `inspection_items` for rapid analytical aggregations.
+- **Analytics Engine & Server Actions (`src/lib/analytics.ts` & `src/lib/actions/analytics.ts`)**:
+  - Calculated audit volume, on-time punctuality scores, average duration & GPS dwell duration, failure discovery rates, photo compliance rates, checklist template distribution, specialist leaderboards, and property frequency.
+- **Portals & Scorecards**:
+  - `AdminAnalyticsDashboard` & `/admin/analytics`: Organization-wide KPI strip, time horizon filters (7D/30D/90D/All), template distribution bars, specialist leaderboard, and property breakdown.
+  - `SpecialistScorecard` & `/inspector/metrics`: Performance tier scorecard (Elite/Senior/Standard) with punctuality, velocity, issues discovered, and template experience.
+  - Embedded `SpecialistScorecard` into `/admin/team/[id]` specialist profile view.
+- **Navigation (`src/lib/nav-items.ts`)**:
+  - Added "Analytics" to Admin/Global Admin navigation and "Performance" to Specialist navigation.
+- `npx tsc --noEmit` and `npm run build` both clean (0 errors, 25 routes).
+
+### 2026-09-18 — Task 6: GPS Tracking & Virtual Geofencing Capabilities
+Built comprehensive GPS tracking, virtual perimeter geofencing, on-site dwell duration calculation, real-time checklist indicators, and field telemetry reporting.
+- **Database & Migration (`0011_gps_geofencing_telemetry.sql`)**:
+  - Added `properties.enable_gps_geofencing`, `properties.latitude`, `properties.longitude`, and `properties.geofence_radius_meters`.
+  - Added `inspections.arrived_at`, `inspections.departed_at`, `inspections.dwell_time_seconds`, and `inspections.geofence_status`.
+  - Created `inspection_geo_logs` table (`latitude`, `longitude`, `speed_meters_per_sec`, `accuracy_meters`, `distance_to_center_meters`, `is_inside_geofence`) with RLS.
+- **Mathematical Geo Engine (`src/lib/geo.ts`)**:
+  - Implemented Haversine great-circle distance algorithm, geofence boundary checks, and formatters for distance, speed, and dwell duration.
+- **Server Actions (`src/lib/actions/geo.ts` & `src/lib/actions/properties.ts`)**:
+  - `logInspectionGeoBreadcrumb`: Streams breadcrumbs, evaluates boundary proximity, and auto-records `arrived_at` upon perimeter entry.
+  - `recordInspectionDeparture`: Finalizes `departed_at` and `dwell_time_seconds`.
+  - Updated property creation and editing actions with GPS and geofence radius support.
+- **Frontend & Telemetry Components**:
+  - `GpsTelemetryTracker`: Real-time presence indicator banner (On-Site & Verified vs Outside Perimeter vs Exempt) in active checklist.
+  - `PropertyForm`: GPS coordinates configuration with "Set to Current Device Location" GPS detection button.
+  - `InspectionGeoTelemetryCard`: Telemetry summary card with arrival/departure times, dwell duration, and collapsible GPS breadcrumb log table on `/admin/reports/[id]` and specialist completed views.
+- `npx tsc --noEmit` and `npm run build` both clean (0 errors, 24 routes).
+
 ### 2026-09-18 — Task 5: Specialist Compensation & Payouts Section
 Built full financial ledger and disbursement management system with organization-level enable/disable toggle.
 - **Database & Migration (`0010_specialist_payouts.sql`)**:

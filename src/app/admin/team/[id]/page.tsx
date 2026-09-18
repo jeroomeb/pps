@@ -17,6 +17,8 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusBadge } from '@/components/StatusBadge'
 import { ZoomableImage } from '@/components/ZoomableImage'
 import { TeamMemberAddressForm } from '@/components/TeamMemberAddressForm'
+import { SpecialistScorecard } from '@/components/SpecialistScorecard'
+import { computeOperationalAnalytics } from '@/lib/analytics'
 
 export default async function TeamMemberProfilePage({
   params,
@@ -41,11 +43,46 @@ export default async function TeamMemberProfilePage({
 
   const { data: inspections } = await supabase
     .from('inspections')
-    .select('id, status, created_at, property_id, properties(name), checklist_templates(name)')
+    .select(
+      'id, status, created_at, completed_at, scheduled_for, arrived_at, dwell_time_seconds, template_id, inspector_id, property_id, properties(name, human_id), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name, human_id, email)'
+    )
     .eq('inspector_id', id)
     .order('created_at', { ascending: false })
 
-  const all = inspections ?? []
+  const rawInspections = (inspections as any[]) ?? []
+  const inspectionIds = rawInspections.map((i) => i.id)
+
+  let itemsQuery = supabase
+    .from('inspection_items')
+    .select('inspection_id, status, photo_path')
+
+  if (inspectionIds.length > 0) {
+    itemsQuery = itemsQuery.in('inspection_id', inspectionIds)
+  }
+
+  const { data: items } = await itemsQuery
+  const rawItems = (items as any[]) ?? []
+
+  const summary = computeOperationalAnalytics(rawInspections, rawItems, 'all')
+  const scorecard = summary.specialistLeaderboard.find((s) => s.specialistId === member.id) || {
+    specialistId: member.id,
+    fullName: member.full_name,
+    humanId: member.human_id,
+    email: member.email,
+    completedCount: 0,
+    inProgressCount: 0,
+    onTimeRate: 100,
+    onTimeCount: 0,
+    scheduledCount: 0,
+    avgDurationMinutes: 0,
+    avgDwellMinutes: 0,
+    failureDiscoveryRate: 0,
+    failuresFlagged: 0,
+    totalItemsChecked: 0,
+    photoComplianceRate: 100,
+  }
+
+  const all = rawInspections
   const pending = all.filter((i) => i.status === 'pending').length
   const inProgress = all.filter((i) => i.status === 'in_progress').length
   const completed = all.filter((i) => i.status === 'completed').length
@@ -115,19 +152,12 @@ export default async function TeamMemberProfilePage({
         }
       />
 
-      <div className="mb-8 grid grid-cols-3 gap-3">
-        {stats.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <Card key={stat.label} className="flex items-center justify-between">
-              <div>
-                <p className="label-tracked text-on-surface-variant">{stat.label}</p>
-                <p className="font-headline text-2xl font-bold">{stat.value}</p>
-              </div>
-              <Icon size={22} className="hidden text-primary sm:block" />
-            </Card>
-          )
-        })}
+      {/* Operational Scorecard */}
+      <div className="mb-8">
+        <SpecialistScorecard
+          scorecard={scorecard}
+          templateBreakdown={summary.templateBreakdown}
+        />
       </div>
 
       <section className="mb-8">

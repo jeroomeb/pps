@@ -22,6 +22,7 @@ export type ProfileWithTenant = {
   full_name: string
   role: UserRole
   email: string
+  human_id: string | null
   tenant_id: string | null
   is_global_admin: boolean
   is_contractor: boolean
@@ -70,7 +71,7 @@ export const getProfile = cache(async (): Promise<ProfileWithTenant> => {
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id, full_name, role, tenant_id, is_global_admin, is_contractor, status, must_reset_password, tenants(id, name, slug, license_tier, max_property_licenses, status, enable_payouts, default_payout_rate)')
+    .select('id, full_name, role, human_id, tenant_id, is_global_admin, is_contractor, status, must_reset_password, tenants(id, name, slug, license_tier, max_property_licenses, status, enable_payouts, default_payout_rate)')
     .eq('id', user.id)
     .single()
 
@@ -81,7 +82,7 @@ export const getProfile = cache(async (): Promise<ProfileWithTenant> => {
     // in an infinite redirect loop between '/' and '/login'.
     const { data: basicProfile } = await supabase
       .from('profiles')
-      .select('id, full_name, role')
+      .select('id, full_name, role, human_id')
       .eq('id', user.id)
       .single()
 
@@ -91,6 +92,7 @@ export const getProfile = cache(async (): Promise<ProfileWithTenant> => {
         full_name: basicProfile.full_name,
         role: basicProfile.role,
         email: user.email!,
+        human_id: basicProfile.human_id ?? null,
         tenant_id: null,
         is_global_admin: basicProfile.role === 'admin',
         is_contractor: false,
@@ -110,6 +112,7 @@ export const getProfile = cache(async (): Promise<ProfileWithTenant> => {
     full_name: profile.full_name,
     role: profile.role,
     email: user.email!,
+    human_id: profile.human_id ?? null,
     tenant_id: profile.tenant_id,
     is_global_admin: profile.is_global_admin ?? false,
     is_contractor: profile.is_contractor ?? false,

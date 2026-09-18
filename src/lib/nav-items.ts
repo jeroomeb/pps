@@ -9,6 +9,8 @@ import {
   UserCircle,
   ShieldCheck,
   CircleDollarSign,
+  BarChart3,
+  Award,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -25,6 +27,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/inspector', label: 'My Inspections', shortLabel: 'My Work', icon: ClipboardCheck },
   { href: '/admin/properties', label: 'Properties', icon: Building2 },
+  { href: '/admin/analytics', label: 'Analytics', shortLabel: 'Metrics', icon: BarChart3 },
   { href: '/admin/reports', label: 'Reports', icon: FileText },
   { href: '/admin/payouts', label: 'Payouts', icon: CircleDollarSign },
   // Checklists is second-to-last, Team is last — per client request.
@@ -37,6 +40,7 @@ export const GLOBAL_ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/inspector', label: 'My Inspections', shortLabel: 'My Work', icon: ClipboardCheck },
   { href: '/admin/properties', label: 'Properties', icon: Building2 },
   { href: '/admin/tenants', label: 'Tenants & Licenses', shortLabel: 'Tenants', icon: ShieldCheck },
+  { href: '/admin/analytics', label: 'Analytics', shortLabel: 'Metrics', icon: BarChart3 },
   { href: '/admin/reports', label: 'Reports', icon: FileText },
   { href: '/admin/payouts', label: 'Payouts', icon: CircleDollarSign },
   { href: '/admin/checklists', label: 'Checklists', shortLabel: 'Lists', icon: ClipboardList },
@@ -49,6 +53,7 @@ export const GLOBAL_ADMIN_NAV_ITEMS: NavItem[] = [
 // the most specific match rather than lighting up both.
 export const INSPECTOR_NAV_ITEMS: NavItem[] = [
   { href: '/inspector', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/inspector/metrics', label: 'Performance', shortLabel: 'Scorecard', icon: Award },
   { href: '/inspector/profile', label: 'Profile', icon: UserCircle },
 ]
 
@@ -68,8 +73,9 @@ export function getNavItems(
     if (enablePayouts) {
       return [
         INSPECTOR_NAV_ITEMS[0],
-        EARNINGS_INSPECTOR_NAV_ITEM,
         INSPECTOR_NAV_ITEMS[1],
+        EARNINGS_INSPECTOR_NAV_ITEM,
+        INSPECTOR_NAV_ITEMS[2],
       ]
     }
     return INSPECTOR_NAV_ITEMS

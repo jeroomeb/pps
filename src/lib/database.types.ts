@@ -7,6 +7,7 @@ export type TenantStatus = 'active' | 'suspended' | 'trial'
 export type ProfileStatus = 'active' | 'inactive' | 'suspended'
 export type SpecialistAssignmentRole = 'primary' | 'backup' | 'staff'
 export type PayoutStatus = 'pending' | 'approved' | 'paid' | 'cancelled'
+export type GeofenceStatus = 'pending' | 'verified' | 'outside' | 'exempt'
 
 export interface Database {
   public: {
@@ -214,6 +215,10 @@ export interface Database {
           is_active: boolean
           require_id_photo: boolean
           custom_payout_rate: number | null
+          enable_gps_geofencing: boolean
+          latitude: number | null
+          longitude: number | null
+          geofence_radius_meters: number
         }
         Insert: {
           id?: string
@@ -234,6 +239,10 @@ export interface Database {
           is_active?: boolean
           require_id_photo?: boolean
           custom_payout_rate?: number | null
+          enable_gps_geofencing?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          geofence_radius_meters?: number
         }
         Update: {
           id?: string
@@ -254,6 +263,10 @@ export interface Database {
           is_active?: boolean
           require_id_photo?: boolean
           custom_payout_rate?: number | null
+          enable_gps_geofencing?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          geofence_radius_meters?: number
         }
         Relationships: [
           {
@@ -370,6 +383,10 @@ export interface Database {
           email_status: 'sent' | 'failed' | null
           email_error: string | null
           tenant_id: string | null
+          arrived_at: string | null
+          departed_at: string | null
+          dwell_time_seconds: number | null
+          geofence_status: GeofenceStatus
         }
         Insert: {
           id?: string
@@ -387,6 +404,10 @@ export interface Database {
           email_status?: 'sent' | 'failed' | null
           email_error?: string | null
           tenant_id?: string | null
+          arrived_at?: string | null
+          departed_at?: string | null
+          dwell_time_seconds?: number | null
+          geofence_status?: GeofenceStatus
         }
         Update: {
           id?: string
@@ -404,6 +425,10 @@ export interface Database {
           email_status?: 'sent' | 'failed' | null
           email_error?: string | null
           tenant_id?: string | null
+          arrived_at?: string | null
+          departed_at?: string | null
+          dwell_time_seconds?: number | null
+          geofence_status?: GeofenceStatus
         }
         Relationships: [
           {
@@ -580,6 +605,80 @@ export interface Database {
             columns: ['approved_by']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      inspection_geo_logs: {
+        Row: {
+          id: string
+          tenant_id: string | null
+          inspection_id: string
+          specialist_id: string
+          property_id: string
+          latitude: number
+          longitude: number
+          speed_meters_per_sec: number | null
+          accuracy_meters: number | null
+          distance_to_center_meters: number | null
+          is_inside_geofence: boolean
+          logged_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id?: string | null
+          inspection_id: string
+          specialist_id: string
+          property_id: string
+          latitude: number
+          longitude: number
+          speed_meters_per_sec?: number | null
+          accuracy_meters?: number | null
+          distance_to_center_meters?: number | null
+          is_inside_geofence?: boolean
+          logged_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string | null
+          inspection_id?: string
+          specialist_id?: string
+          property_id?: string
+          latitude?: number
+          longitude?: number
+          speed_meters_per_sec?: number | null
+          accuracy_meters?: number | null
+          distance_to_center_meters?: number | null
+          is_inside_geofence?: boolean
+          logged_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'inspection_geo_logs_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'inspection_geo_logs_inspection_id_fkey'
+            columns: ['inspection_id']
+            isOneToOne: false
+            referencedRelation: 'inspections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'inspection_geo_logs_specialist_id_fkey'
+            columns: ['specialist_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'inspection_geo_logs_property_id_fkey'
+            columns: ['property_id']
+            isOneToOne: false
+            referencedRelation: 'properties'
             referencedColumns: ['id']
           },
         ]
