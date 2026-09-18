@@ -28,6 +28,18 @@ export default async function InspectorProfilePage() {
     signed(row?.id_back_path),
   ])
 
+  // Check if assigned properties require ID verification
+  const { data: assignments } = await supabase
+    .from('property_specialist_assignments')
+    .select('properties(require_id_photo)')
+    .eq('specialist_id', profile.id)
+
+  const hasMandatoryIdProperty =
+    (assignments ?? []).some((a) => {
+      const prop = a.properties as unknown as { require_id_photo?: boolean } | null
+      return prop?.require_id_photo !== false
+    }) || assignments?.length === 0 // If no properties assigned yet, default to true per platform standard
+
   return (
     <div className="max-w-3xl">
       <PageHeader eyebrow="My Profile" title="Profile & Identification" />
@@ -36,6 +48,7 @@ export default async function InspectorProfilePage() {
         humanId={row?.human_id ?? null}
         fullName={profile.full_name}
         email={profile.email}
+        isIdVerificationMandatory={hasMandatoryIdProperty}
         defaults={{
           phone: row?.phone ?? null,
           street: row?.street ?? null,

@@ -20,6 +20,7 @@ const propertySchema = z.object({
   email: z.string().trim().email('Enter a valid email'),
   phone: z.string().trim().optional(),
   notes: z.string().trim().optional(),
+  require_id_photo: z.coerce.boolean().default(true),
 })
 
 export type PropertyFormState = { error?: string } | undefined
@@ -55,6 +56,7 @@ function propertyFormFields(formData: FormData) {
     email: formData.get('email'),
     phone: formData.get('phone'),
     notes: formData.get('notes'),
+    require_id_photo: formData.get('require_id_photo') === 'on' || formData.get('require_id_photo') === 'true',
   }
 }
 
@@ -106,6 +108,7 @@ export async function createProperty(
     required_schedule: parseScheduleFromForm(formData),
     human_id: genPropertyId(),
     tenant_id: profile.tenant_id ?? null,
+    require_id_photo: parsed.data.require_id_photo,
   }
 
   // Retry once on the (astronomically unlikely) human_id collision.
@@ -153,6 +156,7 @@ export async function updateProperty(
       phone: parsed.data.phone || null,
       notes: parsed.data.notes || null,
       required_schedule: parseScheduleFromForm(formData),
+      require_id_photo: parsed.data.require_id_photo,
     })
     .eq('id', propertyId)
 

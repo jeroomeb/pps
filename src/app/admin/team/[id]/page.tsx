@@ -30,7 +30,7 @@ export default async function TeamMemberProfilePage({
   const { data: member } = await supabase
     .from('profiles')
     .select(
-      'id, full_name, role, email, phone, address, street, city, state, zip, county, human_id, id_front_path, id_back_path'
+      'id, full_name, role, email, phone, address, street, city, state, zip, county, human_id, id_front_path, id_back_path, status'
     )
     .eq('id', id)
     .single()
@@ -71,7 +71,16 @@ export default async function TeamMemberProfilePage({
     <div>
       <PageHeader
         eyebrow={roleLabel}
-        title={member.full_name}
+        title={
+          <span className="flex items-center gap-3">
+            <span>{member.full_name}</span>
+            {member.status === 'inactive' && (
+              <span className="rounded bg-error-container px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-on-error-container">
+                Deactivated
+              </span>
+            )}
+          </span>
+        }
         backHref="/admin/team"
         backLabel="Team"
         subtitle={

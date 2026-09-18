@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 import { updateTenantLicense, type TenantFormState } from '@/lib/actions/tenants'
 import type { LicenseTier, TenantStatus } from '@/lib/database.types'
+import { formatDate } from '@/lib/timezone'
 
 export type TenantItem = {
   id: string
@@ -211,7 +212,7 @@ export function TenantLicenseCard({ tenant }: { tenant: TenantItem }) {
 
       <div className="mt-4 border-t border-outline-variant pt-2 text-[10px] text-on-surface-variant flex justify-between">
         <span>ID: {tenant.id.slice(0, 8)}...</span>
-        <span>Registered {new Date(tenant.created_at).toLocaleDateString()}</span>
+        <span>Registered {formatDate(new Date(tenant.created_at))}</span>
       </div>
     </Card>
   )

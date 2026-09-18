@@ -20,10 +20,23 @@ export async function signIn(
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
     return { error: 'Invalid email or password.' }
+  }
+
+  if (authData.user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('status')
+      .eq('id', authData.user.id)
+      .single()
+
+    if (profile?.status === 'inactive' || profile?.status === 'suspended') {
+      await supabase.auth.signOut()
+      return { error: 'Your account has been deactivated. Please contact your organization administrator.' }
+    }
   }
 
   redirect('/')

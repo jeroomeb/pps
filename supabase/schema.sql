@@ -14,6 +14,7 @@ create table if not exists tenants (
   license_tier text not null default 'standard' check (license_tier in ('starter', 'standard', 'pro', 'enterprise')),
   max_property_licenses int not null default 5,
   status text not null default 'active' check (status in ('active', 'suspended', 'trial')),
+  require_id_photo boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -85,8 +86,23 @@ create table if not exists properties (
   -- ordinal is always 1 ("first <weekday> of the month"); weekday 0=Sun..6=Sat
   required_schedule jsonb not null default '[]'::jsonb,
   tenant_id uuid references tenants (id) on delete cascade,
-  is_active boolean not null default true
+  is_active boolean not null default true,
+  require_id_photo boolean not null default true
 );
+
+create table if not exists property_specialist_assignments (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid references tenants (id) on delete cascade,
+  property_id uuid not null references properties (id) on delete cascade,
+  specialist_id uuid not null references profiles (id) on delete cascade,
+  role text not null default 'primary' check (role in ('primary', 'backup', 'staff')),
+  created_at timestamptz not null default now(),
+  unique (property_id, specialist_id)
+);
+
+create index if not exists prop_assign_property_id_idx on property_specialist_assignments (property_id);
+create index if not exists prop_assign_specialist_id_idx on property_specialist_assignments (specialist_id);
+create index if not exists prop_assign_tenant_id_idx on property_specialist_assignments (tenant_id);
 
 -- An admin-dismissed required-inspection day (stops it surfacing as overdue).
 create table if not exists schedule_dismissals (
@@ -198,6 +214,7 @@ alter table profiles enable row level security;
 alter table checklist_templates enable row level security;
 alter table checklist_template_items enable row level security;
 alter table properties enable row level security;
+alter table property_specialist_assignments enable row level security;
 alter table inspections enable row level security;
 alter table inspection_items enable row level security;
 alter table schedule_dismissals enable row level security;
@@ -280,10 +297,18 @@ create policy "properties_select_all" on properties
       and (
         current_role_is_admin()
         or exists (
+          select 1 from property_specialist_assignments psa
+          where psa.property_id = properties.id and psa.specialist_id = auth.uid()
+        )
+        or exists (
           select 1 from inspections i
           where i.property_id = properties.id and i.inspector_id = auth.uid()
         )
       )
+    )
+    or exists (
+      select 1 from property_specialist_assignments psa
+      where psa.property_id = properties.id and psa.specialist_id = auth.uid()
     )
     or exists (
       select 1 from inspections i
@@ -293,6 +318,25 @@ create policy "properties_select_all" on properties
 
 drop policy if exists "properties_admin_write" on properties;
 create policy "properties_admin_write" on properties
+  for all using (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  ) with check (
+    current_user_is_global_admin()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
+
+-- property_specialist_assignments
+drop policy if exists "prop_assign_select" on property_specialist_assignments;
+create policy "prop_assign_select" on property_specialist_assignments
+  for select using (
+    current_user_is_global_admin()
+    or specialist_id = auth.uid()
+    or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
+
+drop policy if exists "prop_assign_admin_write" on property_specialist_assignments;
+create policy "prop_assign_admin_write" on property_specialist_assignments
   for all using (
     current_user_is_global_admin()
     or (current_role_is_admin() and tenant_id = current_user_tenant_id())

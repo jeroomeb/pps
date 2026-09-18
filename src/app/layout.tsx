@@ -44,9 +44,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${hankenGrotesk.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-surface text-on-surface">
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-surface text-on-surface"
+      >
         <ToastProvider>{children}</ToastProvider>
         <SwRegister />
       </body>

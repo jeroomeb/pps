@@ -96,13 +96,18 @@ The app currently runs on Vercel's serverless Hobby infrastructure. This upgrade
 ## Task 3: Property-Centric Staff Assignment & Scheduling Logic
 
 ### 1. What Is It?
-Instead of an administrator manually picking an inspector every time a single inspection checklist is scheduled, **inspectors/specialists are assigned directly to the property itself**. Any audits that take place at that property automatically route to the assigned specialist(s).
+Instead of an administrator manually picking an inspector every time a single inspection checklist is scheduled, **inspectors/specialists are assigned directly to the property itself**. Any audits that take place at that property automatically route to the assigned specialist(s). Multiple specialists can be assigned to a single property (primary, backup, or designated team).
+
+> **Photo Identification Verification Toggle:**
+> Includes a per-property or per-tenant toggle (`require_specialist_id_photo`).
+> * **When Enabled (1099 Contractor Vetting):** Specialists must upload driver's license identification (front and back) to be approved for on-site audits.
+> * **When Disabled (Corporate Internal Staff):** Internal W-2 employees/facilities staff do not need to provide personal identification photos.
 
 ### 2. Current State vs. Future State
 * **Current State**:
   * Properties exist on their own. When an admin clicks "Start Inspection," they must manually select both a Checklist Type and an Inspector for that specific run.
 * **Future State**:
-  * Properties have designated assigned specialists (Primary, Backup, or In-House Staff).
+  * Properties have designated assigned specialists (Multiple specialists can be assigned to one property: Primary, Backup, or In-House Staff roster).
   * Inspectors only see and access properties they are actively assigned to.
   * External vetted contractors (marketplace) can be dynamically linked to designated property licenses without gaining access to the rest of the corporate tenant.
 
@@ -163,6 +168,11 @@ When an admin provisions a new team member or contractor account from `/admin/te
 
 ### 1. What Is It?
 A dedicated financial tracking and compensation module for Operations Continuity Specialists. Specialists can see how much they have earned from completed audits, track payout statuses, and view past payouts. Admins can review completed work, approve payouts, and log disbursements.
+
+> **Feature Flag / Enable-Disable Capability:**
+> Per client requirements, Task 5 includes an **Enable/Disable Payouts** toggle at the organization/tenant level (`enable_payouts_module`).
+> * **When Enabled (1099 Contractor Model):** Displays the Payouts portal, audit compensation rates, and disbursement tracking.
+> * **When Disabled (Corporate Internal Staff Model):** Completely hides the payouts tab, rates, and compensation ledgers for property management clients employing salaried or hourly W-2 staff.
 
 ### 2. Current State vs. Future State
 * **Current State**:

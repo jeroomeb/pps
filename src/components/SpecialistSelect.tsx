@@ -10,6 +10,7 @@ export type SpecialistOption = AddressParts & {
   id: string
   full_name: string
   role: 'admin' | 'inspector'
+  rosterRole?: 'primary' | 'backup' | 'staff' | null
 }
 
 export type PropertyLocation = AddressParts & { id: string; name?: string }
@@ -36,11 +37,22 @@ export function SpecialistSelect({
         const tier = property ? proximityTier(property, s) : null
         return { ...s, tier }
       })
-      .sort(
-        (a, b) =>
+      .sort((a, b) => {
+        // Roster members (especially primary/backup) rank highest
+        const rosterWeight = (item: typeof a) => {
+          if (item.rosterRole === 'primary') return 0
+          if (item.rosterRole === 'backup') return 1
+          if (item.rosterRole === 'staff') return 2
+          return 3
+        }
+        const weightDiff = rosterWeight(a) - rosterWeight(b)
+        if (weightDiff !== 0) return weightDiff
+
+        return (
           proximityRank(a.tier) - proximityRank(b.tier) ||
           a.full_name.localeCompare(b.full_name)
-      )
+        )
+      })
   }, [specialists, property])
 
   const anyMatch = ordered.some((s) => s.tier)
@@ -60,13 +72,22 @@ export function SpecialistSelect({
         <option value="" disabled>
           Select a specialist…
         </option>
-        {ordered.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.full_name}
-            {s.role === 'admin' ? ' (Admin)' : ''}
-            {s.tier ? ` — ${PROXIMITY_LABELS[s.tier]}` : ''}
-          </option>
-        ))}
+        {ordered.map((s) => {
+          let badge = ''
+          if (s.rosterRole) {
+            badge = ` [Property ${s.rosterRole.toUpperCase()}]`
+          } else if (s.role === 'admin') {
+            badge = ' (Admin)'
+          }
+          const proximity = s.tier ? ` — ${PROXIMITY_LABELS[s.tier]}` : ''
+          return (
+            <option key={s.id} value={s.id}>
+              {s.full_name}
+              {badge}
+              {proximity}
+            </option>
+          )
+        })}
       </select>
       <p className="text-xs text-on-surface-variant">
         {anyMatch

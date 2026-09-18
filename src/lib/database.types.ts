@@ -5,6 +5,7 @@ export type ScheduleEntry = { ordinal: number; weekday: number }
 export type LicenseTier = 'starter' | 'standard' | 'pro' | 'enterprise'
 export type TenantStatus = 'active' | 'suspended' | 'trial'
 export type ProfileStatus = 'active' | 'inactive' | 'suspended'
+export type SpecialistAssignmentRole = 'primary' | 'backup' | 'staff'
 
 export interface Database {
   public: {
@@ -17,6 +18,7 @@ export interface Database {
           license_tier: LicenseTier
           max_property_licenses: number
           status: TenantStatus
+          require_id_photo: boolean
           created_at: string
           updated_at: string
         }
@@ -27,6 +29,7 @@ export interface Database {
           license_tier?: LicenseTier
           max_property_licenses?: number
           status?: TenantStatus
+          require_id_photo?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -37,6 +40,7 @@ export interface Database {
           license_tier?: LicenseTier
           max_property_licenses?: number
           status?: TenantStatus
+          require_id_photo?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -198,6 +202,7 @@ export interface Database {
           required_schedule: ScheduleEntry[]
           tenant_id: string | null
           is_active: boolean
+          require_id_photo: boolean
         }
         Insert: {
           id?: string
@@ -216,6 +221,7 @@ export interface Database {
           required_schedule?: ScheduleEntry[]
           tenant_id?: string | null
           is_active?: boolean
+          require_id_photo?: boolean
         }
         Update: {
           id?: string
@@ -234,6 +240,7 @@ export interface Database {
           required_schedule?: ScheduleEntry[]
           tenant_id?: string | null
           is_active?: boolean
+          require_id_photo?: boolean
         }
         Relationships: [
           {
@@ -241,6 +248,55 @@ export interface Database {
             columns: ['tenant_id']
             isOneToOne: false
             referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      property_specialist_assignments: {
+        Row: {
+          id: string
+          tenant_id: string | null
+          property_id: string
+          specialist_id: string
+          role: SpecialistAssignmentRole
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id?: string | null
+          property_id: string
+          specialist_id: string
+          role?: SpecialistAssignmentRole
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string | null
+          property_id?: string
+          specialist_id?: string
+          role?: SpecialistAssignmentRole
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'property_specialist_assignments_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'property_specialist_assignments_property_id_fkey'
+            columns: ['property_id']
+            isOneToOne: false
+            referencedRelation: 'properties'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'property_specialist_assignments_specialist_id_fkey'
+            columns: ['specialist_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]

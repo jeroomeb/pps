@@ -22,6 +22,7 @@ export function InspectorProfileForm({
   defaults,
   idFrontUrl,
   idBackUrl,
+  isIdVerificationMandatory = true,
 }: {
   userId: string
   humanId: string | null
@@ -31,6 +32,7 @@ export function InspectorProfileForm({
    * these expire, so they're not derivable on the client). */
   idFrontUrl: string | null
   idBackUrl: string | null
+  isIdVerificationMandatory?: boolean
   defaults: {
     phone: string | null
     street: string | null
@@ -232,7 +234,23 @@ export function InspectorProfileForm({
       </p>
 
       <div>
-        <p className={`${LABEL} mb-2`}>Driver&apos;s License / Identification</p>
+        <div className="mb-2 flex items-center justify-between">
+          <p className={LABEL}>Driver&apos;s License / Identification</p>
+          <span
+            className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+              isIdVerificationMandatory
+                ? 'bg-amber-500/10 text-amber-700'
+                : 'bg-surface-container-highest text-on-surface-variant'
+            }`}
+          >
+            {isIdVerificationMandatory ? 'Mandatory for assigned properties' : 'Optional (Exempt by Property)'}
+          </span>
+        </div>
+        <p className="mb-3 text-xs text-on-surface-variant">
+          {isIdVerificationMandatory
+            ? 'Your assigned properties mandate a verified government photo ID (front & back) on file before conducting audits.'
+            : 'Your assigned properties are configured as internal/corporate facilities where photo ID upload is optional.'}
+        </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {(['front', 'back'] as Side[]).map((side) => {
             const has = side === 'front' ? frontPath : backPath

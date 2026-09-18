@@ -7,8 +7,7 @@ import { getProfile } from '@/lib/auth/dal'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
-import { deleteTeamMember } from '@/lib/actions/team'
+import { DeactivateMemberModal } from '@/components/DeactivateMemberModal'
 import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
 
 export default async function TeamPage({
@@ -20,18 +19,33 @@ export default async function TeamPage({
   const currentProfile = await getProfile()
   const supabase = await createClient()
 
-  // Unfiltered set drives the dropdown options.
-  const { data: allMembers } = await supabase.from('profiles').select('state, county')
+  // Unfiltered set drives the dropdown options and active inspections counts
+  const [{ data: allMembers }, { data: openInspections }] = await Promise.all([
+    supabase.from('profiles').select('state, county'),
+    supabase
+      .from('inspections')
+      .select('inspector_id')
+      .in('status', ['pending', 'in_progress']),
+  ])
+
+  const openCounts = new Map<string, number>()
+  for (const i of openInspections ?? []) {
+    openCounts.set(i.inspector_id, (openCounts.get(i.inspector_id) ?? 0) + 1)
+  }
 
   let query = supabase
     .from('profiles')
-    .select('id, full_name, role, human_id, email, phone, city, state, county')
+    .select('id, full_name, role, human_id, email, phone, city, state, county, status')
     .order('full_name')
 
   if (state) query = query.eq('state', state)
   if (county) query = query.eq('county', county)
 
   const { data: members } = await query
+
+  const availableInspectors = (members ?? [])
+    .filter((m) => (m.status ?? 'active') === 'active')
+    .map((m) => ({ id: m.id, full_name: m.full_name, human_id: m.human_id }))
 
   return (
     <div>
@@ -56,7 +70,19 @@ export default async function TeamPage({
                     className="flex items-center justify-between gap-3 p-4"
                   >
                     <Link href={`/admin/team/${member.id}`} className="min-w-0 flex-1">
-                      <p className="truncate font-semibold hover:underline">{member.full_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-semibold hover:underline">{member.full_name}</p>
+                        {member.status === 'inactive' && (
+                          <span className="rounded bg-error-container px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-error-container">
+                            Inactive
+                          </span>
+                        )}
+                        {(openCounts.get(member.id) ?? 0) > 0 && (
+                          <span className="rounded bg-primary-container px-1.5 py-0.5 text-[10px] font-semibold text-on-primary-container">
+                            {openCounts.get(member.id)} open
+                          </span>
+                        )}
+                      </div>
                       <p className="label-tracked flex flex-wrap items-center gap-x-2 text-on-surface-variant">
                         {member.role === 'admin' ? 'Admin' : 'Operational Continuity Specialist'}
                         {member.human_id && (
@@ -80,10 +106,12 @@ export default async function TeamPage({
                     {member.id !== currentProfile.id ? (
                       <div className="flex shrink-0 items-center gap-2">
                         <RoleToggleButton profileId={member.id} role={member.role} />
-                        <ConfirmDeleteButton
-                          action={deleteTeamMember.bind(null, member.id)}
-                          confirmMessage="Delete this team member?"
-                          iconOnly
+                        <DeactivateMemberModal
+                          memberId={member.id}
+                          memberName={member.full_name}
+                          memberStatus={member.status ?? 'active'}
+                          openInspectionsCount={openCounts.get(member.id) ?? 0}
+                          availableInspectors={availableInspectors.filter((ins) => ins.id !== member.id)}
                         />
                       </div>
                     ) : (

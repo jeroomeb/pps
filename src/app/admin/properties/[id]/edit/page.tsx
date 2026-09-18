@@ -14,7 +14,7 @@ export default async function EditPropertyPage({
   const { data: property } = await supabase
     .from('properties')
     .select(
-      'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule'
+      'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule, require_id_photo'
     )
     .eq('id', id)
     .single()
@@ -45,6 +45,7 @@ export default async function EditPropertyPage({
           notes: property.notes,
           humanId: property.human_id,
           schedule: property.required_schedule ?? [],
+          requireIdPhoto: property.require_id_photo ?? true,
         }}
       />
     </div>

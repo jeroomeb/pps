@@ -10,7 +10,7 @@ export function PageHeader({
   backLabel,
 }: {
   eyebrow: string
-  title: string
+  title: React.ReactNode
   subtitle?: React.ReactNode
   action?: React.ReactNode
   /** Parent page to return to. When set, a back link renders above the title. */

@@ -133,9 +133,13 @@ create table if not exists tenants (
 
 ## 5. Next Steps / Dependencies for Subsequent Tasks
 
-* **Task 2 (User Roles & Permissions):** Expand internal roles (Corporate Super Admin vs Regional Manager vs On-Site Staff) within each tenant container.
-* **Task 3 (Strict Property-Level Access):** Map staff members to explicit subsets of the tenant's licensed properties.
+* **Task 3 (Strict Property-Centric Staff Assignment & Scheduling Logic):** Moving forward immediately to Task 3 (Task 2 Hosting/Production VPS migration is deferred to the end after all feature developments are complete).
+  * Multiple specialists assigned to a single property roster (primary, backup, on-site team).
+  * Property-level access scoping.
+  * Enable/Disable toggle for Photo Identification verification on property/tenant level (as requested by client).
 * **Task 4 (Service Scoping):** Associate checklist templates to specific licensed property scopes.
+* **Task 5 (Specialist Payouts):** Contractor ledger with enable/disable toggle for internal corporate staff.
+* **Task 2 (Production Server / VPS Migration):** Scheduled as the final step after all application features and tests are finalized.
 
 ---
 
@@ -153,4 +157,10 @@ create table if not exists tenants (
   * Wrapped `getProfile()` in a resilient fallback mechanism.
   * If the extended tenant join encounters any schema or cache error, the function gracefully falls back to reading core profile fields (`id, full_name, role`) with default values rather than blindly throwing a redirect.
   * Completely eliminated the redirect loop vulnerability for local dev and production.
+
+### 3. Client Requested Enhancements Implemented (Pre-Task 3)
+* **Deactivate Specialist Account:** Added account deactivation alongside deletion. Deactivated specialists are immediately blocked from logging in (`auth.ts` check) and excluded from inspection assignment dropdowns.
+* **Pending Inspections Notice & Reassignment Modal (`DeactivateMemberModal.tsx`):**
+  * When an admin deactivates or deletes a specialist who has pending or in-progress audits, a prompt displays the exact count of open audits and allows immediate one-click reassignment to another specialist.
+* **Preservation of Legal Records:** If a specialist has past completed inspections, the system safely deactivates the account instead of hard-deleting it, preserving historical audit trails, PDF records, and signatures intact.
 

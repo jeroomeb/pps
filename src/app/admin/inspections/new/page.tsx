@@ -28,11 +28,21 @@ export default async function NewInspectionPage({
   const { property, date } = await searchParams
   const supabase = await createClient()
 
-  const [{ data: properties }, { data: templates }, { data: inspectors }] = await Promise.all([
+  const [{ data: properties }, { data: templates }, { data: inspectors }, { data: allAssignments }] = await Promise.all([
     supabase.from('properties').select('id, name, state, zip, county').order('name'),
     supabase.from('checklist_templates').select('id, name').order('name'),
-    supabase.from('profiles').select('id, full_name, role, state, zip, county').order('full_name'),
+    supabase.from('profiles').select('id, full_name, role, state, zip, county').neq('status', 'inactive').order('full_name'),
+    supabase.from('property_specialist_assignments').select('property_id, specialist_id, role'),
   ])
+
+  // Build a lookup map of property roster assignments: property_id -> specialist_id -> role
+  const rosterMap: Record<string, Record<string, 'primary' | 'backup' | 'staff'>> = {}
+  for (const assign of allAssignments ?? []) {
+    if (!rosterMap[assign.property_id]) {
+      rosterMap[assign.property_id] = {}
+    }
+    rosterMap[assign.property_id][assign.specialist_id] = assign.role as 'primary' | 'backup' | 'staff'
+  }
 
   return (
     <div className="max-w-2xl">
@@ -47,6 +57,7 @@ export default async function NewInspectionPage({
         properties={properties ?? []}
         templates={templates ?? []}
         inspectors={inspectors ?? []}
+        rosterMap={rosterMap}
         defaultPropertyId={property}
         defaultScheduledFor={toDateTimeLocal(date)}
         timeZoneLabel={timeZoneAbbreviation()}

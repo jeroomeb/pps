@@ -56,5 +56,26 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  return response
+  // Forward verified user id and email to downstream Server Components
+  // so getSessionUser() doesn't need to make an extra remote HTTP call to Supabase auth!
+  const requestHeaders = new Headers(request.headers)
+  if (user) {
+    requestHeaders.set('x-user-id', user.id)
+    if (user.email) {
+      requestHeaders.set('x-user-email', user.email)
+    }
+  }
+
+  const nextResponse = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
+
+  // Retain any session cookies refreshed during createServerClient
+  response.cookies.getAll().forEach((cookie) => {
+    nextResponse.cookies.set(cookie.name, cookie.value, cookie)
+  })
+
+  return nextResponse
 }

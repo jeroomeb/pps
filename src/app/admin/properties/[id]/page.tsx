@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
   Clock,
   Landmark,
+  Shield,
   Pencil as PencilIcon,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
@@ -21,6 +22,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { CancelInspectionButton } from '@/components/CancelInspectionButton'
+import { PropertyRosterManager, type AssignedSpecialist, type CandidateSpecialist } from '@/components/PropertyRosterManager'
 import { deleteProperty } from '@/lib/actions/properties'
 import { parseSchedule, scheduleEntryLabel, dueLabel } from '@/lib/schedule'
 import { zonedDate, formatDate, timeZoneAbbreviation } from '@/lib/timezone'
@@ -33,26 +35,65 @@ export default async function PropertyDetailPage({
   const { id } = await params
   const supabase = await createClient()
 
-  const [{ data: property }, { data: templates }, { data: inspectors }, { data: inspections }] =
-    await Promise.all([
-      supabase.from('properties').select('*').eq('id', id).single(),
-      supabase.from('checklist_templates').select('id, name').order('name'),
-      supabase
-        .from('profiles')
-        .select('id, full_name, role, state, zip, county')
-        .order('full_name'),
-      supabase
-        .from('inspections')
-        .select(
-          'id, status, created_at, completed_at, scheduled_for, checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
-        )
-        .eq('property_id', id)
-        .order('created_at', { ascending: false }),
-    ])
+  const [
+    { data: property },
+    { data: templates },
+    { data: allProfiles },
+    { data: inspections },
+    { data: assignments },
+  ] = await Promise.all([
+    supabase.from('properties').select('*').eq('id', id).single(),
+    supabase.from('checklist_templates').select('id, name').order('name'),
+    supabase
+      .from('profiles')
+      .select('id, full_name, role, state, zip, county, human_id, is_contractor, email, phone, status')
+      .order('full_name'),
+    supabase
+      .from('inspections')
+      .select(
+        'id, status, created_at, completed_at, scheduled_for, checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      )
+      .eq('property_id', id)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('property_specialist_assignments')
+      .select('id, specialist_id, role, created_at')
+      .eq('property_id', id)
+      .order('created_at', { ascending: true }),
+  ])
 
   if (!property) {
     notFound()
   }
+
+  const profileMap = new Map((allProfiles ?? []).map((p) => [p.id, p]))
+
+  const assignedSpecialists: AssignedSpecialist[] = (assignments ?? []).map((a) => {
+    const prof = profileMap.get(a.specialist_id)
+    return {
+      id: a.id,
+      specialistId: a.specialist_id,
+      fullName: prof?.full_name ?? 'Unknown Specialist',
+      email: prof?.email ?? null,
+      phone: prof?.phone ?? null,
+      humanId: prof?.human_id ?? null,
+      role: a.role,
+      isContractor: prof?.is_contractor ?? false,
+      assignedAt: a.created_at,
+    }
+  })
+
+  const availableCandidates: CandidateSpecialist[] = (allProfiles ?? [])
+    .filter((ins) => ins.status !== 'inactive')
+    .map((ins) => ({
+      id: ins.id,
+      fullName: ins.full_name,
+      humanId: ins.human_id,
+      role: ins.role,
+      isContractor: ins.is_contractor ?? false,
+    }))
+
+  const activeInspectors = (allProfiles ?? []).filter((ins) => ins.status !== 'inactive')
 
   const completedCount = (inspections ?? []).filter((i) => i.status === 'completed').length
   // "In Progress" here previously counted pending + in_progress together
@@ -98,6 +139,14 @@ export default async function PropertyDetailPage({
                 <Phone size={13} /> {property.phone}
               </span>
             )}
+            <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold ${
+              property.require_id_photo !== false
+                ? 'bg-primary-container/40 text-on-surface'
+                : 'bg-surface-container-highest text-on-surface-variant'
+            }`}>
+              <Shield size={12} className={property.require_id_photo !== false ? 'text-primary' : ''} />
+              {property.require_id_photo !== false ? 'Photo ID Required' : 'Photo ID Exempt'}
+            </span>
           </span>
         }
         action={
@@ -165,6 +214,16 @@ export default async function PropertyDetailPage({
         })}
       </div>
 
+      {/* Property Staff Roster Manager */}
+      <div className="mb-8">
+        <PropertyRosterManager
+          propertyId={id}
+          assignedSpecialists={assignedSpecialists}
+          availableCandidates={availableCandidates}
+          requireIdPhotoInitial={property.require_id_photo ?? true}
+        />
+      </div>
+
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1.4fr]">
         <section>
           <h2 className="mb-3 font-headline text-lg font-semibold">New Inspection</h2>
@@ -181,7 +240,18 @@ export default async function PropertyDetailPage({
               },
             ]}
             templates={templates ?? []}
-            inspectors={inspectors ?? []}
+            inspectors={activeInspectors.map((ins) => {
+              const rosterMatch = assignedSpecialists.find((a) => a.specialistId === ins.id)
+              return {
+                id: ins.id,
+                full_name: ins.full_name,
+                role: ins.role,
+                state: ins.state,
+                zip: ins.zip,
+                county: ins.county,
+                rosterRole: rosterMatch?.role ?? null,
+              }
+            })}
             timeZoneLabel={timeZoneAbbreviation()}
           />
         </section>

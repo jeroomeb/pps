@@ -30,18 +30,27 @@ export default async function EditInspectionPage({
   await requireRole('admin')
   const supabase = await createClient()
 
-  const [{ data: inspection }, { data: inspectors }] = await Promise.all([
-    supabase
-      .from('inspections')
-      .select(
-        'id, status, inspector_id, scheduled_for, property_id, cancelled_at, cancelled_by, cancellation_reason, properties(id, name, state, zip, county), checklist_templates(name)'
-      )
-      .eq('id', id)
-      .single(),
+  const { data: inspection } = await supabase
+    .from('inspections')
+    .select(
+      'id, status, inspector_id, scheduled_for, property_id, cancelled_at, cancelled_by, cancellation_reason, properties(id, name, state, zip, county), checklist_templates(name)'
+    )
+    .eq('id', id)
+    .single()
+
+  if (!inspection) {
+    notFound()
+  }
+
+  const [{ data: inspectors }, { data: assignments }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, role, state, zip, county')
+      .select('id, full_name, role, state, zip, county, status')
       .order('full_name'),
+    supabase
+      .from('property_specialist_assignments')
+      .select('specialist_id, role')
+      .eq('property_id', inspection.property_id),
   ])
 
   if (!inspection) {
@@ -75,6 +84,21 @@ export default async function EditInspectionPage({
       .single()
     cancelledByName = canceller?.full_name ?? null
   }
+
+  // Build lookup of property roster for ranking/badges
+  const rosterLookup = new Map((assignments ?? []).map((a) => [a.specialist_id, a.role]))
+
+  const enhancedInspectors = (inspectors ?? [])
+    .filter((ins) => ins.status !== 'inactive' || ins.id === inspection.inspector_id)
+    .map((ins) => ({
+      id: ins.id,
+      full_name: ins.full_name,
+      role: ins.role,
+      state: ins.state,
+      zip: ins.zip,
+      county: ins.county,
+      rosterRole: (rosterLookup.get(ins.id) as 'primary' | 'backup' | 'staff') || null,
+    }))
 
   return (
     <div className="max-w-2xl">
@@ -144,7 +168,7 @@ export default async function EditInspectionPage({
             inspectionId={id}
             property={property}
             checklistName={template?.name ?? 'Checklist'}
-            inspectors={inspectors ?? []}
+            inspectors={enhancedInspectors}
             defaultInspectorId={inspection.inspector_id}
             defaultScheduledFor={toDateTimeLocal(inspection.scheduled_for)}
             timeZoneLabel={timeZoneAbbreviation()}

@@ -1,7 +1,9 @@
 import 'server-only'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import type { User } from '@supabase/supabase-js'
 import type { UserRole, LicenseTier, TenantStatus } from '@/lib/database.types'
 
 export type TenantInfo = {
@@ -26,6 +28,27 @@ export type ProfileWithTenant = {
 }
 
 export const getSessionUser = cache(async () => {
+  // Fast path: if proxy.ts already verified the session and forwarded the user id header,
+  // reuse it directly to avoid an extra remote HTTP round-trip to Supabase auth!
+  try {
+    const headerList = await headers()
+    const headerUserId = headerList.get('x-user-id')
+    const headerUserEmail = headerList.get('x-user-email')
+
+    if (headerUserId) {
+      return {
+        id: headerUserId,
+        email: headerUserEmail || undefined,
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        created_at: '',
+      } as unknown as User
+    }
+  } catch {
+    // headers() might not be accessible in non-request contexts
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -93,6 +116,11 @@ export const getProfile = cache(async (): Promise<ProfileWithTenant> => {
 
 export async function requireRole(role: UserRole) {
   const profile = await getProfile()
+  if (profile.status === 'inactive' || profile.status === 'suspended') {
+    const supabase = await createClient()
+    await supabase.auth.signOut()
+    redirect('/login')
+  }
   if (profile.role !== role) {
     redirect(profile.role === 'admin' ? '/admin' : '/inspector')
   }
@@ -122,26 +150,40 @@ export type LicenseSummary = {
 
 /**
  * Fetches the property license usage summary for a specific tenant or the caller's tenant.
+ * Reuses profile.tenant in-memory whenever available to eliminate redundant database round-trips.
  */
-export async function getTenantLicenseSummary(tenantId?: string | null): Promise<LicenseSummary | null> {
+export async function getTenantLicenseSummary(
+  tenantId?: string | null,
+  knownPropertyCount?: number
+): Promise<LicenseSummary | null> {
   const profile = await getProfile()
   const targetTenantId = tenantId ?? profile.tenant_id
 
   if (!targetTenantId) return null
 
+  // Fast path: if targeting the current user's tenant and tenant info was already loaded in profile, reuse it!
+  const cachedTenant =
+    targetTenantId === profile.tenant_id && profile.tenant ? profile.tenant : null
+
   const supabase = await createClient()
 
-  const [{ data: tenant }, { count }] = await Promise.all([
-    supabase
-      .from('tenants')
-      .select('id, name, license_tier, max_property_licenses')
-      .eq('id', targetTenantId)
-      .single(),
-    supabase
-      .from('properties')
-      .select('id', { count: 'exact', head: true })
-      .eq('tenant_id', targetTenantId),
-  ])
+  const tenantPromise = cachedTenant
+    ? Promise.resolve({ data: cachedTenant })
+    : supabase
+        .from('tenants')
+        .select('id, name, license_tier, max_property_licenses')
+        .eq('id', targetTenantId)
+        .single()
+
+  const countPromise =
+    typeof knownPropertyCount === 'number'
+      ? Promise.resolve({ count: knownPropertyCount })
+      : supabase
+          .from('properties')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', targetTenantId)
+
+  const [{ data: tenant }, { count }] = await Promise.all([tenantPromise, countPromise])
 
   if (!tenant) return null
 

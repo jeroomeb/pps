@@ -228,29 +228,140 @@ export async function setTeamMemberRole(
   revalidatePath('/admin/team')
 }
 
-export async function deleteTeamMember(profileId: string): Promise<{ error?: string } | void> {
+export async function deactivateTeamMember(
+  profileId: string,
+  reassignToInspectorId?: string | null
+): Promise<{ error?: string; success?: boolean } | void> {
   const current = await requireRole('admin')
 
   if (profileId === current.id) {
-    return { error: 'You can’t delete your own account.' }
+    return { error: 'You cannot deactivate your own account.' }
   }
 
   const supabase = await createClient()
-  const { count, error: countError } = await supabase
+
+  // 1. If a replacement inspector is provided, reassign all open (pending/in_progress) inspections
+  if (reassignToInspectorId) {
+    const { error: reassignError } = await supabase
+      .from('inspections')
+      .update({ inspector_id: reassignToInspectorId })
+      .eq('inspector_id', profileId)
+      .in('status', ['pending', 'in_progress'])
+
+    if (reassignError) {
+      return { error: `Failed to reassign open inspections: ${reassignError.message}` }
+    }
+  }
+
+  // 2. Deactivate the specialist account
+  const { error } = await supabase
+    .from('profiles')
+    .update({ status: 'inactive' })
+    .eq('id', profileId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/team')
+  revalidatePath(`/admin/team/${profileId}`)
+  revalidatePath('/admin/inspections')
+  revalidatePath('/inspector')
+  return { success: true }
+}
+
+export async function reactivateTeamMember(profileId: string): Promise<{ error?: string; success?: boolean } | void> {
+  await requireRole('admin')
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ status: 'active' })
+    .eq('id', profileId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/team')
+  revalidatePath(`/admin/team/${profileId}`)
+  return { success: true }
+}
+
+export async function deleteTeamMember(
+  profileId: string,
+  reassignToInspectorId?: string | null
+): Promise<{ error?: string; notice?: string; deactivatedInstead?: boolean } | void> {
+  const current = await requireRole('admin')
+
+  if (profileId === current.id) {
+    return { error: 'You cannot delete your own account.' }
+  }
+
+  const supabase = await createClient()
+
+  // 1. Reassign open inspections if a replacement inspector is supplied
+  if (reassignToInspectorId) {
+    const { error: reassignError } = await supabase
+      .from('inspections')
+      .update({ inspector_id: reassignToInspectorId })
+      .eq('inspector_id', profileId)
+      .in('status', ['pending', 'in_progress'])
+
+    if (reassignError) {
+      return { error: `Failed to reassign open inspections: ${reassignError.message}` }
+    }
+  }
+
+  // 2. Verify no remaining open inspections
+  const { count: openCount, error: openCountError } = await supabase
+    .from('inspections')
+    .select('id', { count: 'exact', head: true })
+    .eq('inspector_id', profileId)
+    .in('status', ['pending', 'in_progress'])
+
+  if (openCountError) {
+    return { error: openCountError.message }
+  }
+
+  if (openCount && openCount > 0) {
+    return {
+      error: `This member still has ${openCount} open inspection${openCount === 1 ? '' : 's'}. Please choose a specialist to reassign them to.`,
+    }
+  }
+
+  // 3. Check for completed historical inspections
+  const { count: completedCount, error: completedCountError } = await supabase
     .from('inspections')
     .select('id', { count: 'exact', head: true })
     .eq('inspector_id', profileId)
 
-  if (countError) {
-    return { error: countError.message }
+  if (completedCountError) {
+    return { error: completedCountError.message }
   }
 
-  if (count) {
+  if (completedCount && completedCount > 0) {
+    // Specialist has historical reports on record. Deactivate instead of hard deleting
+    // to preserve legal report chains, audit trail, and signatures.
+    const { error: deactivateError } = await supabase
+      .from('profiles')
+      .update({ status: 'inactive' })
+      .eq('id', profileId)
+
+    if (deactivateError) {
+      return { error: deactivateError.message }
+    }
+
+    revalidatePath('/admin/team')
+    revalidatePath(`/admin/team/${profileId}`)
+    revalidatePath('/admin/inspections')
     return {
-      error: `This member is assigned to ${count} inspection${count === 1 ? '' : 's'} and can’t be deleted. Reassign or delete those first.`,
+      deactivatedInstead: true,
+      notice: `This specialist has ${completedCount} completed audit report${completedCount === 1 ? '' : 's'}. To preserve legal audit records, their account has been deactivated instead of deleted.`,
     }
   }
 
+  // 4. Zero inspections: safe to completely hard delete
   const admin = createAdminClient()
   const { error } = await admin.auth.admin.deleteUser(profileId)
   if (error) {

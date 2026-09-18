@@ -24,6 +24,7 @@ export function PropertyForm({
     notes?: string | null
     humanId?: string | null
     schedule?: ScheduleEntry[]
+    requireIdPhoto?: boolean
   }
 }) {
   const [state, formAction] = useActionState<PropertyFormState, FormData>(action, undefined)
@@ -93,6 +94,27 @@ export function PropertyForm({
             placeholder="Notes visible to admins and the assigned specialist…"
             className="w-full rounded border border-outline-variant px-3 py-2 text-sm focus:border-primary-container focus:outline-none"
           />
+        </div>
+
+        {/* Client Feature: Photo ID Verification Toggle */}
+        <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              name="require_id_photo"
+              defaultChecked={defaultValues?.requireIdPhoto ?? true}
+              className="mt-1 h-4 w-4 accent-[#ee8a4b]"
+            />
+            <div>
+              <p className="text-sm font-semibold text-on-surface">
+                Require Driver&apos;s License ID Verification
+              </p>
+              <p className="text-xs text-on-surface-variant">
+                Enable for 1099 independent contractor audits to enforce photo ID document submission.
+                Disable for properties maintained by internal corporate / W-2 facilities staff.
+              </p>
+            </div>
+          </label>
         </div>
 
         <fieldset className="flex flex-col gap-2">

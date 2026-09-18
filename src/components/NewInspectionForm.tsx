@@ -18,6 +18,7 @@ export function NewInspectionForm({
   properties,
   templates,
   inspectors,
+  rosterMap,
   defaultPropertyId,
   defaultScheduledFor,
   timeZoneLabel,
@@ -32,6 +33,8 @@ export function NewInspectionForm({
   properties?: PropertyLocation[]
   templates: { id: string; name: string }[]
   inspectors: SpecialistOption[]
+  /** Optional lookup map of property_id -> specialist_id -> role */
+  rosterMap?: Record<string, Record<string, 'primary' | 'backup' | 'staff'>>
   /** Preselects a property in the dropdown (dashboard "Schedule" deep-link). */
   defaultPropertyId?: string
   /** Prefills the date input, e.g. when scheduling a due day from the dashboard. */
@@ -51,6 +54,15 @@ export function NewInspectionForm({
   )
 
   const selectedProperty = (properties ?? []).find((p) => p.id === selectedPropertyId) ?? null
+
+  // If rosterMap provided, enhance inspector list with property-specific roster roles
+  const enhancedInspectors = inspectors.map((ins) => {
+    const roleForProp = selectedPropertyId && rosterMap?.[selectedPropertyId]?.[ins.id]
+    return {
+      ...ins,
+      rosterRole: roleForProp || ins.rosterRole || null,
+    }
+  })
 
   return (
     <Card>
@@ -98,7 +110,7 @@ export function NewInspectionForm({
           </select>
         </div>
 
-        <SpecialistSelect specialists={inspectors} property={selectedProperty} />
+        <SpecialistSelect specialists={enhancedInspectors} property={selectedProperty} />
 
         <div className="flex flex-col gap-1">
           <label htmlFor="scheduled_for" className="text-sm font-semibold uppercase tracking-wide">
