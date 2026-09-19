@@ -467,12 +467,20 @@ export function AdminPayoutsManager({
                       </span>
 
                       <div className="flex items-center gap-2">
+                        <Link
+                          href={`/admin/reports/${row.inspectionId}`}
+                          title="View Audit Report"
+                          className="flex h-7 w-7 items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-container"
+                        >
+                          <FileText size={13} />
+                        </Link>
+
                         {row.status === 'pending' && (
                           <button
                             type="button"
                             onClick={() => handleApprove(row.id)}
                             disabled={pending}
-                            className="rounded bg-primary-container px-2 py-1 text-[11px] font-semibold text-on-primary-container"
+                            className="rounded bg-primary-container px-2.5 py-1 text-[11px] font-semibold text-on-primary-container"
                           >
                             Approve
                           </button>
@@ -481,7 +489,7 @@ export function AdminPayoutsManager({
                           <button
                             type="button"
                             onClick={() => setPayingPayout(row)}
-                            className="rounded bg-success px-2 py-1 text-[11px] font-semibold text-white"
+                            className="rounded bg-success px-2.5 py-1 text-[11px] font-semibold text-white"
                           >
                             Mark Paid
                           </button>

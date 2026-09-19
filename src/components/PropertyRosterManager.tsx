@@ -222,10 +222,10 @@ export function PropertyRosterManager({
       <div className="flex flex-col divide-y divide-outline-variant">
         {assignedSpecialists.length > 0 ? (
           assignedSpecialists.map((spec) => (
-            <div key={spec.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+            <div key={spec.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-3 first:pt-0 last:pb-0">
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-sm truncate">{spec.fullName}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-sm">{spec.fullName}</p>
                   <span
                     className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                       spec.role === 'primary'
@@ -243,12 +243,12 @@ export function PropertyRosterManager({
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-on-surface-variant truncate">
+                <p className="text-xs text-on-surface-variant truncate mt-0.5">
                   {[spec.humanId, spec.email, spec.phone].filter(Boolean).join(' · ')}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                 <select
                   value={spec.role}
                   onChange={(e) => handleRoleChange(spec.specialistId, e.target.value as SpecialistAssignmentRole)}

@@ -238,7 +238,8 @@ export function AdminAnalyticsDashboard({
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="min-w-full divide-y divide-outline-variant text-left text-sm">
             <thead className="bg-surface-container-high text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
               <tr>
@@ -325,6 +326,71 @@ export function AdminAnalyticsDashboard({
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Cards View */}
+        <div className="flex flex-col divide-y divide-outline-variant md:hidden">
+          {summary.specialistLeaderboard.length === 0 ? (
+            <p className="p-6 text-center text-xs text-on-surface-variant">
+              No specialist activity recorded for this period.
+            </p>
+          ) : (
+            summary.specialistLeaderboard.map((s, idx) => (
+              <div key={s.specialistId} className="flex flex-col gap-3 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-container text-xs font-bold text-on-primary-container">
+                      #{idx + 1}
+                    </span>
+                    <div>
+                      <p className="font-semibold text-sm text-on-surface">{s.fullName}</p>
+                      {s.humanId && (
+                        <p className="font-mono text-[11px] text-on-surface-variant">{s.humanId}</p>
+                      )}
+                    </div>
+                  </div>
+                  <Link
+                    href={`/admin/team/${s.specialistId}`}
+                    className="flex min-h-8 items-center gap-1 rounded border border-outline-variant px-2.5 text-xs font-semibold text-on-surface-variant"
+                  >
+                    Profile
+                    <ChevronRight size={12} />
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 rounded-lg bg-surface-container-low p-2.5 text-xs">
+                  <div>
+                    <span className="text-on-surface-variant block text-[10px] uppercase">Completed Audits</span>
+                    <span className="font-bold text-on-surface">{s.completedCount}</span>
+                  </div>
+                  <div>
+                    <span className="text-on-surface-variant block text-[10px] uppercase">On-Time Arrival</span>
+                    <span
+                      className={`inline-block font-bold ${
+                        s.onTimeRate >= 90
+                          ? 'text-emerald-700'
+                          : s.onTimeRate >= 75
+                          ? 'text-amber-700'
+                          : 'text-error'
+                      }`}
+                    >
+                      {s.onTimeRate}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-on-surface-variant block text-[10px] uppercase">Avg Duration</span>
+                    <span className="font-semibold text-on-surface">
+                      {s.avgDurationMinutes > 0 ? `${s.avgDurationMinutes} mins` : '—'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-on-surface-variant block text-[10px] uppercase">Photo Compliance</span>
+                    <span className="font-bold text-emerald-700">{s.photoComplianceRate}%</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </Card>
 
       {/* Property Audit Volume Breakdown */}
@@ -350,7 +416,8 @@ export function AdminAnalyticsDashboard({
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="min-w-full divide-y divide-outline-variant text-left text-sm">
             <thead className="bg-surface-container-high text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
               <tr>
@@ -408,6 +475,51 @@ export function AdminAnalyticsDashboard({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="flex flex-col divide-y divide-outline-variant md:hidden">
+          {summary.propertyBreakdown.length === 0 ? (
+            <p className="p-6 text-center text-xs text-on-surface-variant">
+              No property audit history for this period.
+            </p>
+          ) : (
+            summary.propertyBreakdown.map((p) => (
+              <div key={p.propertyId} className="flex flex-col gap-2.5 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-sm text-on-surface">{p.propertyName}</p>
+                    {p.humanId && (
+                      <p className="font-mono text-[11px] text-on-surface-variant">{p.humanId}</p>
+                    )}
+                  </div>
+                  <Link
+                    href={`/admin/properties/${p.propertyId}`}
+                    className="flex min-h-8 items-center gap-1 rounded border border-outline-variant px-2.5 text-xs font-semibold text-on-surface-variant"
+                  >
+                    View
+                    <ChevronRight size={12} />
+                  </Link>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 text-xs">
+                  <div>
+                    <span className="text-on-surface-variant text-[11px]">Audits: </span>
+                    <span className="font-bold text-on-surface">{p.completedCount}</span>
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      p.failureCount > 0
+                        ? 'bg-error-container text-on-error-container'
+                        : 'bg-emerald-100 text-emerald-900'
+                    }`}
+                  >
+                    {p.failureCount} issues
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </Card>
     </div>
