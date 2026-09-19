@@ -14,6 +14,7 @@ const teamMemberSchema = z.object({
   email: z.string().trim().email('Enter a valid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   role: z.enum(['admin', 'inspector']),
+  tenant_id: z.string().uuid().optional().nullable(),
 })
 
 export type TeamMemberFormState = { error?: string; success?: boolean } | undefined
@@ -24,16 +25,22 @@ export async function createTeamMember(
 ): Promise<TeamMemberFormState> {
   const profile = await requireRole('admin')
 
+  const rawTenantId = formData.get('tenant_id')
   const parsed = teamMemberSchema.safeParse({
     full_name: formData.get('full_name'),
     email: formData.get('email'),
     password: formData.get('password'),
     role: formData.get('role'),
+    tenant_id: typeof rawTenantId === 'string' && rawTenantId.trim() ? rawTenantId.trim() : null,
   })
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   }
+
+  const targetTenantId = profile.is_global_admin && parsed.data.tenant_id
+    ? parsed.data.tenant_id
+    : profile.tenant_id ?? null
 
   const admin = createAdminClient()
   const { data: created, error } = await admin.auth.admin.createUser({
@@ -59,7 +66,7 @@ export async function createTeamMember(
   if (created.user) {
     const patch: { role?: 'admin'; human_id: string; tenant_id?: string | null; must_reset_password: boolean } = {
       human_id: genSpecialistId(),
-      tenant_id: profile.tenant_id ?? null,
+      tenant_id: targetTenantId,
       must_reset_password: true,
     }
     if (parsed.data.role === 'admin') patch.role = 'admin'

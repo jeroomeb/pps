@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/Toast'
 import {
   toggleTenantPayouts,
   updateTenantDefaultRate,
+  updateTenantTierRates,
   approvePayout,
   batchApprovePayouts,
   markPayoutPaid,
@@ -49,11 +50,17 @@ export function AdminPayoutsManager({
   tenantId,
   initialEnabled,
   initialDefaultRate,
+  initialTier1Rate = 50.0,
+  initialTier2Rate = 75.0,
+  initialTier3Rate = 100.0,
   payouts,
 }: {
   tenantId: string
   initialEnabled: boolean
   initialDefaultRate: number
+  initialTier1Rate?: number
+  initialTier2Rate?: number
+  initialTier3Rate?: number
   payouts: AdminPayoutRow[]
 }) {
   const showToast = useToast()
@@ -69,6 +76,20 @@ export function AdminPayoutsManager({
       const res = await updateTenantDefaultRate(prev, formData)
       if (res?.success) {
         showToast('success', 'Default audit compensation rate updated.')
+      } else if (res?.error) {
+        showToast('error', res.error)
+      }
+      return res
+    },
+    undefined
+  )
+
+  // 3-Tier Compensation Matrix action state
+  const [tierState, tierAction] = useActionState<PayoutActionState, FormData>(
+    async (prev, formData) => {
+      const res = await updateTenantTierRates(prev, formData)
+      if (res?.success) {
+        showToast('success', '3-Tier Property Compensation Matrix updated successfully.')
       } else if (res?.error) {
         showToast('error', res.error)
       }
@@ -184,38 +205,130 @@ export function AdminPayoutsManager({
         </div>
 
         {enabled && (
-          <form action={rateAction} className="flex flex-wrap items-end gap-3 pt-1">
-            <input type="hidden" name="tenant_id" value={tenantId} />
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor="default_rate"
-                className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant"
-              >
-                Default Rate per Completed Audit ($ USD)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-xs text-on-surface-variant">$</span>
-                <input
-                  id="default_rate"
-                  name="default_rate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  defaultValue={initialDefaultRate}
-                  required
-                  className="min-h-9 w-40 rounded border border-outline-variant bg-surface-container-lowest pl-6 pr-3 text-xs font-mono focus:border-primary-container focus:outline-none"
-                />
+          <div className="flex flex-col gap-5 pt-2 border-t border-outline-variant">
+            {/* 3-Tier Property Compensation Matrix (Question 4) */}
+            <form action={tierAction} className="flex flex-col gap-3 rounded-lg border border-primary/20 bg-surface-container-low p-4">
+              <input type="hidden" name="tenant_id" value={tenantId} />
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-headline text-xs font-bold uppercase tracking-wider text-primary">
+                    3-Tier Property Compensation Matrix
+                  </h3>
+                  <p className="text-xs text-on-surface-variant">
+                    Define baseline rates per property tier. Audits automatically adjust payout based on the property&apos;s assigned tier.
+                  </p>
+                </div>
               </div>
-            </div>
-            <button
-              type="submit"
-              disabled={pending}
-              className="min-h-9 rounded bg-surface-container px-3 text-xs font-semibold uppercase tracking-wide text-on-surface hover:bg-surface-container-high transition"
-            >
-              Update Default Rate
-            </button>
-            {rateState?.error && <p className="text-xs text-error">{rateState.error}</p>}
-          </form>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="tier_1_rate" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                    Tier 1 (Standard / Baseline)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs text-on-surface-variant">$</span>
+                    <input
+                      id="tier_1_rate"
+                      name="tier_1_rate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      defaultValue={initialTier1Rate}
+                      required
+                      className="min-h-9 w-full rounded border border-outline-variant bg-surface pl-6 pr-3 text-xs font-mono focus:border-primary-container focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="tier_2_rate" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                    Tier 2 (Commercial / Mid-Size)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs text-on-surface-variant">$</span>
+                    <input
+                      id="tier_2_rate"
+                      name="tier_2_rate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      defaultValue={initialTier2Rate}
+                      required
+                      className="min-h-9 w-full rounded border border-outline-variant bg-surface pl-6 pr-3 text-xs font-mono focus:border-primary-container focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="tier_3_rate" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                    Tier 3 (Premium / Luxury High-Rise)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs text-on-surface-variant">$</span>
+                    <input
+                      id="tier_3_rate"
+                      name="tier_3_rate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      defaultValue={initialTier3Rate}
+                      required
+                      className="min-h-9 w-full rounded border border-outline-variant bg-surface pl-6 pr-3 text-xs font-mono focus:border-primary-container focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                {tierState?.error ? (
+                  <p className="text-xs text-error">{tierState.error}</p>
+                ) : (
+                  <span className="text-[11px] text-on-surface-variant">Individual properties can also have custom flat override rates.</span>
+                )}
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="min-h-9 rounded bg-primary-container px-3.5 text-xs font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95 transition"
+                >
+                  Save Tier Rates
+                </button>
+              </div>
+            </form>
+
+            {/* Fallback Base Rate */}
+            <form action={rateAction} className="flex flex-wrap items-end gap-3">
+              <input type="hidden" name="tenant_id" value={tenantId} />
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="default_rate"
+                  className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant"
+                >
+                  Fallback Unclassified Property Rate ($ USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-on-surface-variant">$</span>
+                  <input
+                    id="default_rate"
+                    name="default_rate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    defaultValue={initialDefaultRate}
+                    required
+                    className="min-h-9 w-40 rounded border border-outline-variant bg-surface-container-lowest pl-6 pr-3 text-xs font-mono focus:border-primary-container focus:outline-none"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={pending}
+                className="min-h-9 rounded bg-surface-container px-3 text-xs font-semibold uppercase tracking-wide text-on-surface hover:bg-surface-container-high transition"
+              >
+                Update Fallback Rate
+              </button>
+              {rateState?.error && <p className="text-xs text-error">{rateState.error}</p>}
+            </form>
+          </div>
         )}
       </Card>
 

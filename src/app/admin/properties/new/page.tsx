@@ -3,11 +3,20 @@ import { AlertCircle, KeyRound, ArrowLeft } from 'lucide-react'
 import { PropertyForm } from '@/components/PropertyForm'
 import { createProperty } from '@/lib/actions/properties'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { getTenantLicenseSummary } from '@/lib/auth/dal'
+import { getTenantLicenseSummary, getProfile } from '@/lib/auth/dal'
+import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 
 export default async function NewPropertyPage() {
-  const licenseSummary = await getTenantLicenseSummary()
+  const [licenseSummary, profile, supabase] = await Promise.all([
+    getTenantLicenseSummary(),
+    getProfile(),
+    createClient(),
+  ])
+
+  const { data: tenants } = profile.is_global_admin
+    ? await supabase.from('tenants').select('id, name').order('name')
+    : { data: null }
 
   return (
     <div className="max-w-2xl">
@@ -51,7 +60,7 @@ export default async function NewPropertyPage() {
         </div>
       )}
 
-      <PropertyForm action={createProperty} />
+      <PropertyForm action={createProperty} tenants={tenants ?? undefined} />
     </div>
   )
 }

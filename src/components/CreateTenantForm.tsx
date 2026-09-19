@@ -125,6 +125,60 @@ export function CreateTenantForm() {
           </div>
         </div>
 
+        {/* Initial Tenant Administrator Account Setup (Question 3) */}
+        <div className="rounded-xl border border-outline-variant bg-surface-container-low p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <ShieldCheck size={16} className="text-primary" />
+            <h3 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+              Primary Tenant Administrator Account (Optional Instant Access)
+            </h3>
+          </div>
+          <p className="mb-3 text-xs text-on-surface-variant">
+            Create the primary administrator account for this tenant organization so they can immediately sign in, add properties, and manage staff.
+          </p>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="admin_name" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                Admin Full Name
+              </label>
+              <input
+                id="admin_name"
+                name="admin_name"
+                placeholder="e.g. John Doe"
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="admin_email" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                Admin Email Address
+              </label>
+              <input
+                id="admin_email"
+                name="admin_email"
+                type="email"
+                placeholder="e.g. manager@sampletowers.com"
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="admin_password" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                Temporary Password
+              </label>
+              <input
+                id="admin_password"
+                name="admin_password"
+                type="password"
+                minLength={8}
+                placeholder="Min 8 characters"
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
         {state?.error && (
           <p className="rounded bg-error-container px-3 py-2 text-xs font-medium text-on-error-container">
             {state.error}

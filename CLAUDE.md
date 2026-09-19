@@ -190,6 +190,20 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-19 — Client Inquiries Q3 (Tenant Admin Onboarding & Access) & Q4 (3-Tier Property Compensation Matrix)
+Implemented direct Tenant Admin user account provisioning during tenant creation, HQ tenant switching context, and a 3-Tier Property Compensation Matrix.
+- **Database & Migration (`0013_tenant_onboarding_and_tiered_payouts.sql`)**:
+  - Added `tenants.payout_tier_1_rate`, `tenants.payout_tier_2_rate`, `tenants.payout_tier_3_rate` (defaults $50.00, $75.00, $100.00).
+  - Added `properties.payout_tier text check (payout_tier in ('tier_1', 'tier_2', 'tier_3', 'custom'))` (default 'tier_2').
+- **Tenant Admin Onboarding (Q3)**:
+  - `CreateTenantForm` & `createTenant`: Captures optional initial Administrator credentials (Name, Email, Password). Automatically provisions the Auth user and sets `role = 'admin'`, `tenant_id = newTenant.id`, `must_reset_password = true`.
+  - `PropertyForm` & `InspectorForm`: Super Admins can select the target Tenant container from a dropdown to add properties and staff directly under client tenant profiles.
+- **3-Tier Property Compensation Matrix (Q4)**:
+  - `AdminPayoutsManager` & `updateTenantTierRates`: Payouts dashboard features a 3-Tier Property Compensation Matrix configuration card.
+  - `PropertyForm`: Allows selecting Property Compensation Tier (Tier 1 Baseline, Tier 2 Commercial, Tier 3 Luxury High-Rise, or Custom Rate Override).
+  - `/api/inspections/[id]/complete`: Automatically evaluates property tier or custom rate on audit completion and writes exact tiered payout amount to the ledger.
+- `npx tsc --noEmit` and `npm run build` both clean (0 errors, 24 routes).
+
 ### 2026-09-18 — Task 8: Specialist Performance & Operational Tracking Metrics
 Built operational analytics intelligence suite, time-horizon aggregations, checklist distribution breakdowns, and specialist scorecards.
 - **Database & Migration (`0012_operational_analytics_indexes.sql`)**:

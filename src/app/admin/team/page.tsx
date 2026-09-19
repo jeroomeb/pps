@@ -20,12 +20,15 @@ export default async function TeamPage({
   const supabase = await createClient()
 
   // Unfiltered set drives the dropdown options and active inspections counts
-  const [{ data: allMembers }, { data: openInspections }] = await Promise.all([
+  const [{ data: allMembers }, { data: openInspections }, { data: allTenants }] = await Promise.all([
     supabase.from('profiles').select('state, county'),
     supabase
       .from('inspections')
       .select('inspector_id')
       .in('status', ['pending', 'in_progress']),
+    currentProfile.is_global_admin
+      ? supabase.from('tenants').select('id, name').order('name')
+      : Promise.resolve({ data: null }),
   ])
 
   const openCounts = new Map<string, number>()
@@ -136,7 +139,7 @@ export default async function TeamPage({
 
         <section>
           <h2 className="mb-3 font-headline text-lg font-semibold">Add Team Member</h2>
-          <InspectorForm />
+          <InspectorForm tenants={allTenants ?? undefined} />
         </section>
       </div>
     </div>

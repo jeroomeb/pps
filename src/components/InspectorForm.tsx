@@ -9,7 +9,11 @@ const INPUT_CLASSES =
   'min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none'
 const LABEL_CLASSES = 'text-sm font-semibold uppercase tracking-wide'
 
-export function InspectorForm() {
+export function InspectorForm({
+  tenants,
+}: {
+  tenants?: { id: string; name: string }[]
+}) {
   const [state, formAction] = useActionState<TeamMemberFormState, FormData>(
     createTeamMember,
     undefined
@@ -29,6 +33,26 @@ export function InspectorForm() {
       action={formAction}
       className="flex flex-col gap-4"
     >
+      {tenants && tenants.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor="member_tenant_id" className="text-sm font-semibold uppercase tracking-wide">
+            Assigned Organization / Tenant
+          </label>
+          <select
+            id="member_tenant_id"
+            name="tenant_id"
+            className="min-h-12 rounded border border-outline-variant bg-surface-container-lowest px-3 focus:border-primary-container focus:outline-none"
+          >
+            <option value="">Amenity Op&apos;s HQ (Master / Global)</option>
+            {tenants.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="flex flex-col gap-1">
         <label htmlFor="member_full_name" className={LABEL_CLASSES}>
           Full Name

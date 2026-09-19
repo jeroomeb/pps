@@ -16,6 +16,13 @@ const rateSchema = z.object({
   default_rate: z.coerce.number().min(0, 'Rate must be 0 or greater'),
 })
 
+const tierRatesSchema = z.object({
+  tenant_id: z.string().uuid(),
+  tier_1_rate: z.coerce.number().min(0, 'Tier 1 rate must be 0 or greater'),
+  tier_2_rate: z.coerce.number().min(0, 'Tier 2 rate must be 0 or greater'),
+  tier_3_rate: z.coerce.number().min(0, 'Tier 3 rate must be 0 or greater'),
+})
+
 const propertyRateSchema = z.object({
   property_id: z.string().uuid(),
   custom_rate: z.coerce.number().min(0, 'Rate must be 0 or greater').nullable(),
@@ -86,6 +93,48 @@ export async function updateTenantDefaultRate(
   const { error } = await supabase
     .from('tenants')
     .update({ default_payout_rate: parsed.data.default_rate })
+    .eq('id', parsed.data.tenant_id)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/payouts')
+  return { success: true }
+}
+
+/**
+ * Updates the 3-Tier Compensation Matrix (Tier 1, Tier 2, Tier 3) rates for the tenant.
+ */
+export async function updateTenantTierRates(
+  _prevState: PayoutActionState,
+  formData: FormData
+): Promise<PayoutActionState> {
+  const profile = await requireRole('admin')
+
+  const parsed = tierRatesSchema.safeParse({
+    tenant_id: formData.get('tenant_id'),
+    tier_1_rate: formData.get('tier_1_rate'),
+    tier_2_rate: formData.get('tier_2_rate'),
+    tier_3_rate: formData.get('tier_3_rate'),
+  })
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid tier rates.' }
+  }
+
+  if (!profile.is_global_admin && profile.tenant_id !== parsed.data.tenant_id) {
+    return { error: 'Unauthorized.' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('tenants')
+    .update({
+      payout_tier_1_rate: parsed.data.tier_1_rate,
+      payout_tier_2_rate: parsed.data.tier_2_rate,
+      payout_tier_3_rate: parsed.data.tier_3_rate,
+    })
     .eq('id', parsed.data.tenant_id)
 
   if (error) {

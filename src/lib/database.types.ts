@@ -7,6 +7,7 @@ export type TenantStatus = 'active' | 'suspended' | 'trial'
 export type ProfileStatus = 'active' | 'inactive' | 'suspended'
 export type SpecialistAssignmentRole = 'primary' | 'backup' | 'staff'
 export type PayoutStatus = 'pending' | 'approved' | 'paid' | 'cancelled'
+export type PayoutTier = 'tier_1' | 'tier_2' | 'tier_3' | 'custom'
 export type GeofenceStatus = 'pending' | 'verified' | 'outside' | 'exempt'
 
 export interface Database {
@@ -23,6 +24,9 @@ export interface Database {
           require_id_photo: boolean
           enable_payouts: boolean
           default_payout_rate: number
+          payout_tier_1_rate: number
+          payout_tier_2_rate: number
+          payout_tier_3_rate: number
           created_at: string
           updated_at: string
         }
@@ -36,6 +40,9 @@ export interface Database {
           require_id_photo?: boolean
           enable_payouts?: boolean
           default_payout_rate?: number
+          payout_tier_1_rate?: number
+          payout_tier_2_rate?: number
+          payout_tier_3_rate?: number
           created_at?: string
           updated_at?: string
         }
@@ -49,6 +56,9 @@ export interface Database {
           require_id_photo?: boolean
           enable_payouts?: boolean
           default_payout_rate?: number
+          payout_tier_1_rate?: number
+          payout_tier_2_rate?: number
+          payout_tier_3_rate?: number
           created_at?: string
           updated_at?: string
         }
@@ -215,6 +225,7 @@ export interface Database {
           is_active: boolean
           require_id_photo: boolean
           custom_payout_rate: number | null
+          payout_tier: PayoutTier
           enable_gps_geofencing: boolean
           latitude: number | null
           longitude: number | null
@@ -239,6 +250,7 @@ export interface Database {
           is_active?: boolean
           require_id_photo?: boolean
           custom_payout_rate?: number | null
+          payout_tier?: PayoutTier
           enable_gps_geofencing?: boolean
           latitude?: number | null
           longitude?: number | null
@@ -263,6 +275,7 @@ export interface Database {
           is_active?: boolean
           require_id_photo?: boolean
           custom_payout_rate?: number | null
+          payout_tier?: PayoutTier
           enable_gps_geofencing?: boolean
           latitude?: number | null
           longitude?: number | null

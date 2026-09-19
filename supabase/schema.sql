@@ -17,6 +17,9 @@ create table if not exists tenants (
   require_id_photo boolean not null default true,
   enable_payouts boolean not null default false,
   default_payout_rate numeric(10, 2) not null default 75.00,
+  payout_tier_1_rate numeric(10, 2) not null default 50.00,
+  payout_tier_2_rate numeric(10, 2) not null default 75.00,
+  payout_tier_3_rate numeric(10, 2) not null default 100.00,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -92,6 +95,7 @@ create table if not exists properties (
   is_active boolean not null default true,
   require_id_photo boolean not null default true,
   custom_payout_rate numeric(10, 2),
+  payout_tier text not null default 'tier_2' check (payout_tier in ('tier_1', 'tier_2', 'tier_3', 'custom')),
   enable_gps_geofencing boolean not null default true,
   latitude double precision,
   longitude double precision,

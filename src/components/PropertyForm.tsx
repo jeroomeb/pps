@@ -1,13 +1,14 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { MapPin, Navigation, Crosshair, ShieldCheck } from 'lucide-react'
+import { MapPin, Navigation, Crosshair, ShieldCheck, CircleDollarSign, Building } from 'lucide-react'
 import { SubmitButton } from '@/components/SubmitButton'
 import { AddressFields } from '@/components/AddressFields'
 import { Card } from '@/components/ui/Card'
 import type { PropertyFormState } from '@/lib/actions/properties'
 import { WEEKDAY_LABELS, WEEKDAY_ORDER, type ScheduleEntry } from '@/lib/schedule'
 import type { AddressParts } from '@/lib/address'
+import type { PayoutTier } from '@/lib/database.types'
 
 const INPUT =
   'min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none'
@@ -16,6 +17,7 @@ const LABEL = 'text-sm font-semibold uppercase tracking-wide'
 export function PropertyForm({
   action,
   defaultValues,
+  tenants,
 }: {
   action: (state: PropertyFormState, formData: FormData) => Promise<PropertyFormState>
   defaultValues?: AddressParts & {
@@ -30,12 +32,17 @@ export function PropertyForm({
     latitude?: number | null
     longitude?: number | null
     geofenceRadiusMeters?: number
+    payoutTier?: PayoutTier
+    customPayoutRate?: number | null
+    tenantId?: string | null
   }
+  tenants?: { id: string; name: string }[]
 }) {
   const [state, formAction] = useActionState<PropertyFormState, FormData>(action, undefined)
 
   const [lat, setLat] = useState<string>(defaultValues?.latitude?.toString() ?? '')
   const [lon, setLon] = useState<string>(defaultValues?.longitude?.toString() ?? '')
+  const [payoutTier, setPayoutTier] = useState<PayoutTier>(defaultValues?.payoutTier ?? 'tier_2')
   const [detectingGps, setDetectingGps] = useState(false)
   const [gpsNotice, setGpsNotice] = useState<string | null>(null)
 
@@ -75,6 +82,27 @@ export function PropertyForm({
           <p className="text-xs text-on-surface-variant">
             Property ID: <span className="font-mono font-semibold">{defaultValues.humanId}</span>
           </p>
+        )}
+
+        {tenants && tenants.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor="property_tenant_id" className={LABEL}>
+              Assigned Organization / Corporate Tenant
+            </label>
+            <select
+              id="property_tenant_id"
+              name="tenant_id"
+              defaultValue={defaultValues?.tenantId ?? ''}
+              className={`${INPUT} bg-surface-container-lowest`}
+            >
+              <option value="">Amenity Op&apos;s HQ (Master / Global)</option>
+              {tenants.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -227,6 +255,57 @@ export function PropertyForm({
               <span className="text-xs text-primary font-medium">
                 {gpsNotice}
               </span>
+            )}
+          </div>
+        </div>
+
+        {/* Task 5 & Question 4: 3-Tier Specialist Compensation & Payout Matrix Tier */}
+        <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <CircleDollarSign size={18} className="text-primary" />
+            <h3 className="font-headline text-sm font-semibold text-on-surface">
+              Specialist Audit Compensation & Payout Tier
+            </h3>
+          </div>
+          <p className="mb-4 text-xs text-on-surface-variant">
+            Assign this property to an audit compensation tier. Specialists auditing this site will automatically receive the organization&apos;s designated tier payout rate.
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="payout_tier" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                Property Compensation Tier
+              </label>
+              <select
+                id="payout_tier"
+                name="payout_tier"
+                value={payoutTier}
+                onChange={(e) => setPayoutTier(e.target.value as PayoutTier)}
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              >
+                <option value="tier_1">Tier 1 Property (Baseline / Standard)</option>
+                <option value="tier_2">Tier 2 Property (Mid-Tier / Commercial)</option>
+                <option value="tier_3">Tier 3 Property (Premium / Luxury High-Rise)</option>
+                <option value="custom">Custom Flat Rate Override ($)</option>
+              </select>
+            </div>
+
+            {payoutTier === 'custom' && (
+              <div className="flex flex-col gap-1">
+                <label htmlFor="custom_payout_rate" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                  Custom Payout Amount ($ USD)
+                </label>
+                <input
+                  id="custom_payout_rate"
+                  name="custom_payout_rate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={defaultValues?.customPayoutRate ?? ''}
+                  placeholder="e.g. 85.00"
+                  className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+                />
+              </div>
             )}
           </div>
         </div>

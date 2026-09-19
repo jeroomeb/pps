@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { PropertyForm } from '@/components/PropertyForm'
 import { updateProperty } from '@/lib/actions/properties'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { getProfile } from '@/lib/auth/dal'
+import type { PayoutTier } from '@/lib/database.types'
 
 export default async function EditPropertyPage({
   params,
@@ -10,14 +12,20 @@ export default async function EditPropertyPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: property } = await supabase
-    .from('properties')
-    .select(
-      'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule, require_id_photo, enable_gps_geofencing, latitude, longitude, geofence_radius_meters'
-    )
-    .eq('id', id)
-    .single()
+  const [supabase, profile] = await Promise.all([createClient(), getProfile()])
+
+  const [{ data: property }, { data: tenants }] = await Promise.all([
+    supabase
+      .from('properties')
+      .select(
+        'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule, require_id_photo, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, payout_tier, custom_payout_rate, tenant_id'
+      )
+      .eq('id', id)
+      .single(),
+    profile.is_global_admin
+      ? supabase.from('tenants').select('id, name').order('name')
+      : Promise.resolve({ data: null }),
+  ])
 
   if (!property) {
     notFound()
@@ -33,6 +41,7 @@ export default async function EditPropertyPage({
       />
       <PropertyForm
         action={updateProperty.bind(null, id)}
+        tenants={tenants ?? undefined}
         defaultValues={{
           name: property.name,
           street: property.street,
@@ -50,6 +59,9 @@ export default async function EditPropertyPage({
           latitude: property.latitude,
           longitude: property.longitude,
           geofenceRadiusMeters: property.geofence_radius_meters ?? 100,
+          payoutTier: (property.payout_tier as PayoutTier) ?? 'tier_2',
+          customPayoutRate: property.custom_payout_rate,
+          tenantId: property.tenant_id,
         }}
       />
     </div>

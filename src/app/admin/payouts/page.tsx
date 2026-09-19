@@ -12,12 +12,15 @@ export default async function AdminPayoutsPage() {
   let tenantConfig = {
     enable_payouts: false,
     default_payout_rate: 75.0,
+    payout_tier_1_rate: 50.0,
+    payout_tier_2_rate: 75.0,
+    payout_tier_3_rate: 100.0,
   }
 
   if (profile.tenant_id) {
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('enable_payouts, default_payout_rate')
+      .select('enable_payouts, default_payout_rate, payout_tier_1_rate, payout_tier_2_rate, payout_tier_3_rate')
       .eq('id', profile.tenant_id)
       .single()
 
@@ -25,6 +28,9 @@ export default async function AdminPayoutsPage() {
       tenantConfig = {
         enable_payouts: tenant.enable_payouts ?? false,
         default_payout_rate: Number(tenant.default_payout_rate ?? 75.0),
+        payout_tier_1_rate: Number(tenant.payout_tier_1_rate ?? 50.0),
+        payout_tier_2_rate: Number(tenant.payout_tier_2_rate ?? 75.0),
+        payout_tier_3_rate: Number(tenant.payout_tier_3_rate ?? 100.0),
       }
     }
   }
@@ -71,6 +77,9 @@ export default async function AdminPayoutsPage() {
         tenantId={profile.tenant_id ?? '00000000-0000-0000-0000-000000000001'}
         initialEnabled={tenantConfig.enable_payouts}
         initialDefaultRate={tenantConfig.default_payout_rate}
+        initialTier1Rate={tenantConfig.payout_tier_1_rate}
+        initialTier2Rate={tenantConfig.payout_tier_2_rate}
+        initialTier3Rate={tenantConfig.payout_tier_3_rate}
         payouts={payouts}
       />
     </div>

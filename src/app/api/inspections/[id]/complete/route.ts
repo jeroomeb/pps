@@ -21,7 +21,7 @@ export async function POST(
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, properties(name, address, email, custom_payout_rate), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, properties(name, address, email, custom_payout_rate, payout_tier), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()
@@ -159,22 +159,34 @@ export async function POST(
   revalidatePath('/inspector/payouts')
   revalidatePath('/admin/payouts')
 
-  // Automatic Payout Ledger Entry (Task 5):
+  // Automatic Payout Ledger Entry (Task 5 & Question 4 3-Tier Compensation):
   // If the tenant organization has enabled the payouts module, log an earnings record
   if (inspection.tenant_id) {
     try {
       const { data: tenant } = await admin
         .from('tenants')
-        .select('enable_payouts, default_payout_rate')
+        .select('enable_payouts, default_payout_rate, payout_tier_1_rate, payout_tier_2_rate, payout_tier_3_rate')
         .eq('id', inspection.tenant_id)
         .single()
 
       if (tenant?.enable_payouts) {
-        const prop = inspection.properties as unknown as { custom_payout_rate?: number | null } | null
-        const payoutAmount =
-          typeof prop?.custom_payout_rate === 'number'
-            ? prop.custom_payout_rate
-            : Number(tenant.default_payout_rate ?? 75.0)
+        const prop = inspection.properties as unknown as {
+          custom_payout_rate?: number | null
+          payout_tier?: string | null
+        } | null
+
+        let payoutAmount: number
+        if (typeof prop?.custom_payout_rate === 'number' && prop.custom_payout_rate > 0) {
+          payoutAmount = prop.custom_payout_rate
+        } else if (prop?.payout_tier === 'tier_1') {
+          payoutAmount = Number(tenant.payout_tier_1_rate ?? 50.0)
+        } else if (prop?.payout_tier === 'tier_3') {
+          payoutAmount = Number(tenant.payout_tier_3_rate ?? 100.0)
+        } else if (prop?.payout_tier === 'tier_2') {
+          payoutAmount = Number(tenant.payout_tier_2_rate ?? 75.0)
+        } else {
+          payoutAmount = Number(tenant.default_payout_rate ?? 75.0)
+        }
 
         await admin.from('specialist_payouts').upsert(
           {

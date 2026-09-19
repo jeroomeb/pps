@@ -9,6 +9,7 @@ import { cleanupInspectionStorage } from '@/lib/supabase/storage-cleanup'
 import { genPropertyId } from '@/lib/ids'
 import type { ScheduleEntry } from '@/lib/schedule'
 import { composeAddress, normalizeAddressParts } from '@/lib/address'
+import type { Database } from '@/lib/database.types'
 
 const propertySchema = z.object({
   name: z.string().trim().min(1, 'Property name is required'),
@@ -25,6 +26,9 @@ const propertySchema = z.object({
   latitude: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().nullable().optional()),
   longitude: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().nullable().optional()),
   geofence_radius_meters: z.coerce.number().min(10, 'Geofence radius must be at least 10 meters').default(100),
+  payout_tier: z.enum(['tier_1', 'tier_2', 'tier_3', 'custom']).default('tier_2'),
+  custom_payout_rate: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().min(0).nullable().optional()),
+  tenant_id: z.string().uuid().optional().nullable(),
 })
 
 export type PropertyFormState = { error?: string } | undefined
@@ -50,6 +54,7 @@ function addressColumns(data: z.infer<typeof propertySchema>) {
 }
 
 function propertyFormFields(formData: FormData) {
+  const rawTenantId = formData.get('tenant_id')
   return {
     name: formData.get('name'),
     street: formData.get('street'),
@@ -65,6 +70,9 @@ function propertyFormFields(formData: FormData) {
     latitude: formData.get('latitude'),
     longitude: formData.get('longitude'),
     geofence_radius_meters: formData.get('geofence_radius_meters') || 100,
+    payout_tier: formData.get('payout_tier') || 'tier_2',
+    custom_payout_rate: formData.get('custom_payout_rate'),
+    tenant_id: typeof rawTenantId === 'string' && rawTenantId.trim() ? rawTenantId.trim() : null,
   }
 }
 
@@ -82,12 +90,17 @@ export async function createProperty(
 
   const supabase = await createClient()
 
+  // Target Tenant Resolution: Global admin can assign to any tenant; regular admin is locked to own tenant
+  const targetTenantId = profile.is_global_admin && parsed.data.tenant_id
+    ? parsed.data.tenant_id
+    : profile.tenant_id ?? null
+
   // Enforce Tenant Property License SKU limits (Shared DB, Shared Schema Isolation)
-  if (profile.tenant_id) {
+  if (targetTenantId) {
     const { data: tenant } = await supabase
       .from('tenants')
       .select('id, name, max_property_licenses, status')
-      .eq('id', profile.tenant_id)
+      .eq('id', targetTenantId)
       .single()
 
     if (tenant) {
@@ -101,7 +114,7 @@ export async function createProperty(
 
       if ((count ?? 0) >= tenant.max_property_licenses) {
         return {
-          error: `License limit reached: You have allocated all ${tenant.max_property_licenses} property licenses on your plan. Upgrade your license to add more properties.`,
+          error: `License limit reached: Organization "${tenant.name}" has allocated all ${tenant.max_property_licenses} property licenses on its plan. Upgrade the license to add more properties.`,
         }
       }
     }
@@ -115,12 +128,14 @@ export async function createProperty(
     notes: parsed.data.notes || null,
     required_schedule: parseScheduleFromForm(formData),
     human_id: genPropertyId(),
-    tenant_id: profile.tenant_id ?? null,
+    tenant_id: targetTenantId,
     require_id_photo: parsed.data.require_id_photo,
     enable_gps_geofencing: parsed.data.enable_gps_geofencing,
     latitude: parsed.data.latitude ?? null,
     longitude: parsed.data.longitude ?? null,
     geofence_radius_meters: parsed.data.geofence_radius_meters,
+    payout_tier: parsed.data.payout_tier,
+    custom_payout_rate: parsed.data.payout_tier === 'custom' ? (parsed.data.custom_payout_rate ?? null) : null,
   }
 
   // Retry once on the (astronomically unlikely) human_id collision.
@@ -150,7 +165,7 @@ export async function updateProperty(
   _prevState: PropertyFormState,
   formData: FormData
 ): Promise<PropertyFormState> {
-  await requireRole('admin')
+  const profile = await requireRole('admin')
 
   const parsed = propertySchema.safeParse(propertyFormFields(formData))
 
@@ -159,21 +174,30 @@ export async function updateProperty(
   }
 
   const supabase = await createClient()
+
+  const updateFields: Database['public']['Tables']['properties']['Update'] = {
+    name: parsed.data.name,
+    ...addressColumns(parsed.data),
+    email: parsed.data.email,
+    phone: parsed.data.phone || null,
+    notes: parsed.data.notes || null,
+    required_schedule: parseScheduleFromForm(formData),
+    require_id_photo: parsed.data.require_id_photo,
+    enable_gps_geofencing: parsed.data.enable_gps_geofencing,
+    latitude: parsed.data.latitude ?? null,
+    longitude: parsed.data.longitude ?? null,
+    geofence_radius_meters: parsed.data.geofence_radius_meters,
+    payout_tier: parsed.data.payout_tier,
+    custom_payout_rate: parsed.data.payout_tier === 'custom' ? (parsed.data.custom_payout_rate ?? null) : null,
+  }
+
+  if (profile.is_global_admin && parsed.data.tenant_id !== undefined) {
+    updateFields.tenant_id = parsed.data.tenant_id
+  }
+
   const { error } = await supabase
     .from('properties')
-    .update({
-      name: parsed.data.name,
-      ...addressColumns(parsed.data),
-      email: parsed.data.email,
-      phone: parsed.data.phone || null,
-      notes: parsed.data.notes || null,
-      required_schedule: parseScheduleFromForm(formData),
-      require_id_photo: parsed.data.require_id_photo,
-      enable_gps_geofencing: parsed.data.enable_gps_geofencing,
-      latitude: parsed.data.latitude ?? null,
-      longitude: parsed.data.longitude ?? null,
-      geofence_radius_meters: parsed.data.geofence_radius_meters,
-    })
+    .update(updateFields)
     .eq('id', propertyId)
 
   if (error) {
