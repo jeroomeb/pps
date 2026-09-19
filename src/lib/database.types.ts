@@ -10,6 +10,18 @@ export type PayoutStatus = 'pending' | 'approved' | 'paid' | 'cancelled'
 export type PayoutTier = 'tier_1' | 'tier_2' | 'tier_3' | 'custom'
 export type GeofenceStatus = 'pending' | 'verified' | 'outside' | 'exempt'
 
+export type PayoutMatrixRates = {
+  tier_1: number
+  tier_2: number
+  tier_3: number
+}
+
+export type PayoutMatrix = {
+  luxury_condo: PayoutMatrixRates
+  adult_community: PayoutMatrixRates
+  commercial_multi: PayoutMatrixRates
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -27,6 +39,7 @@ export interface Database {
           payout_tier_1_rate: number
           payout_tier_2_rate: number
           payout_tier_3_rate: number
+          payout_matrix: PayoutMatrix
           created_at: string
           updated_at: string
         }
@@ -43,6 +56,7 @@ export interface Database {
           payout_tier_1_rate?: number
           payout_tier_2_rate?: number
           payout_tier_3_rate?: number
+          payout_matrix?: PayoutMatrix
           created_at?: string
           updated_at?: string
         }
@@ -59,6 +73,7 @@ export interface Database {
           payout_tier_1_rate?: number
           payout_tier_2_rate?: number
           payout_tier_3_rate?: number
+          payout_matrix?: PayoutMatrix
           created_at?: string
           updated_at?: string
         }

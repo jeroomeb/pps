@@ -190,6 +190,19 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-19 — Deactivated Team Members Category & 3x3 Property Category x Tier Compensation Matrix
+Implemented client requests for team member management and full 3x3 grid property compensation matrix:
+- **Deactivated Team Members Category (`src/app/admin/team/page.tsx`)**:
+  - Segregated active vs. deactivated team members.
+  - Active members display at the top in the "Active Team Members" card.
+  - Deactivated members are automatically placed at the bottom in a distinct "Deactivated Members" category card with reactivation controls and muted audit indicators.
+- **3x3 Property Category x Service Tier Matrix (`0013_tenant_onboarding_and_tiered_payouts.sql`, `src/components/AdminPayoutsManager.tsx`, `src/lib/actions/payouts.ts`)**:
+  - Built the full 3x3 matrix (Building Categories: Luxury Condominium, 55+ Active Adult Community, Commercial Multi-Tenant; Tiers: Tier 1 Baseline, Tier 2 Premier, Tier 3 Sovereign).
+  - Configurable rates stored in `tenants.payout_matrix jsonb`.
+  - Responsive matrix table view for desktop and responsive category cards for mobile.
+  - Automatic audit payout evaluation (`/api/inspections/[id]/complete`) matches checklist template category + property tier to the exact matrix cell.
+- `npx tsc --noEmit` and `npm run build` both clean (0 errors, 24 routes).
+
 ### 2026-09-19 — Client Inquiries Q3 (Tenant Admin Onboarding & Access) & Q4 (3-Tier Property Compensation Matrix)
 Implemented direct Tenant Admin user account provisioning during tenant creation, HQ tenant switching context, and a 3-Tier Property Compensation Matrix.
 - **Database & Migration (`0013_tenant_onboarding_and_tiered_payouts.sql`)**:

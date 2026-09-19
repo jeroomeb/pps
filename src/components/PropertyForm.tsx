@@ -283,9 +283,9 @@ export function PropertyForm({
                 onChange={(e) => setPayoutTier(e.target.value as PayoutTier)}
                 className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
               >
-                <option value="tier_1">Tier 1 Property (Baseline / Standard)</option>
-                <option value="tier_2">Tier 2 Property (Mid-Tier / Commercial)</option>
-                <option value="tier_3">Tier 3 Property (Premium / Luxury High-Rise)</option>
+                <option value="tier_1">Tier 1 Property (Baseline)</option>
+                <option value="tier_2">Tier 2 Property (Premier)</option>
+                <option value="tier_3">Tier 3 Property (Sovereign)</option>
                 <option value="custom">Custom Flat Rate Override ($)</option>
               </select>
             </div>

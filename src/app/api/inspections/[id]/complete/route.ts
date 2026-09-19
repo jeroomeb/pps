@@ -159,13 +159,13 @@ export async function POST(
   revalidatePath('/inspector/payouts')
   revalidatePath('/admin/payouts')
 
-  // Automatic Payout Ledger Entry (Task 5 & Question 4 3-Tier Compensation):
+  // Automatic Payout Ledger Entry (Task 5 & Question 4 3-Tier Compensation Matrix):
   // If the tenant organization has enabled the payouts module, log an earnings record
   if (inspection.tenant_id) {
     try {
       const { data: tenant } = await admin
         .from('tenants')
-        .select('enable_payouts, default_payout_rate, payout_tier_1_rate, payout_tier_2_rate, payout_tier_3_rate')
+        .select('enable_payouts, default_payout_rate, payout_tier_1_rate, payout_tier_2_rate, payout_tier_3_rate, payout_matrix')
         .eq('id', inspection.tenant_id)
         .single()
 
@@ -178,14 +178,34 @@ export async function POST(
         let payoutAmount: number
         if (typeof prop?.custom_payout_rate === 'number' && prop.custom_payout_rate > 0) {
           payoutAmount = prop.custom_payout_rate
-        } else if (prop?.payout_tier === 'tier_1') {
-          payoutAmount = Number(tenant.payout_tier_1_rate ?? 50.0)
-        } else if (prop?.payout_tier === 'tier_3') {
-          payoutAmount = Number(tenant.payout_tier_3_rate ?? 100.0)
-        } else if (prop?.payout_tier === 'tier_2') {
-          payoutAmount = Number(tenant.payout_tier_2_rate ?? 75.0)
         } else {
-          payoutAmount = Number(tenant.default_payout_rate ?? 75.0)
+          // Identify category from template name
+          const tName = (template.name || '').toLowerCase()
+          let category: 'luxury_condo' | 'adult_community' | 'commercial_multi' = 'luxury_condo'
+          if (tName.includes('55+') || tName.includes('adult')) {
+            category = 'adult_community'
+          } else if (tName.includes('commercial')) {
+            category = 'commercial_multi'
+          }
+
+          const tier = (prop?.payout_tier && ['tier_1', 'tier_2', 'tier_3'].includes(prop.payout_tier))
+            ? (prop.payout_tier as 'tier_1' | 'tier_2' | 'tier_3')
+            : 'tier_2'
+
+          const matrix = tenant.payout_matrix as unknown as Record<string, Record<string, number>> | null
+          const matrixRate = matrix?.[category]?.[tier]
+
+          if (typeof matrixRate === 'number' && matrixRate > 0) {
+            payoutAmount = Number(matrixRate)
+          } else if (tier === 'tier_1') {
+            payoutAmount = Number(tenant.payout_tier_1_rate ?? 50.0)
+          } else if (tier === 'tier_3') {
+            payoutAmount = Number(tenant.payout_tier_3_rate ?? 100.0)
+          } else if (tier === 'tier_2') {
+            payoutAmount = Number(tenant.payout_tier_2_rate ?? 75.0)
+          } else {
+            payoutAmount = Number(tenant.default_payout_rate ?? 75.0)
+          }
         }
 
         await admin.from('specialist_payouts').upsert(

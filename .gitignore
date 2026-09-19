@@ -43,7 +43,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# client notes
-"dev docs/CLIENT_REPLY_RECOMMENDATIONS.md"
+# client notes & dev documentation
+/dev docs/
+dev docs/
 CLIENT_REPLY_RECOMMENDATIONS.md
 

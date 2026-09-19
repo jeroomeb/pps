@@ -20,6 +20,7 @@ create table if not exists tenants (
   payout_tier_1_rate numeric(10, 2) not null default 50.00,
   payout_tier_2_rate numeric(10, 2) not null default 75.00,
   payout_tier_3_rate numeric(10, 2) not null default 100.00,
+  payout_matrix jsonb not null default '{"luxury_condo":{"tier_1":50.00,"tier_2":75.00,"tier_3":100.00},"adult_community":{"tier_1":55.00,"tier_2":80.00,"tier_3":110.00},"commercial_multi":{"tier_1":65.00,"tier_2":95.00,"tier_3":130.00}}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

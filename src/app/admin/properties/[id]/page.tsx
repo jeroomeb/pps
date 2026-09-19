@@ -162,12 +162,12 @@ export default async function PropertyDetailPage({
             <span className="inline-flex items-center gap-1 rounded bg-surface-container-highest px-2 py-0.5 text-[11px] font-semibold text-on-surface">
               <CircleDollarSign size={12} className="text-primary" />
               {property.payout_tier === 'tier_1'
-                ? 'Tier 1 Rate'
+                ? 'Tier 1 (Baseline)'
                 : property.payout_tier === 'tier_3'
-                  ? 'Tier 3 Rate'
+                  ? 'Tier 3 (Sovereign)'
                   : property.payout_tier === 'custom' && property.custom_payout_rate
                     ? `$${Number(property.custom_payout_rate).toFixed(2)} Custom Rate`
-                    : 'Tier 2 Rate'}
+                    : 'Tier 2 (Premier)'}
             </span>
           </span>
         }

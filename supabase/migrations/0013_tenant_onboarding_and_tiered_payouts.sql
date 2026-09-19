@@ -1,9 +1,9 @@
 -- 0013_tenant_onboarding_and_tiered_payouts.sql
--- Multi-Tier Specialist Compensation Matrix & Property Tier Assignment
+-- Multi-Tier Specialist Compensation Matrix (3x3 Grid) & Property Tier Assignment
 -- Idempotent — safe to re-run on existing databases.
 
 -- ============================================================
--- 1. Add 3-Tier Compensation Rates to Tenants
+-- 1. Add 3-Tier Compensation Rates & Matrix to Tenants
 -- ============================================================
 
 alter table public.tenants
@@ -14,6 +14,14 @@ alter table public.tenants
 
 alter table public.tenants
   add column if not exists payout_tier_3_rate numeric(10, 2) not null default 100.00;
+
+-- Full 3x3 Property Category x Service Tier Matrix
+alter table public.tenants
+  add column if not exists payout_matrix jsonb not null default '{
+    "luxury_condo": { "tier_1": 50.00, "tier_2": 75.00, "tier_3": 100.00 },
+    "adult_community": { "tier_1": 55.00, "tier_2": 80.00, "tier_3": 110.00 },
+    "commercial_multi": { "tier_1": 65.00, "tier_2": 95.00, "tier_3": 130.00 }
+  }'::jsonb;
 
 -- ============================================================
 -- 2. Add Payout Tier Classification to Properties

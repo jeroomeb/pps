@@ -23,6 +23,22 @@ const tierRatesSchema = z.object({
   tier_3_rate: z.coerce.number().min(0, 'Tier 3 rate must be 0 or greater'),
 })
 
+const matrixRatesSchema = z.object({
+  tenant_id: z.string().uuid(),
+  // Luxury Condominium
+  luxury_tier_1: z.coerce.number().min(0, 'Rate must be 0 or greater'),
+  luxury_tier_2: z.coerce.number().min(0, 'Rate must be 0 or greater'),
+  luxury_tier_3: z.coerce.number().min(0, 'Rate must be 0 or greater'),
+  // 55+ Active Adult Community
+  adult_tier_1: z.coerce.number().min(0, 'Rate must be 0 or greater'),
+  adult_tier_2: z.coerce.number().min(0, 'Rate must be 0 or greater'),
+  adult_tier_3: z.coerce.number().min(0, 'Rate must be 0 or greater'),
+  // Commercial Multi-Tenant
+  commercial_tier_1: z.coerce.number().min(0, 'Rate must be 0 or greater'),
+  commercial_tier_2: z.coerce.number().min(0, 'Rate must be 0 or greater'),
+  commercial_tier_3: z.coerce.number().min(0, 'Rate must be 0 or greater'),
+})
+
 const propertyRateSchema = z.object({
   property_id: z.string().uuid(),
   custom_rate: z.coerce.number().min(0, 'Rate must be 0 or greater').nullable(),
@@ -134,6 +150,73 @@ export async function updateTenantTierRates(
       payout_tier_1_rate: parsed.data.tier_1_rate,
       payout_tier_2_rate: parsed.data.tier_2_rate,
       payout_tier_3_rate: parsed.data.tier_3_rate,
+    })
+    .eq('id', parsed.data.tenant_id)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/payouts')
+  return { success: true }
+}
+
+/**
+ * Updates the full 3x3 Property Category x Service Tier Matrix.
+ */
+export async function updateTenantPayoutMatrix(
+  _prevState: PayoutActionState,
+  formData: FormData
+): Promise<PayoutActionState> {
+  const profile = await requireRole('admin')
+
+  const parsed = matrixRatesSchema.safeParse({
+    tenant_id: formData.get('tenant_id'),
+    luxury_tier_1: formData.get('luxury_tier_1'),
+    luxury_tier_2: formData.get('luxury_tier_2'),
+    luxury_tier_3: formData.get('luxury_tier_3'),
+    adult_tier_1: formData.get('adult_tier_1'),
+    adult_tier_2: formData.get('adult_tier_2'),
+    adult_tier_3: formData.get('adult_tier_3'),
+    commercial_tier_1: formData.get('commercial_tier_1'),
+    commercial_tier_2: formData.get('commercial_tier_2'),
+    commercial_tier_3: formData.get('commercial_tier_3'),
+  })
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid matrix rates.' }
+  }
+
+  if (!profile.is_global_admin && profile.tenant_id !== parsed.data.tenant_id) {
+    return { error: 'Unauthorized.' }
+  }
+
+  const matrix = {
+    luxury_condo: {
+      tier_1: parsed.data.luxury_tier_1,
+      tier_2: parsed.data.luxury_tier_2,
+      tier_3: parsed.data.luxury_tier_3,
+    },
+    adult_community: {
+      tier_1: parsed.data.adult_tier_1,
+      tier_2: parsed.data.adult_tier_2,
+      tier_3: parsed.data.adult_tier_3,
+    },
+    commercial_multi: {
+      tier_1: parsed.data.commercial_tier_1,
+      tier_2: parsed.data.commercial_tier_2,
+      tier_3: parsed.data.commercial_tier_3,
+    },
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('tenants')
+    .update({
+      payout_matrix: matrix,
+      payout_tier_1_rate: parsed.data.luxury_tier_1,
+      payout_tier_2_rate: parsed.data.luxury_tier_2,
+      payout_tier_3_rate: parsed.data.luxury_tier_3,
     })
     .eq('id', parsed.data.tenant_id)
 

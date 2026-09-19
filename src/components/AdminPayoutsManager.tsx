@@ -20,14 +20,14 @@ import { useToast } from '@/components/ui/Toast'
 import {
   toggleTenantPayouts,
   updateTenantDefaultRate,
-  updateTenantTierRates,
+  updateTenantPayoutMatrix,
   approvePayout,
   batchApprovePayouts,
   markPayoutPaid,
   type PayoutActionState,
 } from '@/lib/actions/payouts'
 import { formatDate } from '@/lib/timezone'
-import type { PayoutStatus } from '@/lib/database.types'
+import type { PayoutStatus, PayoutMatrix } from '@/lib/database.types'
 
 export type AdminPayoutRow = {
   id: string
@@ -53,6 +53,7 @@ export function AdminPayoutsManager({
   initialTier1Rate = 50.0,
   initialTier2Rate = 75.0,
   initialTier3Rate = 100.0,
+  initialMatrix,
   payouts,
 }: {
   tenantId: string
@@ -61,6 +62,7 @@ export function AdminPayoutsManager({
   initialTier1Rate?: number
   initialTier2Rate?: number
   initialTier3Rate?: number
+  initialMatrix?: PayoutMatrix | null
   payouts: AdminPayoutRow[]
 }) {
   const showToast = useToast()
@@ -69,6 +71,12 @@ export function AdminPayoutsManager({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [statusFilter, setStatusFilter] = useState<'all' | PayoutStatus>('all')
   const [payingPayout, setPayingPayout] = useState<AdminPayoutRow | null>(null)
+
+  const matrix = initialMatrix ?? {
+    luxury_condo: { tier_1: initialTier1Rate, tier_2: initialTier2Rate, tier_3: initialTier3Rate },
+    adult_community: { tier_1: 55.0, tier_2: 80.0, tier_3: 110.0 },
+    commercial_multi: { tier_1: 65.0, tier_2: 95.0, tier_3: 130.0 },
+  }
 
   // Rate action state
   const [rateState, rateAction] = useActionState<PayoutActionState, FormData>(
@@ -84,12 +92,12 @@ export function AdminPayoutsManager({
     undefined
   )
 
-  // 3-Tier Compensation Matrix action state
-  const [tierState, tierAction] = useActionState<PayoutActionState, FormData>(
+  // 3-Tier Property Category x Service Tier Matrix action state
+  const [matrixState, matrixAction] = useActionState<PayoutActionState, FormData>(
     async (prev, formData) => {
-      const res = await updateTenantTierRates(prev, formData)
+      const res = await updateTenantPayoutMatrix(prev, formData)
       if (res?.success) {
-        showToast('success', '3-Tier Property Compensation Matrix updated successfully.')
+        showToast('success', '3-Tier Property Compensation Matrix saved successfully.')
       } else if (res?.error) {
         showToast('error', res.error)
       }
@@ -206,91 +214,373 @@ export function AdminPayoutsManager({
 
         {enabled && (
           <div className="flex flex-col gap-5 pt-2 border-t border-outline-variant">
-            {/* 3-Tier Property Compensation Matrix (Question 4) */}
-            <form action={tierAction} className="flex flex-col gap-3 rounded-lg border border-primary/20 bg-surface-container-low p-4">
+            {/* 3x3 Property Category x Service Tier Compensation Matrix */}
+            <form action={matrixAction} className="flex flex-col gap-4 rounded-lg border border-primary/20 bg-surface-container-low p-4">
               <input type="hidden" name="tenant_id" value={tenantId} />
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 className="font-headline text-xs font-bold uppercase tracking-wider text-primary">
                     3-Tier Property Compensation Matrix
                   </h3>
-                  <p className="text-xs text-on-surface-variant">
-                    Define baseline rates per property tier. Audits automatically adjust payout based on the property&apos;s assigned tier.
+                  <p className="text-xs text-on-surface-variant mt-0.5">
+                    Grid rates by Property Type and Service Tier. When an audit is completed, payout is automatically calculated from this matrix.
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="tier_1_rate" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                    Tier 1 (Standard / Baseline)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-xs text-on-surface-variant">$</span>
-                    <input
-                      id="tier_1_rate"
-                      name="tier_1_rate"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      defaultValue={initialTier1Rate}
-                      required
-                      className="min-h-9 w-full rounded border border-outline-variant bg-surface pl-6 pr-3 text-xs font-mono focus:border-primary-container focus:outline-none"
-                    />
+              {/* Desktop / Tablet Matrix Grid View */}
+              <div className="hidden sm:block overflow-x-auto rounded border border-outline-variant/60 bg-surface">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-outline-variant/60 bg-surface-container-highest/40">
+                      <th className="py-2.5 px-3.5 font-semibold text-on-surface">Property Type / Category</th>
+                      <th className="py-2.5 px-3.5 font-semibold text-on-surface text-center">
+                        Tier 1 (Baseline)
+                      </th>
+                      <th className="py-2.5 px-3.5 font-semibold text-on-surface text-center">
+                        Tier 2 (Premier)
+                      </th>
+                      <th className="py-2.5 px-3.5 font-semibold text-on-surface text-center">
+                        Tier 3 (Sovereign)
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant/40">
+                    {/* Row 1: Luxury Condominium */}
+                    <tr>
+                      <td className="py-3 px-3.5 font-medium text-on-surface">
+                        <span className="font-semibold text-on-surface block">Luxury Condominium</span>
+                        <span className="text-[10px] text-on-surface-variant">High-end residential towers &amp; HOAs</span>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="relative inline-block w-28">
+                          <span className="absolute left-2.5 top-2 text-xs text-on-surface-variant">$</span>
+                          <input
+                            name="luxury_tier_1"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={matrix.luxury_condo.tier_1}
+                            required
+                            className="h-8 w-full rounded border border-outline-variant bg-surface pl-6 pr-2 text-xs font-mono text-center focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="relative inline-block w-28">
+                          <span className="absolute left-2.5 top-2 text-xs text-on-surface-variant">$</span>
+                          <input
+                            name="luxury_tier_2"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={matrix.luxury_condo.tier_2}
+                            required
+                            className="h-8 w-full rounded border border-outline-variant bg-surface pl-6 pr-2 text-xs font-mono text-center focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="relative inline-block w-28">
+                          <span className="absolute left-2.5 top-2 text-xs text-on-surface-variant">$</span>
+                          <input
+                            name="luxury_tier_3"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={matrix.luxury_condo.tier_3}
+                            required
+                            className="h-8 w-full rounded border border-outline-variant bg-surface pl-6 pr-2 text-xs font-mono text-center focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Row 2: 55+ Active Adult Community */}
+                    <tr>
+                      <td className="py-3 px-3.5 font-medium text-on-surface">
+                        <span className="font-semibold text-on-surface block">55+ Active Adult Community</span>
+                        <span className="text-[10px] text-on-surface-variant">Senior living, clubhouses &amp; recreational assets</span>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="relative inline-block w-28">
+                          <span className="absolute left-2.5 top-2 text-xs text-on-surface-variant">$</span>
+                          <input
+                            name="adult_tier_1"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={matrix.adult_community.tier_1}
+                            required
+                            className="h-8 w-full rounded border border-outline-variant bg-surface pl-6 pr-2 text-xs font-mono text-center focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="relative inline-block w-28">
+                          <span className="absolute left-2.5 top-2 text-xs text-on-surface-variant">$</span>
+                          <input
+                            name="adult_tier_2"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={matrix.adult_community.tier_2}
+                            required
+                            className="h-8 w-full rounded border border-outline-variant bg-surface pl-6 pr-2 text-xs font-mono text-center focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="relative inline-block w-28">
+                          <span className="absolute left-2.5 top-2 text-xs text-on-surface-variant">$</span>
+                          <input
+                            name="adult_tier_3"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={matrix.adult_community.tier_3}
+                            required
+                            className="h-8 w-full rounded border border-outline-variant bg-surface pl-6 pr-2 text-xs font-mono text-center focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Row 3: Commercial Multi-Tenant */}
+                    <tr>
+                      <td className="py-3 px-3.5 font-medium text-on-surface">
+                        <span className="font-semibold text-on-surface block">Commercial Multi-Tenant</span>
+                        <span className="text-[10px] text-on-surface-variant">Office parks, retail strips &amp; industrial suites</span>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="relative inline-block w-28">
+                          <span className="absolute left-2.5 top-2 text-xs text-on-surface-variant">$</span>
+                          <input
+                            name="commercial_tier_1"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={matrix.commercial_multi.tier_1}
+                            required
+                            className="h-8 w-full rounded border border-outline-variant bg-surface pl-6 pr-2 text-xs font-mono text-center focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="relative inline-block w-28">
+                          <span className="absolute left-2.5 top-2 text-xs text-on-surface-variant">$</span>
+                          <input
+                            name="commercial_tier_2"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={matrix.commercial_multi.tier_2}
+                            required
+                            className="h-8 w-full rounded border border-outline-variant bg-surface pl-6 pr-2 text-xs font-mono text-center focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="relative inline-block w-28">
+                          <span className="absolute left-2.5 top-2 text-xs text-on-surface-variant">$</span>
+                          <input
+                            name="commercial_tier_3"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            defaultValue={matrix.commercial_multi.tier_3}
+                            required
+                            className="h-8 w-full rounded border border-outline-variant bg-surface pl-6 pr-2 text-xs font-mono text-center focus:border-primary focus:outline-none"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile View: Category-based Cards */}
+              <div className="sm:hidden flex flex-col gap-3">
+                {/* Mobile: Luxury Condominium */}
+                <div className="rounded border border-outline-variant/60 bg-surface p-3 flex flex-col gap-2.5">
+                  <div>
+                    <span className="text-xs font-bold text-on-surface block">Luxury Condominium</span>
+                    <span className="text-[10px] text-on-surface-variant">High-end residential towers</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-on-surface-variant">Tier 1 (Base)</label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-[10px] text-on-surface-variant">$</span>
+                        <input
+                          name="luxury_tier_1"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={matrix.luxury_condo.tier_1}
+                          required
+                          className="h-8 w-full rounded border border-outline-variant bg-surface pl-4 pr-1 text-[11px] font-mono text-center"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-on-surface-variant">Tier 2 (Prem)</label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-[10px] text-on-surface-variant">$</span>
+                        <input
+                          name="luxury_tier_2"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={matrix.luxury_condo.tier_2}
+                          required
+                          className="h-8 w-full rounded border border-outline-variant bg-surface pl-4 pr-1 text-[11px] font-mono text-center"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-on-surface-variant">Tier 3 (Sov)</label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-[10px] text-on-surface-variant">$</span>
+                        <input
+                          name="luxury_tier_3"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={matrix.luxury_condo.tier_3}
+                          required
+                          className="h-8 w-full rounded border border-outline-variant bg-surface pl-4 pr-1 text-[11px] font-mono text-center"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="tier_2_rate" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                    Tier 2 (Commercial / Mid-Size)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-xs text-on-surface-variant">$</span>
-                    <input
-                      id="tier_2_rate"
-                      name="tier_2_rate"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      defaultValue={initialTier2Rate}
-                      required
-                      className="min-h-9 w-full rounded border border-outline-variant bg-surface pl-6 pr-3 text-xs font-mono focus:border-primary-container focus:outline-none"
-                    />
+                {/* Mobile: 55+ Active Adult */}
+                <div className="rounded border border-outline-variant/60 bg-surface p-3 flex flex-col gap-2.5">
+                  <div>
+                    <span className="text-xs font-bold text-on-surface block">55+ Active Adult Community</span>
+                    <span className="text-[10px] text-on-surface-variant">Senior living &amp; recreational</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-on-surface-variant">Tier 1 (Base)</label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-[10px] text-on-surface-variant">$</span>
+                        <input
+                          name="adult_tier_1"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={matrix.adult_community.tier_1}
+                          required
+                          className="h-8 w-full rounded border border-outline-variant bg-surface pl-4 pr-1 text-[11px] font-mono text-center"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-on-surface-variant">Tier 2 (Prem)</label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-[10px] text-on-surface-variant">$</span>
+                        <input
+                          name="adult_tier_2"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={matrix.adult_community.tier_2}
+                          required
+                          className="h-8 w-full rounded border border-outline-variant bg-surface pl-4 pr-1 text-[11px] font-mono text-center"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-on-surface-variant">Tier 3 (Sov)</label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-[10px] text-on-surface-variant">$</span>
+                        <input
+                          name="adult_tier_3"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={matrix.adult_community.tier_3}
+                          required
+                          className="h-8 w-full rounded border border-outline-variant bg-surface pl-4 pr-1 text-[11px] font-mono text-center"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="tier_3_rate" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                    Tier 3 (Premium / Luxury High-Rise)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-xs text-on-surface-variant">$</span>
-                    <input
-                      id="tier_3_rate"
-                      name="tier_3_rate"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      defaultValue={initialTier3Rate}
-                      required
-                      className="min-h-9 w-full rounded border border-outline-variant bg-surface pl-6 pr-3 text-xs font-mono focus:border-primary-container focus:outline-none"
-                    />
+                {/* Mobile: Commercial Multi-Tenant */}
+                <div className="rounded border border-outline-variant/60 bg-surface p-3 flex flex-col gap-2.5">
+                  <div>
+                    <span className="text-xs font-bold text-on-surface block">Commercial Multi-Tenant</span>
+                    <span className="text-[10px] text-on-surface-variant">Office parks &amp; retail</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-on-surface-variant">Tier 1 (Base)</label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-[10px] text-on-surface-variant">$</span>
+                        <input
+                          name="commercial_tier_1"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={matrix.commercial_multi.tier_1}
+                          required
+                          className="h-8 w-full rounded border border-outline-variant bg-surface pl-4 pr-1 text-[11px] font-mono text-center"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-on-surface-variant">Tier 2 (Prem)</label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-[10px] text-on-surface-variant">$</span>
+                        <input
+                          name="commercial_tier_2"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={matrix.commercial_multi.tier_2}
+                          required
+                          className="h-8 w-full rounded border border-outline-variant bg-surface pl-4 pr-1 text-[11px] font-mono text-center"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-on-surface-variant">Tier 3 (Sov)</label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-[10px] text-on-surface-variant">$</span>
+                        <input
+                          name="commercial_tier_3"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={matrix.commercial_multi.tier_3}
+                          required
+                          className="h-8 w-full rounded border border-outline-variant bg-surface pl-4 pr-1 text-[11px] font-mono text-center"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                {tierState?.error ? (
-                  <p className="text-xs text-error">{tierState.error}</p>
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant/40">
+                {matrixState?.error ? (
+                  <p className="text-xs text-error">{matrixState.error}</p>
                 ) : (
-                  <span className="text-[11px] text-on-surface-variant">Individual properties can also have custom flat override rates.</span>
+                  <span className="text-[11px] text-on-surface-variant">
+                    Specific properties can also specify custom flat rate overrides on their edit form.
+                  </span>
                 )}
                 <button
                   type="submit"
                   disabled={pending}
-                  className="min-h-9 rounded bg-primary-container px-3.5 text-xs font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95 transition"
+                  className="min-h-9 rounded bg-primary-container px-4 text-xs font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95 transition"
                 >
-                  Save Tier Rates
+                  Save Matrix Rates
                 </button>
               </div>
             </form>

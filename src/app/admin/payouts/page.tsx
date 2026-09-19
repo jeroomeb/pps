@@ -15,12 +15,17 @@ export default async function AdminPayoutsPage() {
     payout_tier_1_rate: 50.0,
     payout_tier_2_rate: 75.0,
     payout_tier_3_rate: 100.0,
+    payout_matrix: {
+      luxury_condo: { tier_1: 50.0, tier_2: 75.0, tier_3: 100.0 },
+      adult_community: { tier_1: 55.0, tier_2: 80.0, tier_3: 110.0 },
+      commercial_multi: { tier_1: 65.0, tier_2: 95.0, tier_3: 130.0 },
+    },
   }
 
   if (profile.tenant_id) {
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('enable_payouts, default_payout_rate, payout_tier_1_rate, payout_tier_2_rate, payout_tier_3_rate')
+      .select('enable_payouts, default_payout_rate, payout_tier_1_rate, payout_tier_2_rate, payout_tier_3_rate, payout_matrix')
       .eq('id', profile.tenant_id)
       .single()
 
@@ -31,6 +36,7 @@ export default async function AdminPayoutsPage() {
         payout_tier_1_rate: Number(tenant.payout_tier_1_rate ?? 50.0),
         payout_tier_2_rate: Number(tenant.payout_tier_2_rate ?? 75.0),
         payout_tier_3_rate: Number(tenant.payout_tier_3_rate ?? 100.0),
+        payout_matrix: (tenant.payout_matrix as unknown as typeof tenantConfig.payout_matrix) ?? tenantConfig.payout_matrix,
       }
     }
   }
@@ -80,6 +86,7 @@ export default async function AdminPayoutsPage() {
         initialTier1Rate={tenantConfig.payout_tier_1_rate}
         initialTier2Rate={tenantConfig.payout_tier_2_rate}
         initialTier3Rate={tenantConfig.payout_tier_3_rate}
+        initialMatrix={tenantConfig.payout_matrix}
         payouts={payouts}
       />
     </div>
