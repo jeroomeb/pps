@@ -44,5 +44,6 @@ yarn-error.log*
 next-env.d.ts
 
 # client notes
+"dev docs/CLIENT_REPLY_RECOMMENDATIONS.md"
 CLIENT_REPLY_RECOMMENDATIONS.md
 
