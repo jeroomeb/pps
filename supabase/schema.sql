@@ -718,3 +718,83 @@ create policy "documents_update" on storage.objects
     bucket_id = 'documents'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- ============================================================
+-- 7. Specialist RAG Knowledge Base & Embeddings
+-- ============================================================
+
+create extension if not exists vector;
+
+create table if not exists specialist_knowledge_base (
+  id uuid primary key default gen_random_uuid(),
+  category text not null,
+  question text not null unique,
+  content text not null,
+  keywords text[] not null default '{}'::text[],
+  embedding vector(1536),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists specialist_knowledge_base_embedding_idx 
+  on specialist_knowledge_base 
+  using hnsw (embedding vector_cosine_ops);
+
+create index if not exists specialist_knowledge_base_category_idx 
+  on specialist_knowledge_base (category);
+
+alter table specialist_knowledge_base enable row level security;
+
+drop policy if exists "specialist_knowledge_base_select_all" on specialist_knowledge_base;
+create policy "specialist_knowledge_base_select_all"
+  on specialist_knowledge_base
+  for select
+  to authenticated
+  using (true);
+
+drop policy if exists "specialist_knowledge_base_admin_write" on specialist_knowledge_base;
+create policy "specialist_knowledge_base_admin_write"
+  on specialist_knowledge_base
+  for all
+  to authenticated
+  using (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+        and profiles.role = 'admin'
+    )
+  )
+  with check (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+        and profiles.role = 'admin'
+    )
+  );
+
+create or replace function match_knowledge_base (
+  query_embedding vector(1536),
+  match_threshold float default 0.35,
+  match_count int default 4
+)
+returns table (
+  id uuid,
+  category text,
+  question text,
+  content text,
+  similarity float
+)
+language sql stable
+as $$
+  select
+    id,
+    category,
+    question,
+    content,
+    1 - (specialist_knowledge_base.embedding <=> query_embedding) as similarity
+  from specialist_knowledge_base
+  where specialist_knowledge_base.embedding is not null
+    and 1 - (specialist_knowledge_base.embedding <=> query_embedding) > match_threshold
+  order by specialist_knowledge_base.embedding <=> query_embedding
+  limit match_count;
+$$;

@@ -190,6 +190,36 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-21 — Task 7: Supabase Vector RAG Knowledge Base & OpenAI Embeddings Integration
+Engineered full database-backed Retrieval-Augmented Generation (RAG) architecture for the Field Specialist AI Assistant:
+- **Database & Migration (`0014_specialist_rag_knowledge_base.sql` & `supabase/schema.sql`)**:
+  - Enabled PostgreSQL `vector` extension (`pgvector`).
+  - Created `specialist_knowledge_base` table (`category`, `question unique`, `content`, `keywords`, `embedding vector(1536)`) with HNSW cosine similarity index.
+  - Added `match_knowledge_base` RPC database function for sub-millisecond vector similarity search.
+- **RAG Execution Engine (`src/lib/rag-assistant.ts`)**:
+  - Direct pipeline utilizing OpenAI `text-embedding-3-small` (1536-dim embeddings) and `gpt-4o-mini` with strict system constraints.
+  - Multi-tiered fallback architecture: Supabase Vector RAG $\rightarrow$ Base AI Context $\rightarrow$ Local Knowledge Engine (zero downtime even without API key or during network disruptions).
+- **Seeding Automation (`scripts/seed-rag-knowledge.mjs` & `npm run seed:knowledge`)**:
+  - Automated seeding script parsing all 29 domain SOPs, computing vector embeddings via OpenAI, and upserting into the Supabase database.
+- **TypeScript Types & API Updates (`src/lib/database.types.ts`, `src/app/api/specialist-assistant/route.ts`)**:
+  - Fully typed vector RPC functions and knowledge base rows in TypeScript.
+- `npx tsc --noEmit` and `npm run build` both clean (0 errors, 25 routes).
+
+### 2026-09-20 — Task 7: Field Specialist On-Site AI Assistant Chatbot
+Engineered on-site operational SOP and guidance assistant chatbot exclusively for field specialists (OCS):
+- **Specialist-Only Placement (`src/app/inspector/layout.tsx`)**:
+  - Mounted `SpecialistChatbot` exclusively inside the specialist layout.
+  - Excluded from `/admin/*` entirely per explicit directive.
+- **On-Site Knowledge Base Engine (`src/lib/specialist-bot-knowledge.ts`)**:
+  - Structured Q&A repository covering photo verification rules, mandatory failure comments + evidence, GPS geofencing perimeter statuses, locked access SOPs, local crash-safe drafts, scheduled start gates, compensation matrix earnings, and performance scorecards.
+  - Smart keyword and topic matching with fallback guidance.
+- **Backend API Route (`src/app/api/specialist-assistant/route.ts`)**:
+  - Authenticated endpoint verifying specialist session and returning structured markdown responses.
+- **Floating UI Widget (`src/components/SpecialistChatbot.tsx`)**:
+  - Unobtrusive floating trigger with animated status badge positioned at `bottom-20 right-4` (above mobile bottom nav) and `bottom-6 right-6` on desktop.
+  - Slide-over drawer with suggested quick-prompt chips, rich markdown formatting, and reset controls.
+- `npx tsc --noEmit` and `npm run build` both clean (0 errors, 25 routes).
+
 ### 2026-09-19 — Deactivated Team Members Category & 3x3 Property Category x Tier Compensation Matrix
 Implemented client requests for team member management and full 3x3 grid property compensation matrix:
 - **Deactivated Team Members Category (`src/app/admin/team/page.tsx`)**:

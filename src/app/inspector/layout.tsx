@@ -4,6 +4,7 @@ import { Header } from '@/components/Header'
 import { BottomNav } from '@/components/BottomNav'
 import { AppShell } from '@/components/AppShell'
 import { signOut } from '@/lib/actions/auth'
+import { SpecialistChatbot } from '@/components/SpecialistChatbot'
 
 export default async function InspectorLayout({
   children,
@@ -39,6 +40,7 @@ export default async function InspectorLayout({
         isGlobalAdmin={profile.is_global_admin}
         enablePayouts={enablePayouts}
       />
+      <SpecialistChatbot specialistName={profile.full_name} />
     </>
   )
 }

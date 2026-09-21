@@ -711,8 +711,56 @@ export interface Database {
           },
         ]
       }
+      specialist_knowledge_base: {
+        Row: {
+          id: string
+          category: string
+          question: string
+          content: string
+          keywords: string[]
+          embedding: number[] | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          category: string
+          question: string
+          content: string
+          keywords?: string[]
+          embedding?: number[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          category?: string
+          question?: string
+          content?: string
+          keywords?: string[]
+          embedding?: number[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      match_knowledge_base: {
+        Args: {
+          query_embedding: number[]
+          match_threshold?: number
+          match_count?: number
+        }
+        Returns: {
+          id: string
+          category: string
+          question: string
+          content: string
+          similarity: number
+        }[]
+      }
+    }
   }
 }
