@@ -215,7 +215,7 @@ export function SpecialistChatbot({
 
             {/* Tooltip on desktop */}
             <span className="absolute right-16 hidden whitespace-nowrap rounded-lg bg-surface-container-highest px-3 py-1.5 text-xs font-semibold text-on-surface shadow-md lg:group-hover:block transition">
-              OCS Field Assistant
+              Field Assistant
             </span>
           </button>
         </div>
@@ -242,7 +242,7 @@ export function SpecialistChatbot({
                 <div>
                   <div className="flex items-center gap-1.5">
                     <h3 className="font-headline text-sm font-bold text-on-surface">
-                      OCS Field Assistant
+                      Field Assistant
                     </h3>
                     <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-1.5 py-0.2 text-[9px] font-semibold text-emerald-700">
                       Live SOP

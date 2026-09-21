@@ -31,7 +31,7 @@ function getOpenAIClient(): OpenAI | null {
 /**
  * System prompt instructing OpenAI on how to behave as the Amenity Op's Field Assistant
  */
-const SYSTEM_PROMPT = `You are the Amenity Op's OCS Field Assistant, an expert on-site operational supervisor assisting field property inspectors (Operational Continuity Specialists).
+const SYSTEM_PROMPT = `You are the Amenity Op's Field Assistant, an expert on-site operational supervisor assisting field property inspectors.
 
 CORE RESPONSIBILITIES:
 1. Answer the specialist's question clearly, concisely, and professionally using the retrieved Standard Operating Procedures (SOPs) provided in the context below.
