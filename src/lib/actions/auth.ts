@@ -132,11 +132,10 @@ export async function updatePassword(
     .update({ must_reset_password: false })
     .eq('id', session.user.id)
 
-  // Evict any other active sessions (e.g. a stolen cookie elsewhere) now
-  // that the password has changed.
-  await supabase.auth.signOut({ scope: 'others' })
+  // Sign out the current session so the user signs in with their new password
+  await supabase.auth.signOut()
 
-  redirect('/')
+  redirect('/login')
 }
 
 /**
@@ -205,6 +204,7 @@ export async function completeForcedPasswordChange(
       .eq('id', user.id)
   }
 
-  await supabase.auth.signOut({ scope: 'others' })
-  redirect('/')
+  // Sign out completely so the user must authenticate with their newly set password
+  await supabase.auth.signOut()
+  redirect('/login')
 }
