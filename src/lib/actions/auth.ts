@@ -126,8 +126,9 @@ export async function updatePassword(
     return { error: error.message }
   }
 
-  // Clear must_reset_password flag so the user can access the app normally
-  await supabase
+  // Clear must_reset_password flag using admin client to bypass the self-update security guard
+  const admin = createAdminClient()
+  await admin
     .from('profiles')
     .update({ must_reset_password: false })
     .eq('id', session.user.id)
@@ -189,19 +190,17 @@ export async function completeForcedPasswordChange(
     return { error: updateAuthError.message }
   }
 
-  // Clear must_reset_password flag on profiles table
-  const { error: profileError } = await supabase
+  // Clear must_reset_password flag on profiles table using admin client
+  // (guarantees bypass of guard_profile_self_update trigger which blocks client API role/flag changes)
+  const admin = createAdminClient()
+  const { error: profileError } = await admin
     .from('profiles')
     .update({ must_reset_password: false })
     .eq('id', user.id)
 
   if (profileError) {
-    // If RLS blocked client update, use admin client to guarantee flag clearance
-    const admin = createAdminClient()
-    await admin
-      .from('profiles')
-      .update({ must_reset_password: false })
-      .eq('id', user.id)
+    console.error('Failed to clear must_reset_password flag:', profileError)
+    return { error: 'Failed to update account security status. Please try again.' }
   }
 
   // Sign out completely so the user must authenticate with their newly set password
