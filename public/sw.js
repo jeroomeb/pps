@@ -1,4 +1,4 @@
-const CACHE_NAME = 'amenity-ops-shell-v1'
+const CACHE_NAME = 'amenity-ops-shell-v2'
 const SHELL_ASSETS = ['/logo-sm.png', '/icon-192.png']
 
 self.addEventListener('install', (event) => {

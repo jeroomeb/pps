@@ -190,6 +190,20 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-21 — PWA & Apple Touch Icon Aspect Ratio and Safe Zone Padding Fix
+Resolved issue where installing the web app to the mobile home screen (iOS & Android) resulted in clipped and warped/stretched logos:
+- **Root Cause**: The icon assets (`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`) were exported edge-to-edge (0px margin). iOS's standard ~22.5% squircle corner radius and Android's adaptive mask clipped off the top bar and side corners of the shield logo mark, distorting the visible aspect ratio.
+- **Icon Regeneration**: Extracted the authentic logo mark (preserving exact 512:455 aspect ratio) and regenerated all PWA and touch icon assets on the `#f8f9fa` brand surface background with proper safe zone padding:
+  - `apple-touch-icon.png` (180x180): Centered with 27px/34px safe margin so iOS squircle mask never clips the logo.
+  - `icon-192.png` & `icon-512.png`: PWA manifest standard icons centered with balanced padding.
+  - `icon-maskable-512.png`: Contained safely within the 80% circle safe zone for Android adaptive icon shapes.
+  - `logo-sm.png` & `src/app/icon.png`: High-DPI centered favicon and UI logo asset.
+- **Manifest & Service Worker Updates**:
+  - `src/app/manifest.ts`: Added explicit `purpose: 'any'` on standard icons and `purpose: 'maskable'` on maskable icon.
+  - `src/app/layout.tsx`: Added 512x512 icon reference and verified apple-touch-icon link.
+  - `public/sw.js`: Bumped cache version (`amenity-ops-shell-v2`) to instantly purge stale icon cache on client devices.
+- `npx tsc --noEmit` clean (0 errors).
+
 ### 2026-09-21 — Task 7: Supabase Vector RAG Knowledge Base & OpenAI Embeddings Integration
 Engineered full database-backed Retrieval-Augmented Generation (RAG) architecture for the Field Specialist AI Assistant:
 - **Database & Migration (`0014_specialist_rag_knowledge_base.sql` & `supabase/schema.sql`)**:
