@@ -190,6 +190,15 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-24 — CI/CD Automated Deployment Pipeline (GitHub Actions to Hostinger VPS)
+Engineered automated continuous deployment pipeline triggering on every `git push` to `main`:
+- **Workflow (`.github/workflows/deploy.yml`)**:
+  - Uses `appleboy/ssh-action` to connect securely via SSH key.
+  - Pulls latest commits from `main`, installs dependencies (`npm ci`/`npm install`), builds Next.js production bundle (`npm run build`), and reloads PM2 without downtime (`pm2 reload amenityops`).
+  - Implemented concurrency protection to prevent race conditions during rapid commits.
+- **Hostinger VPS Infrastructure**:
+  - Hosted directly on VPS (`148.230.108.195`), Nginx reverse proxy with SSL (`amenityops.app` and `portal.amenityops.app`), PM2 process daemon.
+
 ### 2026-09-21 — PWA & Apple Touch Icon Aspect Ratio and Safe Zone Padding Fix
 Resolved issue where installing the web app to the mobile home screen (iOS & Android) resulted in clipped and warped/stretched logos:
 - **Root Cause**: The icon assets (`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`) were exported edge-to-edge (0px margin). iOS's standard ~22.5% squircle corner radius and Android's adaptive mask clipped off the top bar and side corners of the shield logo mark, distorting the visible aspect ratio.
