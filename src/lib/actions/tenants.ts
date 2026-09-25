@@ -98,14 +98,13 @@ export async function createTenant(
 
   let finalAdminPassword = ''
 
-  // If an existing verified specialist was appointed as primary tenant administrator:
+  // If an existing verified specialist was appointed to this tenant:
   if (parsed.data.primary_specialist_id) {
     const admin = createAdminClient()
     const { error: assignError } = await admin
       .from('profiles')
       .update({
         tenant_id: newTenant.id,
-        role: 'admin',
       })
       .eq('id', parsed.data.primary_specialist_id)
 

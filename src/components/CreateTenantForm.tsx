@@ -164,21 +164,21 @@ export function CreateTenantForm({
           </div>
         </div>
 
-        {/* Primary Tenant Administrator / Specialist Assignment */}
+        {/* Specialist Assignment */}
         <div className="rounded-xl border border-outline-variant bg-surface-container-low p-4">
           <div className="mb-2 flex items-center gap-2">
             <UserCheck size={17} className="text-primary" />
             <h3 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
-              Primary Tenant Administrator / Specialist Assignment (Optional)
+              Assign Specialist to Tenant (Optional)
             </h3>
           </div>
           <p className="mb-3 text-xs text-on-surface-variant">
-            Select a verified operational specialist or staff member to appoint as the primary administrator for this corporate tenant.
+            Select a verified operational specialist to assign to this corporate tenant so they can conduct field inspections for this organization.
           </p>
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="primary_specialist_id" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-              Appoint Verified Specialist / Administrator
+              Assign Specialist
             </label>
             <select
               id="primary_specialist_id"
@@ -219,7 +219,7 @@ export function CreateTenantForm({
               )}
             </select>
             <p className="text-[11px] text-on-surface-variant">
-              Appointing a specialist will associate them with this corporate tenant and grant Administrator permissions to oversee inspections, manage properties, and dispatch assignments.
+              Assigning a specialist links their profile to this tenant organization while keeping their specialist inspection dashboard intact.
             </p>
           </div>
         </div>
