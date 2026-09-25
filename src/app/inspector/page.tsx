@@ -1,4 +1,4 @@
-import { getProfile } from '@/lib/auth/dal'
+import { getEffectiveProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { AssignmentsBoard, type AssignmentRow } from '@/components/AssignmentsBoard'
@@ -10,13 +10,13 @@ export default async function InspectorDashboardPage({
 }: {
   searchParams?: Promise<{ viewAs?: string }>
 }) {
-  const profile = await getProfile()
+  const { profile, isImpersonating, adminProfile } = await getEffectiveProfile()
   const supabase = await createClient()
 
-  // Support Admin / Super-Admin viewing as a specific specialist
+  // Support Admin / Super-Admin viewing as a specific specialist via URL query fallback as well
   const params = searchParams ? await searchParams : {}
   const targetSpecialistId =
-    profile.role === 'admin' && params.viewAs ? params.viewAs : profile.id
+    !isImpersonating && adminProfile?.role === 'admin' && params.viewAs ? params.viewAs : profile.id
 
   let targetSpecialistName = profile.full_name
   if (targetSpecialistId !== profile.id) {
@@ -65,34 +65,20 @@ export default async function InspectorDashboardPage({
       templateName: template?.name ?? '—',
       dueText: due?.text ?? null,
       dueTone: due?.tone ?? null,
-      // Formatted from the raw instant (not the zoned shim) via the shared
-      // app-timezone formatter, so this matches every other screen exactly.
       scheduledLabel: i.scheduled_for ? formatDateTime(i.scheduled_for) : null,
       completedLabel: i.completed_at ? formatDate(i.completed_at) : null,
     }
   })
 
+  const isSimulatedView = isImpersonating || targetSpecialistId !== profile.id
+
   return (
     <div>
-      {targetSpecialistId !== profile.id && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-primary/40 bg-primary-container/20 p-3 text-sm text-on-surface">
-          <div>
-            <span className="font-semibold text-primary">Admin View Mode:</span> Viewing board as{' '}
-            <strong>{targetSpecialistName}</strong>
-          </div>
-          <a
-            href="/admin/team"
-            className="rounded bg-surface-container-highest px-2.5 py-1 text-xs font-semibold hover:bg-surface-container"
-          >
-            Exit to Team &rarr;
-          </a>
-        </div>
-      )}
       <PageHeader
-        eyebrow={targetSpecialistId !== profile.id ? `${targetSpecialistName}'s Schedule` : "Today's Schedule"}
-        title={targetSpecialistId !== profile.id ? `${targetSpecialistName}'s Assignments` : 'My Assignments'}
+        eyebrow={isSimulatedView ? `${targetSpecialistName}'s Schedule` : "Today's Schedule"}
+        title={isSimulatedView ? `${targetSpecialistName}'s Assignments` : 'My Assignments'}
       />
-      <AssignmentsBoard inspections={rows} isAdmin={profile.role === 'admin'} />
+      <AssignmentsBoard inspections={rows} isAdmin={adminProfile?.role === 'admin' || profile.role === 'admin'} />
     </div>
   )
 }

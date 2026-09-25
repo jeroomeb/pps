@@ -1,4 +1,4 @@
-import { getProfile } from '@/lib/auth/dal'
+import { getEffectiveProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SpecialistScorecard } from '@/components/SpecialistScorecard'
@@ -7,7 +7,7 @@ import { computeOperationalAnalytics } from '@/lib/analytics'
 export const dynamic = 'force-dynamic'
 
 export default async function SpecialistMetricsPage() {
-  const profile = await getProfile()
+  const { profile } = await getEffectiveProfile()
   if (!profile) return null
 
   const supabase = await createClient()

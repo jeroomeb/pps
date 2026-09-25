@@ -1,7 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import type { User } from '@supabase/supabase-js'
 import type { UserRole, LicenseTier, TenantStatus } from '@/lib/database.types'
@@ -243,3 +243,77 @@ export async function getTenantLicenseSummary(
     isAtCapacity: used >= max,
   }
 }
+
+/**
+ * Checks if the current admin session is impersonating a specialist via the
+ * `amenity_impersonate_id` cookie.
+ */
+export const getImpersonatedSpecialist = cache(async (): Promise<ProfileWithTenant | null> => {
+  try {
+    const user = await getSessionUser()
+    const supabase = await createClient()
+    const { data: caller } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('id', user.id)
+      .single()
+
+    if (!caller || caller.role !== 'admin') return null
+
+    const cookieStore = await cookies()
+    const impersonateId = cookieStore.get('amenity_impersonate_id')?.value
+    if (!impersonateId || impersonateId === user.id) return null
+
+    const { data: targetProfile } = await supabase
+      .from('profiles')
+      .select('id, full_name, role, human_id, tenant_id, is_global_admin, is_contractor, status, must_reset_password, tenants(id, name, slug, license_tier, max_property_licenses, status, enable_payouts, default_payout_rate)')
+      .eq('id', impersonateId)
+      .single()
+
+    if (!targetProfile) return null
+    const tenant = targetProfile.tenants as unknown as TenantInfo | null
+
+    return {
+      id: targetProfile.id,
+      full_name: targetProfile.full_name,
+      role: targetProfile.role,
+      email: '',
+      human_id: targetProfile.human_id ?? null,
+      tenant_id: targetProfile.tenant_id,
+      is_global_admin: targetProfile.is_global_admin ?? false,
+      is_contractor: targetProfile.is_contractor ?? false,
+      status: targetProfile.status ?? 'active',
+      must_reset_password: targetProfile.must_reset_password ?? false,
+      tenant: tenant ?? null,
+    }
+  } catch {
+    return null
+  }
+})
+
+/**
+ * Returns the effective profile for specialist routes.
+ * If an admin is impersonating a specialist, returns the specialist's profile
+ * along with the admin's original profile and `isImpersonating = true`.
+ */
+export async function getEffectiveProfile(): Promise<{
+  profile: ProfileWithTenant
+  isImpersonating: boolean
+  adminProfile: ProfileWithTenant | null
+}> {
+  const profile = await getProfile()
+  const impersonated = await getImpersonatedSpecialist()
+  if (impersonated) {
+    return {
+      profile: impersonated,
+      isImpersonating: true,
+      adminProfile: profile,
+    }
+  }
+  return {
+    profile,
+    isImpersonating: false,
+    adminProfile: null,
+  }
+}
+

@@ -9,7 +9,7 @@ import {
   FileText,
   AlertCircle,
 } from 'lucide-react'
-import { getProfile } from '@/lib/auth/dal'
+import { getEffectiveProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
@@ -17,7 +17,7 @@ import { formatDate } from '@/lib/timezone'
 import type { PayoutStatus } from '@/lib/database.types'
 
 export default async function SpecialistEarningsPage() {
-  const profile = await getProfile()
+  const { profile } = await getEffectiveProfile()
   const supabase = await createClient()
 
   // If the tenant organization has disabled the payouts module, redirect out

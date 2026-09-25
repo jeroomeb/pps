@@ -1,10 +1,10 @@
-import { getProfile } from '@/lib/auth/dal'
+import { getEffectiveProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { InspectorProfileForm } from '@/components/InspectorProfileForm'
 import { PageHeader } from '@/components/ui/PageHeader'
 
 export default async function InspectorProfilePage() {
-  const profile = await getProfile()
+  const { profile } = await getEffectiveProfile()
   const supabase = await createClient()
 
   const { data: row } = await supabase

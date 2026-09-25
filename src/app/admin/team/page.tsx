@@ -122,14 +122,16 @@ export default async function TeamPage({
 
                       {member.id !== currentProfile.id ? (
                         <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant/40 pt-2 sm:border-t-0 sm:pt-0 sm:shrink-0">
-                          <Link
-                            href={`/inspector?viewAs=${member.id}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high hover:border-outline transition"
-                            title={`View dashboard for ${member.full_name}`}
+                          <a
+                            href={`/admin/impersonate/${member.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition"
+                            title={`Open full specialist panel for ${member.full_name} in a new tab`}
                           >
                             <ExternalLink size={13} className="text-primary" />
-                            <span>View Board</span>
-                          </Link>
+                            <span>Open User Panel</span>
+                          </a>
                           <RoleToggleButton profileId={member.id} role={member.role} />
                           <DeactivateMemberModal
                             memberId={member.id}
@@ -141,13 +143,15 @@ export default async function TeamPage({
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <Link
+                          <a
                             href="/inspector"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high hover:border-outline transition"
                           >
                             <ExternalLink size={13} className="text-primary" />
-                            <span>My Board</span>
-                          </Link>
+                            <span>My Panel</span>
+                          </a>
                           <span className="self-start sm:self-center shrink-0 rounded-full bg-secondary-container px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
                             You
                           </span>

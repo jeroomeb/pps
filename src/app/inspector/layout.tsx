@@ -1,21 +1,21 @@
 import { redirect } from 'next/navigation'
-import { getProfile } from '@/lib/auth/dal'
+import { getEffectiveProfile } from '@/lib/auth/dal'
 import { Header } from '@/components/Header'
 import { BottomNav } from '@/components/BottomNav'
 import { AppShell } from '@/components/AppShell'
 import { signOut } from '@/lib/actions/auth'
 import { SpecialistChatbot } from '@/components/SpecialistChatbot'
+import { AdminImpersonationBanner } from '@/components/AdminImpersonationBanner'
 
 export default async function InspectorLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // Any authenticated user (inspector or admin) can view/complete their own
-  // assigned inspections here — admins can double as inspectors.
-  const profile = await getProfile()
+  // Supports direct specialist session or an Admin impersonating a specialist
+  const { profile, isImpersonating, adminProfile } = await getEffectiveProfile()
 
-  if (profile.must_reset_password) {
+  if (profile.must_reset_password && !isImpersonating) {
     redirect('/force-password-change')
   }
 
@@ -23,21 +23,28 @@ export default async function InspectorLayout({
 
   return (
     <>
+      {isImpersonating && (
+        <AdminImpersonationBanner
+          specialistName={profile.full_name}
+          specialistHumanId={profile.human_id}
+          adminName={adminProfile?.full_name ?? 'Admin'}
+        />
+      )}
       <Header title="Amenity Op's" fullName={profile.full_name} />
       <AppShell
-        role={profile.role}
+        role={isImpersonating ? 'inspector' : profile.role}
         fullName={profile.full_name}
-        isGlobalAdmin={profile.is_global_admin}
+        isGlobalAdmin={isImpersonating ? false : profile.is_global_admin}
         tenantName={profile.tenant?.name ?? null}
         enablePayouts={enablePayouts}
-        showStartAudit={profile.role === 'admin'}
+        showStartAudit={!isImpersonating && profile.role === 'admin'}
         signOutAction={signOut}
       >
         {children}
       </AppShell>
       <BottomNav
-        role={profile.role}
-        isGlobalAdmin={profile.is_global_admin}
+        role={isImpersonating ? 'inspector' : profile.role}
+        isGlobalAdmin={isImpersonating ? false : profile.is_global_admin}
         enablePayouts={enablePayouts}
       />
       <SpecialistChatbot specialistName={profile.full_name} />

@@ -190,6 +190,21 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-25 — Full Specialist User Panel Impersonation in Dedicated Tab
+Engineered dedicated specialist user panel impersonation for Admins opening in a separate browser tab:
+- **Dedicated Impersonation Flow & Routes (`src/app/admin/impersonate/[id]/route.ts`, `src/app/api/impersonate/exit/route.ts`)**:
+  - Secure, admin-guarded impersonation endpoint sets `amenity_impersonate_id` session cookie and redirects directly into the specialist portal (`/inspector`).
+  - `/api/impersonate/exit` cleans up impersonation state and safely exits back to Admin Team management.
+- **Full Specialist User Experience in `InspectorLayout` (`src/app/inspector/layout.tsx`, `src/lib/auth/dal.ts`)**:
+  - `getEffectiveProfile()` evaluates active admin impersonation.
+  - Switches `AppShell` and `BottomNav` to render the authentic **Specialist Navigation** (Dashboard, Performance, Earnings, Profile) and displays the specialist's name/OCS ID.
+  - Added sticky `AdminImpersonationBanner` (`src/components/AdminImpersonationBanner.tsx`) with instant "Exit to Admin" and "Close Tab" controls.
+- **All Specialist Subpages Updated (`/inspector`, `/inspector/metrics`, `/inspector/payouts`, `/inspector/profile`)**:
+  - Seamlessly display the target specialist's assignments, scorecard analytics, earnings ledger, and uploaded credentials.
+- **Admin UI Updates (`src/app/admin/team/page.tsx`, `src/app/admin/team/[id]/page.tsx`)**:
+  - "Open User Panel" / "Open Specialist Panel" buttons now open the full user panel in a new tab via `target="_blank" rel="noopener noreferrer"`.
+- `npx tsc --noEmit` clean (0 errors).
+
 ### 2026-09-24 — Global Access, Parent-Child Multi-Tenancy Hierarchy, Impersonation & Automated Credentials
 Engineered enterprise multi-tenancy hierarchy, specialist dashboard impersonation for admins, cryptographically secure password auto-generation, and asynchronous welcome credential emails:
 - **Database & Migration (`0015_parent_child_tenants.sql`, `supabase/schema.sql`, `src/lib/database.types.ts`)**:
