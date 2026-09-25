@@ -36,7 +36,7 @@ export async function sendCancellationEmail({
     process.env.EMAIL_FROM_ASSIGNMENTS ||
     process.env.EMAIL_FROM ||
     "Amenity Op's <inspections@amenityops.app>"
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://portal.amenityops.app'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://amenityops.app'
   // amenityops.app is send-only (no MX records) — a reply to `from` above has
   // nowhere to land. hello@amenityops.com is a real mailbox.
   const replyTo = process.env.EMAIL_REPLY_TO || 'hello@amenityops.com'
