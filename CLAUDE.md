@@ -190,6 +190,15 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-26 — Verified Specialist Appointment in Tenant Provisioning
+Replaced the text-based initial administrator creation fields on `/admin/tenants` with a verified specialist selector:
+- **Verified Specialist Dropdown (`src/components/CreateTenantForm.tsx`, `src/app/admin/tenants/page.tsx`)**:
+  - Replaced manual `Admin Full Name`, `Admin Email Address`, and `Temporary Password` inputs with a clean selector grouping verified specialists (with photo IDs on file) and active staff.
+  - Automatically lists specialist name, `OCS-####` ID, email, and current assigned organization.
+- **Backend Assignment Action (`src/lib/actions/tenants.ts`)**:
+  - `createTenant` accepts `primary_specialist_id`, associates their profile directly with `newTenant.id`, and grants them `role: 'admin'`.
+- `npx tsc --noEmit` clean (0 errors).
+
 ### 2026-09-25 — Full Specialist User Panel Impersonation in Dedicated Tab
 Engineered dedicated specialist user panel impersonation for Admins opening in a separate browser tab:
 - **Dedicated Impersonation Flow & Routes (`src/app/admin/impersonate/[id]/route.ts`, `src/app/api/impersonate/exit/route.ts`)**:

@@ -21,6 +21,7 @@ const tenantSchema = z.object({
   max_property_licenses: z.coerce.number().int().min(1, 'Minimum 1 property license required'),
   status: z.enum(['active', 'suspended', 'trial']).default('active'),
   parent_organization_id: z.string().uuid().optional().nullable(),
+  primary_specialist_id: z.string().uuid().optional().nullable(),
   admin_name: z.string().trim().optional(),
   admin_email: z.string().trim().email('Enter a valid admin email').optional().or(z.literal('')),
   admin_password: z.string().min(8, 'Admin password must be at least 8 characters').optional().or(z.literal('')),
@@ -40,6 +41,10 @@ export async function createTenant(
   const rawParentOrgId = formData.get('parent_organization_id')
   const parentOrgId = typeof rawParentOrgId === 'string' && rawParentOrgId.trim() ? rawParentOrgId.trim() : null
 
+  const rawSpecialistId = formData.get('primary_specialist_id')
+  const primarySpecialistId =
+    typeof rawSpecialistId === 'string' && rawSpecialistId.trim() ? rawSpecialistId.trim() : null
+
   const adminName = formData.get('admin_name')
   const adminEmail = formData.get('admin_email')
   const adminPassword = formData.get('admin_password')
@@ -51,6 +56,7 @@ export async function createTenant(
     max_property_licenses: formData.get('max_property_licenses'),
     status: formData.get('status') || 'active',
     parent_organization_id: parentOrgId,
+    primary_specialist_id: primarySpecialistId,
     admin_name: typeof adminName === 'string' && adminName.trim() ? adminName.trim() : undefined,
     admin_email: typeof adminEmail === 'string' && adminEmail.trim() ? adminEmail.trim() : '',
     admin_password: typeof adminPassword === 'string' && adminPassword.trim() ? adminPassword.trim() : '',
@@ -92,7 +98,23 @@ export async function createTenant(
 
   let finalAdminPassword = ''
 
-  // Provision the primary Tenant Admin user account if email was provided
+  // If an existing verified specialist was appointed as primary tenant administrator:
+  if (parsed.data.primary_specialist_id) {
+    const admin = createAdminClient()
+    const { error: assignError } = await admin
+      .from('profiles')
+      .update({
+        tenant_id: newTenant.id,
+        role: 'admin',
+      })
+      .eq('id', parsed.data.primary_specialist_id)
+
+    if (assignError) {
+      console.error('[createTenant] Failed to assign primary specialist to tenant:', assignError)
+    }
+  }
+
+  // Provision a new primary Tenant Admin user account if email was provided
   if (parsed.data.admin_email) {
     const admin = createAdminClient()
     const adminFullName = parsed.data.admin_name || `${parsed.data.name} Administrator`

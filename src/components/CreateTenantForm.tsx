@@ -1,15 +1,27 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { Plus, X, Building, ShieldCheck } from 'lucide-react'
+import { Plus, X, Building, ShieldCheck, UserCheck } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { SubmitButton } from '@/components/SubmitButton'
 import { createTenant, type TenantFormState } from '@/lib/actions/tenants'
 
+export type VerifiedSpecialistOption = {
+  id: string
+  full_name: string
+  email: string | null
+  human_id: string | null
+  role: string
+  isIdVerified: boolean
+  currentTenantName?: string | null
+}
+
 export function CreateTenantForm({
   parentTenants,
+  specialists,
 }: {
   parentTenants?: { id: string; name: string }[]
+  specialists?: VerifiedSpecialistOption[]
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [state, formAction] = useActionState<TenantFormState, FormData>(async (prevState, formData) => {
@@ -152,57 +164,63 @@ export function CreateTenantForm({
           </div>
         </div>
 
-        {/* Initial Tenant Administrator Account Setup (Question 3) */}
+        {/* Primary Tenant Administrator / Specialist Assignment */}
         <div className="rounded-xl border border-outline-variant bg-surface-container-low p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <ShieldCheck size={16} className="text-primary" />
+          <div className="mb-2 flex items-center gap-2">
+            <UserCheck size={17} className="text-primary" />
             <h3 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
-              Primary Tenant Administrator Account (Optional Instant Access)
+              Primary Tenant Administrator / Specialist Assignment (Optional)
             </h3>
           </div>
           <p className="mb-3 text-xs text-on-surface-variant">
-            Create the primary administrator account for this tenant organization so they can immediately sign in, add properties, and manage staff.
+            Select a verified operational specialist or staff member to appoint as the primary administrator for this corporate tenant.
           </p>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="admin_name" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                Admin Full Name
-              </label>
-              <input
-                id="admin_name"
-                name="admin_name"
-                placeholder="e.g. John Doe"
-                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="admin_email" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                Admin Email Address
-              </label>
-              <input
-                id="admin_email"
-                name="admin_email"
-                type="email"
-                placeholder="e.g. manager@sampletowers.com"
-                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="admin_password" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                Temporary Password (Blank = Auto-Gen)
-              </label>
-              <input
-                id="admin_password"
-                name="admin_password"
-                type="text"
-                minLength={8}
-                placeholder="Auto-generated if blank"
-                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none font-mono text-xs"
-              />
-            </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="primary_specialist_id" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+              Appoint Verified Specialist / Administrator
+            </label>
+            <select
+              id="primary_specialist_id"
+              name="primary_specialist_id"
+              defaultValue=""
+              className="min-h-11 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+            >
+              <option value="">None (Assign or invite later from Team Management)</option>
+              {specialists && specialists.length > 0 && (
+                <>
+                  {specialists.some((s) => s.isIdVerified) && (
+                    <optgroup label="⭐ Verified Specialists (Photo ID on File)">
+                      {specialists
+                        .filter((s) => s.isIdVerified)
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            ✓ {s.full_name} {s.human_id ? `(${s.human_id})` : ''}
+                            {s.email ? ` · ${s.email}` : ''}
+                            {s.currentTenantName ? ` [Current: ${s.currentTenantName}]` : ''}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
+                  {specialists.some((s) => !s.isIdVerified) && (
+                    <optgroup label="Active Team Specialists & Staff">
+                      {specialists
+                        .filter((s) => !s.isIdVerified)
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.full_name} {s.human_id ? `(${s.human_id})` : ''}
+                            {s.email ? ` · ${s.email}` : ''}
+                            {s.currentTenantName ? ` [Current: ${s.currentTenantName}]` : ''}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
+                </>
+              )}
+            </select>
+            <p className="text-[11px] text-on-surface-variant">
+              Appointing a specialist will associate them with this corporate tenant and grant Administrator permissions to oversee inspections, manage properties, and dispatch assignments.
+            </p>
           </div>
         </div>
 

@@ -10,13 +10,18 @@ export default async function TenantsPage() {
   await requireGlobalAdmin()
   const supabase = await createClient()
 
-  const [{ data: tenants }, { data: properties }, { data: profiles }] = await Promise.all([
+  const [{ data: tenants }, { data: properties }, { data: profiles }, { data: rawSpecialists }] = await Promise.all([
     supabase
       .from('tenants')
       .select('id, name, slug, license_tier, max_property_licenses, status, created_at')
       .order('created_at', { ascending: false }),
     supabase.from('properties').select('id, tenant_id'),
     supabase.from('profiles').select('id, tenant_id'),
+    supabase
+      .from('profiles')
+      .select('id, full_name, email, human_id, role, id_front_path, id_back_path, status, tenant_id, tenants(name)')
+      .neq('status', 'inactive')
+      .order('full_name'),
   ])
 
   const propertyCounts = new Map<string, number>()
@@ -51,13 +56,27 @@ export default async function TenantsPage() {
 
   const parentTenantsList = (tenants ?? []).map((t) => ({ id: t.id, name: t.name }))
 
+  const specialistsList = (rawSpecialists ?? []).map((s) => {
+    const isIdVerified = Boolean(s.id_front_path && s.id_back_path) || Boolean(s.id_front_path)
+    const tenantObj = s.tenants as unknown as { name?: string } | null
+    return {
+      id: s.id,
+      full_name: s.full_name,
+      email: s.email,
+      human_id: s.human_id,
+      role: s.role,
+      isIdVerified,
+      currentTenantName: tenantObj?.name ?? null,
+    }
+  })
+
   return (
     <div>
       <PageHeader
         eyebrow="Global Management Layer"
         title="Tenants & Licenses"
         subtitle="Shared Database, Shared Schema Multi-Tenant Administration & Building SKU Allocations"
-        action={<CreateTenantForm parentTenants={parentTenantsList} />}
+        action={<CreateTenantForm parentTenants={parentTenantsList} specialists={specialistsList} />}
       />
 
       {/* Overview KPI Cards */}
