@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, UserX } from 'lucide-react'
+import { Users, UserX, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { InspectorForm } from '@/components/InspectorForm'
 import { RoleToggleButton } from '@/components/RoleToggleButton'
@@ -122,6 +122,14 @@ export default async function TeamPage({
 
                       {member.id !== currentProfile.id ? (
                         <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant/40 pt-2 sm:border-t-0 sm:pt-0 sm:shrink-0">
+                          <Link
+                            href={`/inspector?viewAs=${member.id}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high hover:border-outline transition"
+                            title={`View dashboard for ${member.full_name}`}
+                          >
+                            <ExternalLink size={13} className="text-primary" />
+                            <span>View Board</span>
+                          </Link>
                           <RoleToggleButton profileId={member.id} role={member.role} />
                           <DeactivateMemberModal
                             memberId={member.id}
@@ -132,9 +140,18 @@ export default async function TeamPage({
                           />
                         </div>
                       ) : (
-                        <span className="self-start sm:self-center shrink-0 rounded-full bg-secondary-container px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
-                          You
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href="/inspector"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high hover:border-outline transition"
+                          >
+                            <ExternalLink size={13} className="text-primary" />
+                            <span>My Board</span>
+                          </Link>
+                          <span className="self-start sm:self-center shrink-0 rounded-full bg-secondary-container px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
+                            You
+                          </span>
+                        </div>
                       )}
                     </div>
                   ))}
