@@ -13,6 +13,7 @@ export type VerifiedSpecialistOption = {
   human_id: string | null
   role: string
   isIdVerified: boolean
+  currentTenantId?: string | null
   currentTenantName?: string | null
 }
 

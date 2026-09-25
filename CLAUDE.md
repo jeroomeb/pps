@@ -190,6 +190,17 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-26 — Full Tenant Management: Specialist Roster Assignment, Hierarchy & Deletion
+Engineered complete tenant management capabilities on `/admin/tenants` (`TenantLicenseCard.tsx`, `tenants.ts`):
+- **Full Tenant Editing (`src/components/TenantLicenseCard.tsx`, `src/lib/actions/tenants.ts`)**:
+  - Company Name, Account Slug, License Tier, Max Property Licenses, Subscription Status, and Parent Corporate HQ assignment.
+- **Specialist & Staff Roster Management**:
+  - Embedded interactive checklist in the edit card allowing Super Admins to assign or unassign specialists to any tenant container on the fly.
+  - Displays assigned in-house staff names on the tenant card preview.
+- **Destructive Tenant Deletion (`deleteTenant`)**:
+  - Added two-tap safe delete button (`Confirm Delete?`) unlinking associated specialists/child tenants and removing the tenant organization cleanly.
+- `npx tsc --noEmit` clean (0 errors).
+
 ### 2026-09-26 — Verified Specialist Appointment in Tenant Provisioning
 Replaced the text-based initial administrator creation fields on `/admin/tenants` with a verified specialist selector:
 - **Verified Specialist Dropdown (`src/components/CreateTenantForm.tsx`, `src/app/admin/tenants/page.tsx`)**:

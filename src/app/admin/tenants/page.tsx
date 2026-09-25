@@ -13,7 +13,7 @@ export default async function TenantsPage() {
   const [{ data: tenants }, { data: properties }, { data: profiles }, { data: rawSpecialists }] = await Promise.all([
     supabase
       .from('tenants')
-      .select('id, name, slug, license_tier, max_property_licenses, status, created_at')
+      .select('id, name, slug, license_tier, max_property_licenses, status, parent_organization_id, created_at')
       .order('created_at', { ascending: false }),
     supabase.from('properties').select('id, tenant_id'),
     supabase.from('profiles').select('id, tenant_id'),
@@ -38,6 +38,15 @@ export default async function TenantsPage() {
     }
   }
 
+  const assignedStaffMap = new Map<string, string[]>()
+  for (const s of rawSpecialists ?? []) {
+    if (s.tenant_id) {
+      const existing = assignedStaffMap.get(s.tenant_id) ?? []
+      existing.push(s.full_name)
+      assignedStaffMap.set(s.tenant_id, existing)
+    }
+  }
+
   const tenantItems: TenantItem[] = (tenants ?? []).map((t) => ({
     id: t.id,
     name: t.name,
@@ -45,9 +54,11 @@ export default async function TenantsPage() {
     license_tier: t.license_tier,
     max_property_licenses: t.max_property_licenses,
     status: t.status,
+    parent_organization_id: t.parent_organization_id,
     created_at: t.created_at,
     propertyCount: propertyCounts.get(t.id) ?? 0,
     staffCount: staffCounts.get(t.id) ?? 0,
+    assignedStaffNames: assignedStaffMap.get(t.id) ?? [],
   }))
 
   const totalTenants = tenantItems.length
@@ -66,6 +77,7 @@ export default async function TenantsPage() {
       human_id: s.human_id,
       role: s.role,
       isIdVerified,
+      currentTenantId: s.tenant_id,
       currentTenantName: tenantObj?.name ?? null,
     }
   })
@@ -113,7 +125,12 @@ export default async function TenantsPage() {
         {tenantItems.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {tenantItems.map((tenant) => (
-              <TenantLicenseCard key={tenant.id} tenant={tenant} />
+              <TenantLicenseCard
+                key={tenant.id}
+                tenant={tenant}
+                parentTenants={parentTenantsList}
+                specialists={specialistsList}
+              />
             ))}
           </div>
         ) : (
