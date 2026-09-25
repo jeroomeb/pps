@@ -6,7 +6,11 @@ import { Card } from '@/components/ui/Card'
 import { SubmitButton } from '@/components/SubmitButton'
 import { createTenant, type TenantFormState } from '@/lib/actions/tenants'
 
-export function CreateTenantForm() {
+export function CreateTenantForm({
+  parentTenants,
+}: {
+  parentTenants?: { id: string; name: string }[]
+}) {
   const [isOpen, setIsOpen] = useState(false)
   const [state, formAction] = useActionState<TenantFormState, FormData>(async (prevState, formData) => {
     const res = await createTenant(prevState, formData)
@@ -46,6 +50,29 @@ export function CreateTenantForm() {
       </div>
 
       <form action={formAction} className="flex flex-col gap-4">
+        {parentTenants && parentTenants.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor="parent_organization_id" className="text-xs font-semibold uppercase tracking-wide">
+              Parent Organization / Corporate HQ (Optional Hierarchy)
+            </label>
+            <select
+              id="parent_organization_id"
+              name="parent_organization_id"
+              className="min-h-11 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+            >
+              <option value="">None (Top-Level Independent Organization)</option>
+              {parentTenants.map((pt) => (
+                <option key={pt.id} value={pt.id}>
+                  {pt.name} (Parent HQ)
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-on-surface-variant">
+              If mapped to a parent, administrators of the parent organization can monitor this tenant&apos;s data.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1">
             <label htmlFor="name" className="text-xs font-semibold uppercase tracking-wide">
@@ -165,15 +192,15 @@ export function CreateTenantForm() {
 
             <div className="flex flex-col gap-1">
               <label htmlFor="admin_password" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                Temporary Password
+                Temporary Password (Blank = Auto-Gen)
               </label>
               <input
                 id="admin_password"
                 name="admin_password"
-                type="password"
+                type="text"
                 minLength={8}
-                placeholder="Min 8 characters"
-                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+                placeholder="Auto-generated if blank"
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none font-mono text-xs"
               />
             </div>
           </div>

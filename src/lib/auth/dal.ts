@@ -15,6 +15,7 @@ export type TenantInfo = {
   status: TenantStatus
   enable_payouts?: boolean
   default_payout_rate?: number
+  parent_organization_id?: string | null
 }
 
 export type ProfileWithTenant = {
@@ -29,6 +30,37 @@ export type ProfileWithTenant = {
   status: string
   must_reset_password: boolean
   tenant: TenantInfo | null
+}
+
+/**
+ * Resolves all accessible tenant IDs for the current profile.
+ * - Global admins: returns null (representing unrestricted access to all tenants)
+ * - Parent tenant admins: returns array containing their own tenant ID + all child tenant IDs
+ * - Child tenant users: returns array containing only their own tenant ID
+ */
+export async function getAccessibleTenantIds(): Promise<string[] | null> {
+  const profile = await getProfile()
+  if (profile.is_global_admin) {
+    return null
+  }
+  if (!profile.tenant_id) {
+    return []
+  }
+
+  const supabase = await createClient()
+  const { data: childTenants } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('parent_organization_id', profile.tenant_id)
+
+  const ids = [profile.tenant_id]
+  if (childTenants && childTenants.length > 0) {
+    for (const child of childTenants) {
+      ids.push(child.id)
+    }
+  }
+
+  return ids
 }
 
 export const getSessionUser = cache(async () => {

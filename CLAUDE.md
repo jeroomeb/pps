@@ -190,6 +190,26 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-24 — Global Access, Parent-Child Multi-Tenancy Hierarchy, Impersonation & Automated Credentials
+Engineered enterprise multi-tenancy hierarchy, specialist dashboard impersonation for admins, cryptographically secure password auto-generation, and asynchronous welcome credential emails:
+- **Database & Migration (`0015_parent_child_tenants.sql`, `supabase/schema.sql`, `src/lib/database.types.ts`)**:
+  - Added `tenants.parent_organization_id uuid references tenants(id) on delete set null` with index.
+  - Added PostgreSQL helper function `get_user_accessible_tenant_ids()` for hierarchical query isolation.
+- **Data Access Layer & Hierarchy Resolution (`src/lib/auth/dal.ts`)**:
+  - Implemented `getAccessibleTenantIds()` resolving all child tenant IDs belonging to the parent organization.
+  - Global Admins (`is_global_admin = true`) query across all tenants; Parent Admins query across their own + all child branch licenses.
+- **Cryptographically Secure Generator (`src/lib/security.ts`)**:
+  - Engineered `generateSecureTemporaryPassword()` generating 14-char high-entropy passwords via `crypto.randomBytes` / `crypto.randomInt` (excluding ambiguous characters `O`, `0`, `I`, `l`).
+  - Stored via Supabase Auth salted password hashing (`admin.createUser`).
+- **Asynchronous Email Delivery Service (`src/lib/email/sendWelcomeCredentialsEmail.ts`)**:
+  - Built branded Amenity Op's welcome credential email template with direct login link (`https://amenityops.app/login`), temporary credentials, and security notice for mandatory first-time password reset.
+  - Hooked asynchronously (fire-and-forget) into `createTeamMember` and `createTenant` actions without blocking UI.
+- **Admin Specialist Impersonation & UI (`src/app/admin/team/[id]/page.tsx`, `src/app/inspector/page.tsx`, `src/components/InspectorForm.tsx`, `src/components/CreateTenantForm.tsx`)**:
+  - Added "View Specialist Dashboard" CTA on team member profile (`/inspector?viewAs=[specialistId]`), allowing admins to see the exact assigned checklist board and schedule.
+  - Added temporary password auto-generation toggle and copy-to-clipboard widget in `InspectorForm`.
+  - Added optional Parent Organization dropdown selector in `CreateTenantForm`.
+- `npx tsc --noEmit` and `npm run build` both clean (0 errors, 25 routes).
+
 ### 2026-09-24 — CI/CD Automated Deployment Pipeline (GitHub Actions to Hostinger VPS)
 Engineered automated continuous deployment pipeline triggering on every `git push` to `main`:
 - **Workflow (`.github/workflows/deploy.yml`)**:

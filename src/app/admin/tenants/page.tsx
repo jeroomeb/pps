@@ -49,13 +49,15 @@ export default async function TenantsPage() {
   const totalAllocatedLicenses = tenantItems.reduce((acc, t) => acc + t.max_property_licenses, 0)
   const totalActiveProperties = tenantItems.reduce((acc, t) => acc + t.propertyCount, 0)
 
+  const parentTenantsList = (tenants ?? []).map((t) => ({ id: t.id, name: t.name }))
+
   return (
     <div>
       <PageHeader
         eyebrow="Global Management Layer"
         title="Tenants & Licenses"
         subtitle="Shared Database, Shared Schema Multi-Tenant Administration & Building SKU Allocations"
-        action={<CreateTenantForm />}
+        action={<CreateTenantForm parentTenants={parentTenantsList} />}
       />
 
       {/* Overview KPI Cards */}

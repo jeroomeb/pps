@@ -40,6 +40,7 @@ export interface Database {
           payout_tier_2_rate: number
           payout_tier_3_rate: number
           payout_matrix: PayoutMatrix
+          parent_organization_id: string | null
           created_at: string
           updated_at: string
         }
@@ -57,6 +58,7 @@ export interface Database {
           payout_tier_2_rate?: number
           payout_tier_3_rate?: number
           payout_matrix?: PayoutMatrix
+          parent_organization_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -74,10 +76,19 @@ export interface Database {
           payout_tier_2_rate?: number
           payout_tier_3_rate?: number
           payout_matrix?: PayoutMatrix
+          parent_organization_id?: string | null
           created_at?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'tenants_parent_organization_id_fkey'
+            columns: ['parent_organization_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+        ]
       }
       profiles: {
         Row: {

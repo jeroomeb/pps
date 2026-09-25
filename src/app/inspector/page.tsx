@@ -5,16 +5,37 @@ import { AssignmentsBoard, type AssignmentRow } from '@/components/AssignmentsBo
 import { dueLabel } from '@/lib/schedule'
 import { zonedDate, formatDate, formatDateTime } from '@/lib/timezone'
 
-export default async function InspectorDashboardPage() {
+export default async function InspectorDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ viewAs?: string }>
+}) {
   const profile = await getProfile()
   const supabase = await createClient()
+
+  // Support Admin / Super-Admin viewing as a specific specialist
+  const params = searchParams ? await searchParams : {}
+  const targetSpecialistId =
+    profile.role === 'admin' && params.viewAs ? params.viewAs : profile.id
+
+  let targetSpecialistName = profile.full_name
+  if (targetSpecialistId !== profile.id) {
+    const { data: targetProfile } = await supabase
+      .from('profiles')
+      .select('full_name, human_id')
+      .eq('id', targetSpecialistId)
+      .single()
+    if (targetProfile) {
+      targetSpecialistName = targetProfile.full_name
+    }
+  }
 
   const { data: inspections } = await supabase
     .from('inspections')
     .select(
       'id, status, created_at, completed_at, scheduled_for, properties(name, address, phone), checklist_templates(name)'
     )
-    .eq('inspector_id', profile.id)
+    .eq('inspector_id', targetSpecialistId)
     // A cancelled inspection is not the specialist's problem any more — it
     // leaves their board completely. Admins still see it under Inspections.
     .neq('status', 'cancelled')
@@ -53,7 +74,24 @@ export default async function InspectorDashboardPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="Today's Schedule" title="My Assignments" />
+      {targetSpecialistId !== profile.id && (
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-primary/40 bg-primary-container/20 p-3 text-sm text-on-surface">
+          <div>
+            <span className="font-semibold text-primary">Admin View Mode:</span> Viewing board as{' '}
+            <strong>{targetSpecialistName}</strong>
+          </div>
+          <a
+            href="/admin/team"
+            className="rounded bg-surface-container-highest px-2.5 py-1 text-xs font-semibold hover:bg-surface-container"
+          >
+            Exit to Team &rarr;
+          </a>
+        </div>
+      )}
+      <PageHeader
+        eyebrow={targetSpecialistId !== profile.id ? `${targetSpecialistName}'s Schedule` : "Today's Schedule"}
+        title={targetSpecialistId !== profile.id ? `${targetSpecialistName}'s Assignments` : 'My Assignments'}
+      />
       <AssignmentsBoard inspections={rows} isAdmin={profile.role === 'admin'} />
     </div>
   )

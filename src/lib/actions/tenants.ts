@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { requireGlobalAdmin } from '@/lib/auth/dal'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { genSpecialistId } from '@/lib/ids'
+import { generateSecureTemporaryPassword } from '@/lib/security'
+import { sendWelcomeCredentialsEmail } from '@/lib/email/sendWelcomeCredentialsEmail'
 import type { LicenseTier, TenantStatus } from '@/lib/database.types'
 
 const tenantSchema = z.object({
@@ -18,12 +20,13 @@ const tenantSchema = z.object({
   license_tier: z.enum(['starter', 'standard', 'pro', 'enterprise']),
   max_property_licenses: z.coerce.number().int().min(1, 'Minimum 1 property license required'),
   status: z.enum(['active', 'suspended', 'trial']).default('active'),
+  parent_organization_id: z.string().uuid().optional().nullable(),
   admin_name: z.string().trim().optional(),
   admin_email: z.string().trim().email('Enter a valid admin email').optional().or(z.literal('')),
   admin_password: z.string().min(8, 'Admin password must be at least 8 characters').optional().or(z.literal('')),
 })
 
-export type TenantFormState = { error?: string; success?: boolean } | undefined
+export type TenantFormState = { error?: string; success?: boolean; generatedPassword?: string } | undefined
 
 export async function createTenant(
   _prevState: TenantFormState,
@@ -33,6 +36,9 @@ export async function createTenant(
 
   const rawSlug = formData.get('slug')
   const slug = typeof rawSlug === 'string' && rawSlug.trim() ? rawSlug.trim().toLowerCase() : undefined
+
+  const rawParentOrgId = formData.get('parent_organization_id')
+  const parentOrgId = typeof rawParentOrgId === 'string' && rawParentOrgId.trim() ? rawParentOrgId.trim() : null
 
   const adminName = formData.get('admin_name')
   const adminEmail = formData.get('admin_email')
@@ -44,6 +50,7 @@ export async function createTenant(
     license_tier: formData.get('license_tier'),
     max_property_licenses: formData.get('max_property_licenses'),
     status: formData.get('status') || 'active',
+    parent_organization_id: parentOrgId,
     admin_name: typeof adminName === 'string' && adminName.trim() ? adminName.trim() : undefined,
     admin_email: typeof adminEmail === 'string' && adminEmail.trim() ? adminEmail.trim() : '',
     admin_password: typeof adminPassword === 'string' && adminPassword.trim() ? adminPassword.trim() : '',
@@ -71,6 +78,7 @@ export async function createTenant(
       license_tier: parsed.data.license_tier as LicenseTier,
       max_property_licenses: parsed.data.max_property_licenses,
       status: parsed.data.status as TenantStatus,
+      parent_organization_id: parsed.data.parent_organization_id,
     })
     .select('id, name')
     .single()
@@ -82,14 +90,17 @@ export async function createTenant(
     return { error: error?.message ?? 'Failed to create tenant organization.' }
   }
 
-  // Provision the primary Tenant Admin user account if credentials were provided
-  if (parsed.data.admin_email && parsed.data.admin_password) {
+  let finalAdminPassword = ''
+
+  // Provision the primary Tenant Admin user account if email was provided
+  if (parsed.data.admin_email) {
     const admin = createAdminClient()
     const adminFullName = parsed.data.admin_name || `${parsed.data.name} Administrator`
+    finalAdminPassword = parsed.data.admin_password || generateSecureTemporaryPassword()
 
     const { data: createdUser, error: authError } = await admin.auth.admin.createUser({
       email: parsed.data.admin_email,
-      password: parsed.data.admin_password,
+      password: finalAdminPassword,
       email_confirm: true,
       user_metadata: {
         full_name: adminFullName,
@@ -120,11 +131,22 @@ export async function createTenant(
 
         if (!profileError) break
       }
+
+      // Fire-and-forget asynchronous welcome credential email dispatch via Resend
+      sendWelcomeCredentialsEmail({
+        recipientEmail: parsed.data.admin_email,
+        recipientName: adminFullName,
+        temporaryPassword: finalAdminPassword,
+        role: 'admin',
+        organizationName: newTenant.name,
+      }).catch((err) => {
+        console.error('[createTenant] Async credentials email dispatch error:', err)
+      })
     }
   }
 
   revalidatePath('/admin/tenants')
-  return { success: true }
+  return { success: true, generatedPassword: finalAdminPassword || undefined }
 }
 
 const updateLicenseSchema = z.object({

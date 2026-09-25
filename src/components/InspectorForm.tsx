@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useEffect, useRef } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
+import { KeyRound, Mail, Sparkles, Check } from 'lucide-react'
 import { SubmitButton } from '@/components/SubmitButton'
 import { Card } from '@/components/ui/Card'
 import { createTeamMember, type TeamMemberFormState } from '@/lib/actions/team'
@@ -19,12 +20,19 @@ export function InspectorForm({
     undefined
   )
   const formRef = useRef<HTMLFormElement>(null)
+  const [copied, setCopied] = useState(false)
 
   // Only clear the form on a confirmed success — never wipe the user's
   // input out from under a validation error.
   useEffect(() => {
     if (state?.success) formRef.current?.reset()
   }, [state])
+
+  const copyPassword = (pwd: string) => {
+    navigator.clipboard.writeText(pwd)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 3000)
+  }
 
   return (
     <Card>
@@ -61,34 +69,48 @@ export function InspectorForm({
           id="member_full_name"
           name="full_name"
           required
+          placeholder="e.g. Alex Rivera"
           className={INPUT_CLASSES}
         />
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="member_email" className={LABEL_CLASSES}>
-          Email
+          Email Address
         </label>
         <input
           id="member_email"
           name="email"
           type="email"
           required
+          placeholder="alex@example.com"
           className={INPUT_CLASSES}
         />
+        <p className="flex items-center gap-1.5 text-xs text-on-surface-variant mt-0.5">
+          <Mail className="h-3.5 w-3.5 text-primary" />
+          A welcome email with login credentials will be automatically sent to this address.
+        </p>
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor="member_password" className={LABEL_CLASSES}>
-          Temporary Password
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="member_password" className={LABEL_CLASSES}>
+            Temporary Password
+          </label>
+          <span className="flex items-center gap-1 text-xs text-primary font-medium">
+            <Sparkles className="h-3.5 w-3.5" /> Auto-Generated if blank
+          </span>
+        </div>
         <input
           id="member_password"
           name="password"
-          type="password"
-          required
+          type="text"
+          placeholder="Leave blank to auto-generate secure 14-char password"
           minLength={8}
           autoComplete="new-password"
-          className={INPUT_CLASSES}
+          className={`${INPUT_CLASSES} font-mono text-sm`}
         />
+        <p className="text-xs text-on-surface-variant">
+          User will be required to configure their own permanent password on first sign-in.
+        </p>
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="role" className="text-sm font-semibold uppercase tracking-wide">
@@ -107,11 +129,40 @@ export function InspectorForm({
           Admins can also be assigned inspections, just like specialists.
         </p>
       </div>
+
       {state?.error && (
         <p className="rounded bg-error-container px-3 py-2 text-sm text-on-error-container">
           {state.error}
         </p>
       )}
+
+      {state?.success && state.generatedPassword && (
+        <div className="rounded border border-primary/30 bg-primary-container/20 p-3.5 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-primary">
+            <KeyRound className="h-4 w-4" /> Account Created & Credentials Emailed
+          </div>
+          <p className="mt-1 text-xs text-on-surface-variant">
+            Temporary password generated for this user:
+          </p>
+          <div className="mt-2 flex items-center justify-between gap-2 rounded bg-surface-container-lowest px-3 py-2 font-mono text-sm border border-outline-variant">
+            <span className="font-bold text-on-surface select-all">{state.generatedPassword}</span>
+            <button
+              type="button"
+              onClick={() => copyPassword(state.generatedPassword!)}
+              className="flex items-center gap-1 text-xs text-primary hover:underline font-sans font-semibold cursor-pointer"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-3.5 w-3.5 text-emerald-600" /> Copied!
+                </>
+              ) : (
+                'Copy'
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       <SubmitButton pendingText="Creating…">+ Add Team Member</SubmitButton>
     </form>
     </Card>

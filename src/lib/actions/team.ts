@@ -7,17 +7,19 @@ import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { genSpecialistId } from '@/lib/ids'
 import { composeAddress, normalizeAddressParts } from '@/lib/address'
 import { isSafeObjectPath } from '@/lib/storage-paths'
+import { generateSecureTemporaryPassword } from '@/lib/security'
+import { sendWelcomeCredentialsEmail } from '@/lib/email/sendWelcomeCredentialsEmail'
 import type { Database } from '@/lib/database.types'
 
 const teamMemberSchema = z.object({
   full_name: z.string().trim().min(1, 'Name is required'),
   email: z.string().trim().email('Enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().optional().nullable(),
   role: z.enum(['admin', 'inspector']),
   tenant_id: z.string().uuid().optional().nullable(),
 })
 
-export type TeamMemberFormState = { error?: string; success?: boolean } | undefined
+export type TeamMemberFormState = { error?: string; success?: boolean; generatedPassword?: string } | undefined
 
 export async function createTeamMember(
   _prevState: TeamMemberFormState,
@@ -26,10 +28,15 @@ export async function createTeamMember(
   const profile = await requireRole('admin')
 
   const rawTenantId = formData.get('tenant_id')
+  const rawPassword = formData.get('password')
+  const passwordStr = typeof rawPassword === 'string' && rawPassword.trim().length >= 8
+    ? rawPassword.trim()
+    : generateSecureTemporaryPassword()
+
   const parsed = teamMemberSchema.safeParse({
     full_name: formData.get('full_name'),
     email: formData.get('email'),
-    password: formData.get('password'),
+    password: passwordStr,
     role: formData.get('role'),
     tenant_id: typeof rawTenantId === 'string' && rawTenantId.trim() ? rawTenantId.trim() : null,
   })
@@ -45,7 +52,7 @@ export async function createTeamMember(
   const admin = createAdminClient()
   const { data: created, error } = await admin.auth.admin.createUser({
     email: parsed.data.email,
-    password: parsed.data.password,
+    password: passwordStr,
     email_confirm: true,
     user_metadata: {
       full_name: parsed.data.full_name,
@@ -55,6 +62,17 @@ export async function createTeamMember(
 
   if (error) {
     return { error: error.message }
+  }
+
+  // Look up tenant name for the welcome email if assigned
+  let targetTenantName: string | null = null
+  if (targetTenantId) {
+    const { data: tenantRow } = await admin
+      .from('tenants')
+      .select('name')
+      .eq('id', targetTenantId)
+      .single()
+    if (tenantRow) targetTenantName = tenantRow.name
   }
 
   // The handle_new_user trigger deliberately ignores metadata and always
@@ -90,10 +108,21 @@ export async function createTeamMember(
         error: `Account created, but finishing setup failed: ${roleError.message}. Use the role toggle to retry.`,
       }
     }
+
+    // Fire-and-forget asynchronous welcome credential email dispatch via Resend
+    sendWelcomeCredentialsEmail({
+      recipientEmail: parsed.data.email,
+      recipientName: parsed.data.full_name,
+      temporaryPassword: passwordStr,
+      role: parsed.data.role,
+      organizationName: targetTenantName,
+    }).catch((err) => {
+      console.error('[createTeamMember] Async credentials email dispatch error:', err)
+    })
   }
 
   revalidatePath('/admin/team')
-  return { success: true }
+  return { success: true, generatedPassword: passwordStr }
 }
 
 const addressPartsSchema = {

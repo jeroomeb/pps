@@ -9,6 +9,7 @@ import {
   Clock,
   CheckCircle2,
   ChevronRight,
+  ExternalLink,
 } from 'lucide-react'
 import { requireRole } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
@@ -149,6 +150,15 @@ export default async function TeamMemberProfilePage({
               </span>
             )}
           </span>
+        }
+        action={
+          <Link
+            href={`/inspector?viewAs=${member.id}`}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 transition-colors"
+          >
+            <ExternalLink size={15} />
+            View Specialist Dashboard
+          </Link>
         }
       />
 

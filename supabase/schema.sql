@@ -21,12 +21,14 @@ create table if not exists tenants (
   payout_tier_2_rate numeric(10, 2) not null default 75.00,
   payout_tier_3_rate numeric(10, 2) not null default 100.00,
   payout_matrix jsonb not null default '{"luxury_condo":{"tier_1":50.00,"tier_2":75.00,"tier_3":100.00},"adult_community":{"tier_1":55.00,"tier_2":80.00,"tier_3":110.00},"commercial_multi":{"tier_1":65.00,"tier_2":95.00,"tier_3":130.00}}'::jsonb,
+  parent_organization_id uuid references tenants(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 create index if not exists tenants_slug_idx on tenants (slug);
 create index if not exists tenants_status_idx on tenants (status);
+create index if not exists tenants_parent_org_idx on tenants (parent_organization_id);
 
 -- ============================================================
 -- 2. Core Tables
