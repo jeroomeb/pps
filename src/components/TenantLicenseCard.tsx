@@ -18,7 +18,17 @@ import { useToast } from '@/components/ui/Toast'
 import { updateTenantLicense, deleteTenant, type TenantFormState } from '@/lib/actions/tenants'
 import type { LicenseTier, TenantStatus } from '@/lib/database.types'
 import { formatDate } from '@/lib/timezone'
-import type { VerifiedSpecialistOption } from '@/components/CreateTenantForm'
+
+export type VerifiedSpecialistOption = {
+  id: string
+  full_name: string
+  email: string | null
+  human_id: string | null
+  role: 'admin' | 'inspector'
+  isIdVerified: boolean
+  currentTenantId: string | null
+  currentTenantName: string | null
+}
 
 export type TenantItem = {
   id: string

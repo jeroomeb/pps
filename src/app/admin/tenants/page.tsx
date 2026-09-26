@@ -88,7 +88,7 @@ export default async function TenantsPage() {
         eyebrow="Global Management Layer"
         title="Tenants & Licenses"
         subtitle="Shared Database, Shared Schema Multi-Tenant Administration & Building SKU Allocations"
-        action={<CreateTenantForm parentTenants={parentTenantsList} specialists={specialistsList} />}
+        action={<CreateTenantForm parentTenants={parentTenantsList} />}
       />
 
       {/* Overview KPI Cards */}

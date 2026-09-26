@@ -1,48 +1,83 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { Plus, X, Building, ShieldCheck, UserCheck } from 'lucide-react'
+import { Plus, X, Building, ShieldCheck, Key, Mail, User, Check } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import { useToast } from '@/components/ui/Toast'
 import { SubmitButton } from '@/components/SubmitButton'
 import { createTenant, type TenantFormState } from '@/lib/actions/tenants'
 
-export type VerifiedSpecialistOption = {
-  id: string
-  full_name: string
-  email: string | null
-  human_id: string | null
-  role: string
-  isIdVerified: boolean
-  currentTenantId?: string | null
-  currentTenantName?: string | null
-}
-
 export function CreateTenantForm({
   parentTenants,
-  specialists,
 }: {
   parentTenants?: { id: string; name: string }[]
-  specialists?: VerifiedSpecialistOption[]
 }) {
+  const showToast = useToast()
   const [isOpen, setIsOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [issuedPassword, setIssuedPassword] = useState<string | null>(null)
   const [state, formAction] = useActionState<TenantFormState, FormData>(async (prevState, formData) => {
     const res = await createTenant(prevState, formData)
     if (res?.success) {
       setIsOpen(false)
+      setIssuedPassword(res.generatedPassword ?? null)
+      showToast(
+        'success',
+        res.generatedPassword
+          ? 'Tenant created. Copy the temporary admin password below — it is also emailed.'
+          : 'Corporate tenant provisioned successfully.'
+      )
+    } else if (res?.error) {
+      showToast('error', res.error)
     }
     return res
   }, undefined)
 
+  const copyPassword = (pwd: string) => {
+    navigator.clipboard.writeText(pwd)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 3000)
+  }
+
   if (!isOpen) {
     return (
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary-container px-4 font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95"
-      >
-        <Plus size={16} />
-        Provision Tenant
-      </button>
+      <div className="flex flex-col items-end gap-3">
+        {issuedPassword && (
+          <div className="w-full max-w-md rounded border border-primary/30 bg-primary-container/20 p-3 text-sm">
+            <p className="font-semibold text-primary">Temporary admin password</p>
+            <p className="mt-1 text-xs text-on-surface-variant">
+              Save this now. The new administrator must change it on first sign-in.
+            </p>
+            <div className="mt-2 flex items-center justify-between gap-2 rounded border border-outline-variant bg-surface-container-lowest px-3 py-2 font-mono text-sm">
+              <span className="select-all font-bold text-on-surface">{issuedPassword}</span>
+              <button
+                type="button"
+                onClick={() => copyPassword(issuedPassword)}
+                className="flex items-center gap-1 font-sans text-xs font-semibold text-primary hover:underline"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" /> Copied
+                  </>
+                ) : (
+                  'Copy'
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            setIssuedPassword(null)
+            setIsOpen(true)
+          }}
+          className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary-container px-4 font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95"
+        >
+          <Plus size={16} />
+          Provision Tenant
+        </button>
+      </div>
     )
   }
 
@@ -108,7 +143,7 @@ export function CreateTenantForm({
               id="slug"
               name="slug"
               placeholder="e.g. apex-pm (auto-generated if blank)"
-              className="min-h-11 rounded border border-outline-variant px-3 text-sm focus:border-primary-container focus:outline-none"
+              className="min-h-11 rounded border border-outline-variant px-3 text-sm focus:border-primary-container focus:outline-none font-mono"
             />
           </div>
         </div>
@@ -165,63 +200,57 @@ export function CreateTenantForm({
           </div>
         </div>
 
-        {/* Specialist Assignment */}
+        {/* Primary Tenant Administrator Account Setup */}
         <div className="rounded-xl border border-outline-variant bg-surface-container-low p-4">
           <div className="mb-2 flex items-center gap-2">
-            <UserCheck size={17} className="text-primary" />
+            <ShieldCheck size={16} className="text-primary" />
             <h3 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
-              Assign Specialist to Tenant (Optional)
+              Primary Tenant Administrator Account (Optional Instant Access)
             </h3>
           </div>
           <p className="mb-3 text-xs text-on-surface-variant">
-            Select a verified operational specialist to assign to this corporate tenant so they can conduct field inspections for this organization.
+            Create the primary administrator account for this tenant organization so they can immediately sign in, add properties, and manage staff. A branded welcome email with temporary credentials will be sent automatically.
           </p>
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="primary_specialist_id" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-              Assign Specialist
-            </label>
-            <select
-              id="primary_specialist_id"
-              name="primary_specialist_id"
-              defaultValue=""
-              className="min-h-11 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
-            >
-              <option value="">None (Assign or invite later from Team Management)</option>
-              {specialists && specialists.length > 0 && (
-                <>
-                  {specialists.some((s) => s.isIdVerified) && (
-                    <optgroup label="⭐ Verified Specialists (Photo ID on File)">
-                      {specialists
-                        .filter((s) => s.isIdVerified)
-                        .map((s) => (
-                          <option key={s.id} value={s.id}>
-                            ✓ {s.full_name} {s.human_id ? `(${s.human_id})` : ''}
-                            {s.email ? ` · ${s.email}` : ''}
-                            {s.currentTenantName ? ` [Current: ${s.currentTenantName}]` : ''}
-                          </option>
-                        ))}
-                    </optgroup>
-                  )}
-                  {specialists.some((s) => !s.isIdVerified) && (
-                    <optgroup label="Active Team Specialists & Staff">
-                      {specialists
-                        .filter((s) => !s.isIdVerified)
-                        .map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.full_name} {s.human_id ? `(${s.human_id})` : ''}
-                            {s.email ? ` · ${s.email}` : ''}
-                            {s.currentTenantName ? ` [Current: ${s.currentTenantName}]` : ''}
-                          </option>
-                        ))}
-                    </optgroup>
-                  )}
-                </>
-              )}
-            </select>
-            <p className="text-[11px] text-on-surface-variant">
-              Assigning a specialist links their profile to this tenant organization while keeping their specialist inspection dashboard intact.
-            </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="admin_name" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1">
+                <User size={12} className="text-primary" /> Admin Full Name
+              </label>
+              <input
+                id="admin_name"
+                name="admin_name"
+                placeholder="e.g. John Doe"
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="admin_email" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1">
+                <Mail size={12} className="text-primary" /> Admin Email Address
+              </label>
+              <input
+                id="admin_email"
+                name="admin_email"
+                type="email"
+                placeholder="e.g. manager@sampletowers.com"
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="admin_password" className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1">
+                <Key size={12} className="text-primary" /> Temporary Password
+              </label>
+              <input
+                id="admin_password"
+                name="admin_password"
+                type="text"
+                minLength={8}
+                placeholder="Auto-generated if blank"
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none font-mono text-xs"
+              />
+            </div>
           </div>
         </div>
 

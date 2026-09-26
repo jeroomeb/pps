@@ -66,15 +66,18 @@ export async function createTenant(
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   }
 
+  if ((parsed.data.admin_name || parsed.data.admin_password) && !parsed.data.admin_email) {
+    return { error: 'Admin email address is required to provision the administrator account.' }
+  }
+
   const supabase = await createClient()
 
   // Generate fallback slug from name if not provided
-  const tenantSlug =
-    parsed.data.slug ||
-    parsed.data.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
+  const rawGeneratedSlug = parsed.data.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+  const tenantSlug = parsed.data.slug || rawGeneratedSlug || `tenant-${Date.now().toString(36)}`
 
   const { data: newTenant, error } = await supabase
     .from('tenants')
@@ -209,6 +212,10 @@ export async function updateTenantLicense(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  }
+
+  if (parsed.data.parent_organization_id && parsed.data.parent_organization_id === parsed.data.tenant_id) {
+    return { error: 'An organization cannot be set as its own parent HQ.' }
   }
 
   const supabase = await createClient()
