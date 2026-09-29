@@ -5,6 +5,11 @@ import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import type { SpecialistAssignmentRole } from '@/lib/database.types'
+import { sendPropertyAssignmentEmail } from '@/lib/email/sendPropertyAssignmentEmail'
+import {
+  cancelPendingInspectionsForUnassignedSpecialist,
+  ensureOpenInspectionsForProperty,
+} from '@/lib/standing-inspections'
 
 const assignSchema = z.object({
   property_id: z.string().uuid(),
@@ -35,10 +40,9 @@ export async function assignSpecialistToProperty(
 
   const supabase = await createClient()
 
-  // Verify specialist exists and is active
   const { data: specialist, error: specError } = await supabase
     .from('profiles')
-    .select('id, full_name, status, tenant_id, is_contractor')
+    .select('id, full_name, email, status, tenant_id, is_contractor')
     .eq('id', parsed.data.specialist_id)
     .single()
 
@@ -50,8 +54,6 @@ export async function assignSpecialistToProperty(
     return { error: 'Cannot assign a deactivated specialist.' }
   }
 
-  // Cross-tenant verification:
-  // Must belong to the same tenant OR be part of the global independent contractor pool
   if (
     !profile.is_global_admin &&
     specialist.tenant_id !== profile.tenant_id &&
@@ -60,12 +62,29 @@ export async function assignSpecialistToProperty(
     return { error: 'Specialist does not belong to your organization.' }
   }
 
+  const { data: property } = await supabase
+    .from('properties')
+    .select('id, name, address, tenant_id, checklist_always_available')
+    .eq('id', parsed.data.property_id)
+    .single()
+
+  if (!property) {
+    return { error: 'Property not found.' }
+  }
+
+  const { data: existing } = await supabase
+    .from('property_specialist_assignments')
+    .select('id')
+    .eq('property_id', parsed.data.property_id)
+    .eq('specialist_id', parsed.data.specialist_id)
+    .maybeSingle()
+
   const { error } = await supabase.from('property_specialist_assignments').upsert(
     {
       property_id: parsed.data.property_id,
       specialist_id: parsed.data.specialist_id,
       role: parsed.data.role as SpecialistAssignmentRole,
-      tenant_id: profile.tenant_id ?? null,
+      tenant_id: property.tenant_id,
     },
     { onConflict: 'property_id,specialist_id' }
   )
@@ -74,9 +93,32 @@ export async function assignSpecialistToProperty(
     return { error: error.message }
   }
 
+  await ensureOpenInspectionsForProperty(parsed.data.property_id, parsed.data.specialist_id)
+
+  if (!existing && parsed.data.specialist_id !== profile.id && specialist.email) {
+    const { data: access } = await supabase
+      .from('property_checklist_access')
+      .select('checklist_templates(name)')
+      .eq('property_id', parsed.data.property_id)
+    const checklistNames = (access ?? [])
+      .map((row) => (row.checklist_templates as unknown as { name?: string } | null)?.name)
+      .filter((name): name is string => Boolean(name))
+
+    sendPropertyAssignmentEmail({
+      to: specialist.email,
+      specialistName: specialist.full_name,
+      propertyName: property.name,
+      propertyAddress: property.address,
+      checklistNames,
+      alwaysAvailable: property.checklist_always_available,
+    }).catch((err) => {
+      console.error('[assignSpecialistToProperty] Assignment email failed:', err)
+    })
+  }
+
   revalidatePath(`/admin/properties/${parsed.data.property_id}`)
   revalidatePath('/admin/properties')
-  revalidatePath('/admin/inspections/new')
+  revalidatePath('/inspector')
   return { success: true }
 }
 
@@ -87,7 +129,7 @@ export async function removeSpecialistFromProperty(
   propertyId: string,
   specialistId: string
 ): Promise<{ error?: string; success?: boolean } | void> {
-  await requireRole('admin')
+  const profile = await requireRole('admin')
   const supabase = await createClient()
 
   const { error } = await supabase
@@ -100,9 +142,11 @@ export async function removeSpecialistFromProperty(
     return { error: error.message }
   }
 
+  await cancelPendingInspectionsForUnassignedSpecialist(propertyId, specialistId, profile.id)
+
   revalidatePath(`/admin/properties/${propertyId}`)
   revalidatePath('/admin/properties')
-  revalidatePath('/admin/inspections/new')
+  revalidatePath('/inspector')
   return { success: true }
 }
 

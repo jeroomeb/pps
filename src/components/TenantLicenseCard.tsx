@@ -12,6 +12,7 @@ import {
   Users,
   UserCheck,
   GitFork,
+  ExternalLink,
 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
@@ -42,16 +43,19 @@ export type TenantItem = {
   propertyCount: number
   staffCount: number
   assignedStaffNames?: string[]
+  enabledTemplateIds?: string[]
 }
 
 export function TenantLicenseCard({
   tenant,
   parentTenants = [],
   specialists = [],
+  templates = [],
 }: {
   tenant: TenantItem
   parentTenants?: { id: string; name: string }[]
   specialists?: VerifiedSpecialistOption[]
+  templates?: { id: string; name: string }[]
 }) {
   const showToast = useToast()
   const [isEditing, setIsEditing] = useState(false)
@@ -145,6 +149,15 @@ export function TenantLicenseCard({
               {tenant.status}
             </span>
 
+            <a
+              href={`/admin/tenants/${tenant.id}/open`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded border border-outline-variant px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-on-surface hover:bg-surface-container"
+            >
+              <ExternalLink size={12} />
+              Open dashboard
+            </a>
             <button
               type="button"
               onClick={() => {
@@ -165,6 +178,7 @@ export function TenantLicenseCard({
         {isEditing ? (
           <form action={formAction} className="mt-4 flex flex-col gap-3">
             <input type="hidden" name="tenant_id" value={tenant.id} />
+            <input type="hidden" name="checklist_access_present" value="1" />
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
@@ -260,6 +274,29 @@ export function TenantLicenseCard({
                 </select>
               </div>
             )}
+
+            {/* Checklist access */}
+            <div className="rounded-lg border border-outline-variant bg-surface-container-low/60 p-2.5">
+              <p className="mb-2 text-xs font-semibold text-on-surface">Checklist access</p>
+              {templates.length ? (
+                <div className="grid grid-cols-1 gap-1.5">
+                  {templates.map((template) => (
+                    <label key={template.id} className="flex items-center gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        name="template_ids"
+                        value={template.id}
+                        defaultChecked={tenant.enabledTemplateIds?.includes(template.id)}
+                        className="h-3.5 w-3.5 accent-[#ee8a4b]"
+                      />
+                      {template.name}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-on-surface-variant">No checklist types exist yet.</p>
+              )}
+            </div>
 
             {/* Specialist & Staff Assignment Section */}
             <div className="rounded-lg border border-outline-variant bg-surface-container-low/60 p-2.5">

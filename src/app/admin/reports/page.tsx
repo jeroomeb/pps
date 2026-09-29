@@ -8,17 +8,23 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { deleteInspection } from '@/lib/actions/inspections'
 import { formatDateTime } from '@/lib/timezone'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 
 export default async function ReportsPage() {
   const supabase = await createClient()
+  const scope = await getAdminScope()
 
-  const { data: inspections } = await supabase
+  let reportsQuery = supabase
     .from('inspections')
     .select(
       'id, completed_at, email_status, email_error, properties(name, human_id), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('status', 'completed')
     .order('completed_at', { ascending: false, nullsFirst: false })
+
+  if (scope.tenantId) reportsQuery = reportsQuery.eq('tenant_id', scope.tenantId)
+
+  const { data: inspections } = await reportsQuery
 
   return (
     <div>

@@ -4,13 +4,29 @@ import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 
 export default async function ChecklistsPage() {
   const supabase = await createClient()
-  const { data: templates } = await supabase
+  const scope = await getAdminScope()
+
+  let templatesQuery = supabase
     .from('checklist_templates')
     .select('id, name, checklist_template_items(count)')
     .order('name')
+
+  if (scope.tenantId) {
+    const { data: access } = await supabase
+      .from('tenant_checklist_access')
+      .select('template_id')
+      .eq('tenant_id', scope.tenantId)
+    const ids = (access ?? []).map((row) => row.template_id)
+    templatesQuery = ids.length
+      ? templatesQuery.in('id', ids)
+      : templatesQuery.eq('id', '00000000-0000-0000-0000-000000000000')
+  }
+
+  const { data: templates } = await templatesQuery
 
   return (
     <div>

@@ -190,6 +190,16 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-09-29 — Property assignment, standing checklists, tenant dashboard, ACH
+The operating model is now “assign a specialist to a property,” not “create a one-off inspection” from the property page.
+
+- **Migration `0016_checklist_access_property_category_ach.sql` must be applied** before this is tested. It adds tenant and property checklist access, `properties.building_category`, `properties.checklist_always_available`, and specialist ACH columns.
+- Provisioning a tenant chooses which checklist types that organization may use. Adding or editing a property chooses which of those checklists are enabled, plus a 24/7 switch. Assigning a specialist opens those checklists. With 24/7 on, submitting one creates a fresh pending copy. The property page no longer has a New Inspection form.
+- Assigning a specialist emails them that they were added to the property.
+- The property payout fields are building type (Luxury, 55+ Active Adult, Commercial) and compensation tier. The completed-inspection payout uses that pair against the 3×3 matrix.
+- The specialist profile has an enable/disable ACH section (bank name, account number, routing number). Turning it off clears the stored numbers.
+- HQ can open a provisional tenant’s admin dashboard from Tenants & Licenses (**Open dashboard**). It uses the same new-tab pattern as Open User Panel, with an exit banner. While that view is open, admin lists are limited to that tenant.
+
 ### 2026-09-26 — Full Tenant Management: Specialist Roster Assignment, Hierarchy & Deletion
 Engineered complete tenant management capabilities on `/admin/tenants` (`TenantLicenseCard.tsx`, `tenants.ts`):
 - **Full Tenant Editing (`src/components/TenantLicenseCard.tsx`, `src/lib/actions/tenants.ts`)**:

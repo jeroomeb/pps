@@ -8,6 +8,7 @@ import { genSpecialistId } from '@/lib/ids'
 import { generateSecureTemporaryPassword } from '@/lib/security'
 import { sendWelcomeCredentialsEmail } from '@/lib/email/sendWelcomeCredentialsEmail'
 import type { LicenseTier, TenantStatus } from '@/lib/database.types'
+import { replaceTenantChecklistAccess, templateIdsFromForm } from '@/lib/checklist-access'
 
 const tenantSchema = z.object({
   name: z.string().trim().min(1, 'Tenant company name is required'),
@@ -97,6 +98,15 @@ export async function createTenant(
       return { error: 'A tenant with that company slug already exists.' }
     }
     return { error: error?.message ?? 'Failed to create tenant organization.' }
+  }
+
+  const checklistError = await replaceTenantChecklistAccess(
+    supabase,
+    newTenant.id,
+    templateIdsFromForm(formData)
+  )
+  if (checklistError) {
+    return { error: `Tenant created, but checklist access could not be saved: ${checklistError.message}` }
   }
 
   let finalAdminPassword = ''
@@ -238,6 +248,17 @@ export async function updateTenantLicense(
       return { error: 'A tenant with that account slug already exists.' }
     }
     return { error: error.message }
+  }
+
+  if (formData.get('checklist_access_present') === '1') {
+    const checklistError = await replaceTenantChecklistAccess(
+      supabase,
+      parsed.data.tenant_id,
+      templateIdsFromForm(formData)
+    )
+    if (checklistError) {
+      return { error: checklistError.message }
+    }
   }
 
   // Handle assigned specialists roster if provided in form

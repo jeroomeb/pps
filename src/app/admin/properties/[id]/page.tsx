@@ -17,7 +17,7 @@ import {
   Pencil as PencilIcon,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { NewInspectionForm } from '@/components/NewInspectionForm'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -27,7 +27,8 @@ import { CancelInspectionButton } from '@/components/CancelInspectionButton'
 import { PropertyRosterManager, type AssignedSpecialist, type CandidateSpecialist } from '@/components/PropertyRosterManager'
 import { deleteProperty } from '@/lib/actions/properties'
 import { parseSchedule, scheduleEntryLabel, dueLabel } from '@/lib/schedule'
-import { zonedDate, formatDate, timeZoneAbbreviation } from '@/lib/timezone'
+import { zonedDate, formatDate } from '@/lib/timezone'
+import { BUILDING_CATEGORY_LABELS, isBuildingCategory } from '@/lib/building-category'
 
 export default async function PropertyDetailPage({
   params,
@@ -35,17 +36,16 @@ export default async function PropertyDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
+  const [supabase, scope] = await Promise.all([createClient(), getAdminScope()])
 
   const [
     { data: property },
-    { data: templates },
     { data: allProfiles },
     { data: inspections },
     { data: assignments },
+    { data: enabledChecklists },
   ] = await Promise.all([
     supabase.from('properties').select('*').eq('id', id).single(),
-    supabase.from('checklist_templates').select('id, name').order('name'),
     supabase
       .from('profiles')
       .select('id, full_name, role, state, zip, county, human_id, is_contractor, email, phone, status')
@@ -62,9 +62,13 @@ export default async function PropertyDetailPage({
       .select('id, specialist_id, role, created_at')
       .eq('property_id', id)
       .order('created_at', { ascending: true }),
+    supabase
+      .from('property_checklist_access')
+      .select('checklist_templates(name)')
+      .eq('property_id', id),
   ])
 
-  if (!property) {
+  if (!property || (scope.tenantId && property.tenant_id !== scope.tenantId)) {
     notFound()
   }
 
@@ -94,8 +98,6 @@ export default async function PropertyDetailPage({
       role: ins.role,
       isContractor: ins.is_contractor ?? false,
     }))
-
-  const activeInspectors = (allProfiles ?? []).filter((ins) => ins.status !== 'inactive')
 
   const completedCount = (inspections ?? []).filter((i) => i.status === 'completed').length
   // "In Progress" here previously counted pending + in_progress together
@@ -246,40 +248,23 @@ export default async function PropertyDetailPage({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_1.4fr]">
-        <section>
-          <h2 className="mb-3 font-headline text-lg font-semibold">New Inspection</h2>
-          <NewInspectionForm
-            propertyId={id}
-            // Passed so the specialist list can rank by proximity to this property.
-            properties={[
-              {
-                id,
-                name: property.name,
-                state: property.state,
-                zip: property.zip,
-                county: property.county,
-              },
-            ]}
-            templates={templates ?? []}
-            inspectors={activeInspectors.map((ins) => {
-              const rosterMatch = assignedSpecialists.find((a) => a.specialistId === ins.id)
-              return {
-                id: ins.id,
-                full_name: ins.full_name,
-                role: ins.role,
-                state: ins.state,
-                zip: ins.zip,
-                county: ins.county,
-                rosterRole: rosterMatch?.role ?? null,
-              }
-            })}
-            timeZoneLabel={timeZoneAbbreviation()}
-          />
-        </section>
-
-        <section>
-          <h2 className="mb-3 font-headline text-lg font-semibold">Inspections</h2>
+      <div className="mb-8">
+        <h2 className="mb-3 font-headline text-lg font-semibold">Inspections</h2>
+        <p className="mb-3 text-sm text-on-surface-variant">
+          Assigned specialists receive the enabled checklists automatically.
+          {property.checklist_always_available
+            ? ' 24/7 access is on, so a submitted checklist stays pending for the next visit.'
+            : ' 24/7 access is off, so a submitted checklist does not reopen on its own.'}
+          {isBuildingCategory(property.building_category)
+            ? ` Property type: ${BUILDING_CATEGORY_LABELS[property.building_category]}.`
+            : ''}
+          {enabledChecklists?.length
+            ? ` Enabled: ${enabledChecklists
+                .map((row) => (row.checklist_templates as unknown as { name?: string } | null)?.name)
+                .filter(Boolean)
+                .join(', ')}.`
+            : ' No checklists are enabled for this property yet.'}
+        </p>
           {inspections?.length ? (
             <Card padded={false}>
               <div className="flex flex-col divide-y divide-outline-variant">
@@ -361,10 +346,9 @@ export default async function PropertyDetailPage({
             <EmptyState
               icon={ClipboardList}
               title="No inspections yet"
-              description="Create one using the form to the left."
+              description="Assign a specialist and enable checklists on this property. Their board will show the open checklists."
             />
           )}
-        </section>
       </div>
     </div>
   )

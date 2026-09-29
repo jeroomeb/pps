@@ -9,8 +9,10 @@ import { createTenant, type TenantFormState } from '@/lib/actions/tenants'
 
 export function CreateTenantForm({
   parentTenants,
+  templates = [],
 }: {
   parentTenants?: { id: string; name: string }[]
+  templates?: { id: string; name: string }[]
 }) {
   const showToast = useToast()
   const [isOpen, setIsOpen] = useState(false)
@@ -198,6 +200,28 @@ export function CreateTenantForm({
               <option value="suspended">Suspended</option>
             </select>
           </div>
+        </div>
+
+        {/* Checklists this organization may use */}
+        <div className="rounded-xl border border-outline-variant bg-surface-container-low p-4">
+          <h3 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+            Checklist access
+          </h3>
+          <p className="mb-3 mt-1 text-xs text-on-surface-variant">
+            Turn on every checklist this organization can assign to its properties. A property can then enable one or more of these.
+          </p>
+          {templates.length ? (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {templates.map((template) => (
+                <label key={template.id} className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" name="template_ids" value={template.id} className="h-4 w-4 accent-[#ee8a4b]" />
+                  {template.name}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-on-surface-variant">No checklist types exist yet.</p>
+          )}
         </div>
 
         {/* Primary Tenant Administrator Account Setup */}

@@ -1,4 +1,5 @@
 import { requireRole } from '@/lib/auth/dal'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { AdminAnalyticsDashboard } from '@/components/AdminAnalyticsDashboard'
@@ -8,6 +9,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminAnalyticsPage() {
   const profile = await requireRole('admin')
+  const scope = await getAdminScope()
   const supabase = await createClient()
 
   let inspectionsQuery = supabase
@@ -17,8 +19,8 @@ export default async function AdminAnalyticsPage() {
     )
     .order('created_at', { ascending: false })
 
-  if (profile.tenant_id && !profile.is_global_admin) {
-    inspectionsQuery = inspectionsQuery.eq('tenant_id', profile.tenant_id)
+  if (scope.tenantId) {
+    inspectionsQuery = inspectionsQuery.eq('tenant_id', scope.tenantId)
   }
 
   const { data: inspections, error: insError } = await inspectionsQuery

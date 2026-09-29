@@ -6,6 +6,8 @@ import { renderInspectionPdf, photoDataUri, mapWithConcurrency } from '@/lib/pdf
 import { sendReportEmail } from '@/lib/email/sendReportEmail'
 import { validateInspectionItems } from '@/lib/inspection-validation'
 import { formatDateTime } from '@/lib/timezone'
+import { isBuildingCategory, payoutMatrixKey } from '@/lib/building-category'
+import { renewStandingInspection } from '@/lib/standing-inspections'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -21,7 +23,7 @@ export async function POST(
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, properties(name, address, email, custom_payout_rate, payout_tier), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, properties(name, address, email, custom_payout_rate, payout_tier, building_category), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()
@@ -159,6 +161,12 @@ export async function POST(
   revalidatePath('/inspector/payouts')
   revalidatePath('/admin/payouts')
 
+  await renewStandingInspection(
+    inspection.property_id,
+    inspection.inspector_id,
+    inspection.template_id
+  )
+
   // Automatic Payout Ledger Entry (Task 5 & Question 4 3-Tier Compensation Matrix):
   // If the tenant organization has enabled the payouts module, log an earnings record
   if (inspection.tenant_id) {
@@ -173,16 +181,18 @@ export async function POST(
         const prop = inspection.properties as unknown as {
           custom_payout_rate?: number | null
           payout_tier?: string | null
+          building_category?: string | null
         } | null
 
         let payoutAmount: number
         if (typeof prop?.custom_payout_rate === 'number' && prop.custom_payout_rate > 0) {
           payoutAmount = prop.custom_payout_rate
         } else {
-          // Identify category from template name
           const tName = (template.name || '').toLowerCase()
           let category: 'luxury_condo' | 'adult_community' | 'commercial_multi' = 'luxury_condo'
-          if (tName.includes('55+') || tName.includes('adult')) {
+          if (isBuildingCategory(prop?.building_category)) {
+            category = payoutMatrixKey(prop.building_category)
+          } else if (tName.includes('55+') || tName.includes('adult')) {
             category = 'adult_community'
           } else if (tName.includes('commercial')) {
             category = 'commercial_multi'

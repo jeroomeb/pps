@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Building2, ChevronRight, Plus, KeyRound, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile, getTenantLicenseSummary } from '@/lib/auth/dal'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -27,6 +28,7 @@ export default async function PropertiesPage({
 }) {
   const { state, county, zip } = await searchParams
   const supabase = await createClient()
+  const scope = await getAdminScope()
   const hasFilter = Boolean(state || county || zip)
 
   let filteredQuery = supabase
@@ -34,6 +36,7 @@ export default async function PropertiesPage({
     .select('id, name, address, city, state, zip, county, email, phone, human_id')
     .order('name')
 
+  if (scope.tenantId) filteredQuery = filteredQuery.eq('tenant_id', scope.tenantId)
   if (state) filteredQuery = filteredQuery.eq('state', state)
   if (county) filteredQuery = filteredQuery.eq('county', county)
   if (zip) filteredQuery = filteredQuery.eq('zip', zip)
@@ -47,7 +50,11 @@ export default async function PropertiesPage({
   ] = await Promise.all([
     filteredQuery,
     hasFilter
-      ? supabase.from('properties').select('state, county, zip')
+      ? (() => {
+          let locationQuery = supabase.from('properties').select('state, county, zip')
+          if (scope.tenantId) locationQuery = locationQuery.eq('tenant_id', scope.tenantId)
+          return locationQuery
+        })()
       : Promise.resolve({ data: null }),
     supabase.from('property_specialist_assignments').select('property_id, role'),
     getProfile(),
@@ -61,7 +68,7 @@ export default async function PropertiesPage({
     : (properties?.length ?? 0)
 
   // Computes in-memory reusing profile.tenant and totalCount (0 extra queries!)
-  const licenseSummary = await getTenantLicenseSummary(profile.tenant_id, totalCount)
+  const licenseSummary = await getTenantLicenseSummary(scope.tenantId ?? profile.tenant_id, totalCount)
 
   // Aggregate roster counts per property
   const rosterCountMap = new Map<string, { total: number; hasPrimary: boolean }>()

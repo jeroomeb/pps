@@ -11,6 +11,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -26,15 +27,24 @@ const QUICK_ACTIONS = [
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient()
+  const scope = await getAdminScope()
+
+  let propertiesQuery = supabase.from('properties').select('id, name').order('name')
+  let inspectionsQuery = supabase
+    .from('inspections')
+    .select(
+      'id, property_id, status, created_at, completed_at, scheduled_for, properties(name), checklist_templates(name)'
+    )
+    .order('created_at', { ascending: false })
+
+  if (scope.tenantId) {
+    propertiesQuery = propertiesQuery.eq('tenant_id', scope.tenantId)
+    inspectionsQuery = inspectionsQuery.eq('tenant_id', scope.tenantId)
+  }
 
   const [{ data: properties }, { data: inspections }] = await Promise.all([
-    supabase.from('properties').select('id, name').order('name'),
-    supabase
-      .from('inspections')
-      .select(
-        'id, property_id, status, created_at, completed_at, scheduled_for, properties(name), checklist_templates(name)'
-      )
-      .order('created_at', { ascending: false }),
+    propertiesQuery,
+    inspectionsQuery,
   ])
 
   const allProperties = properties ?? []

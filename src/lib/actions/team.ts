@@ -138,6 +138,10 @@ const ownProfileSchema = z.object({
   ...addressPartsSchema,
   id_front_path: z.string().trim().nullable().optional(),
   id_back_path: z.string().trim().nullable().optional(),
+  ach_enabled: z.boolean().optional(),
+  bank_name: z.string().trim().max(80).optional(),
+  bank_account_number: z.string().trim().optional(),
+  bank_routing_number: z.string().trim().optional(),
 })
 
 export type ProfileAddressInput = {
@@ -156,6 +160,10 @@ export async function updateOwnProfile(
     phone?: string
     id_front_path?: string | null
     id_back_path?: string | null
+    ach_enabled?: boolean
+    bank_name?: string
+    bank_account_number?: string
+    bank_routing_number?: string
   }
 ): Promise<{ error?: string } | void> {
   const profile = await getProfile()
@@ -176,16 +184,31 @@ export async function updateOwnProfile(
     return { error: 'Invalid document reference.' }
   }
 
+  if (parsed.data.ach_enabled) {
+    if (!parsed.data.bank_name) return { error: 'Bank name is required when ACH is enabled.' }
+    if (!/^\d{4,17}$/.test(parsed.data.bank_account_number ?? '')) {
+      return { error: 'Account number must be 4 to 17 digits.' }
+    }
+    if (!/^\d{9}$/.test(parsed.data.bank_routing_number ?? '')) {
+      return { error: 'Routing number must be 9 digits.' }
+    }
+  }
+
   const supabase = await createClient()
   const addressParts = normalizeAddressParts(parsed.data)
   const patch: Database['public']['Tables']['profiles']['Update'] = {
     phone: parsed.data.phone || null,
     ...addressParts,
-    // Derived single-line value read by the PDF/report/email pipeline.
     address: composeAddress(addressParts) || null,
   }
   if (parsed.data.id_front_path !== undefined) patch.id_front_path = parsed.data.id_front_path
   if (parsed.data.id_back_path !== undefined) patch.id_back_path = parsed.data.id_back_path
+  if (parsed.data.ach_enabled !== undefined) {
+    patch.ach_enabled = parsed.data.ach_enabled
+    patch.bank_name = parsed.data.ach_enabled ? parsed.data.bank_name || null : null
+    patch.bank_account_number = parsed.data.ach_enabled ? parsed.data.bank_account_number || null : null
+    patch.bank_routing_number = parsed.data.ach_enabled ? parsed.data.bank_routing_number || null : null
+  }
 
   const { error } = await supabase.from('profiles').update(patch).eq('id', profile.id)
   if (error) {

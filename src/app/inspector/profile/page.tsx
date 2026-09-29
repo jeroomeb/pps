@@ -9,7 +9,7 @@ export default async function InspectorProfilePage() {
 
   const { data: row } = await supabase
     .from('profiles')
-    .select('human_id, phone, street, city, state, zip, county, id_front_path, id_back_path')
+    .select('human_id, phone, street, city, state, zip, county, id_front_path, id_back_path, ach_enabled, bank_name, bank_account_number, bank_routing_number')
     .eq('id', profile.id)
     .single()
 
@@ -58,6 +58,10 @@ export default async function InspectorProfilePage() {
           county: row?.county ?? null,
           id_front_path: row?.id_front_path ?? null,
           id_back_path: row?.id_back_path ?? null,
+          ach_enabled: row?.ach_enabled ?? false,
+          bank_name: row?.bank_name ?? null,
+          bank_account_number: row?.bank_account_number ?? null,
+          bank_routing_number: row?.bank_routing_number ?? null,
         }}
         idFrontUrl={idFrontUrl}
         idBackUrl={idBackUrl}

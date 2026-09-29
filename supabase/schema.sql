@@ -56,7 +56,11 @@ create table if not exists profiles (
   is_global_admin boolean not null default false,
   is_contractor boolean not null default false,
   status text not null default 'active' check (status in ('active', 'inactive', 'suspended')),
-  must_reset_password boolean not null default true
+  must_reset_password boolean not null default true,
+  ach_enabled boolean not null default false,
+  bank_name text,
+  bank_account_number text,
+  bank_routing_number text
 );
 
 create table if not exists checklist_templates (
@@ -102,7 +106,9 @@ create table if not exists properties (
   enable_gps_geofencing boolean not null default true,
   latitude double precision,
   longitude double precision,
-  geofence_radius_meters integer not null default 100
+  geofence_radius_meters integer not null default 100,
+  building_category text check (building_category in ('luxury', 'adult', 'commercial')),
+  checklist_always_available boolean not null default false
 );
 
 create table if not exists property_specialist_assignments (
@@ -113,6 +119,20 @@ create table if not exists property_specialist_assignments (
   role text not null default 'primary' check (role in ('primary', 'backup', 'staff')),
   created_at timestamptz not null default now(),
   unique (property_id, specialist_id)
+);
+
+create table if not exists tenant_checklist_access (
+  tenant_id uuid not null references tenants (id) on delete cascade,
+  template_id uuid not null references checklist_templates (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (tenant_id, template_id)
+);
+
+create table if not exists property_checklist_access (
+  property_id uuid not null references properties (id) on delete cascade,
+  template_id uuid not null references checklist_templates (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (property_id, template_id)
 );
 
 create index if not exists prop_assign_property_id_idx on property_specialist_assignments (property_id);
@@ -284,6 +304,8 @@ alter table checklist_templates enable row level security;
 alter table checklist_template_items enable row level security;
 alter table properties enable row level security;
 alter table property_specialist_assignments enable row level security;
+alter table tenant_checklist_access enable row level security;
+alter table property_checklist_access enable row level security;
 alter table inspections enable row level security;
 alter table inspection_items enable row level security;
 alter table schedule_dismissals enable row level security;
@@ -431,6 +453,59 @@ create policy "properties_admin_write" on properties
   ) with check (
     current_user_is_global_admin()
     or (current_role_is_admin() and tenant_id = current_user_tenant_id())
+  );
+
+drop policy if exists "tenant_checklist_access_select" on tenant_checklist_access;
+create policy "tenant_checklist_access_select" on tenant_checklist_access
+  for select using (
+    current_user_is_global_admin()
+    or tenant_id = current_user_tenant_id()
+    or tenant_id in (
+      select id from public.tenants where parent_organization_id = current_user_tenant_id()
+    )
+  );
+
+drop policy if exists "tenant_checklist_access_write" on tenant_checklist_access;
+create policy "tenant_checklist_access_write" on tenant_checklist_access
+  for all using (current_user_is_global_admin())
+  with check (current_user_is_global_admin());
+
+drop policy if exists "property_checklist_access_select" on property_checklist_access;
+create policy "property_checklist_access_select" on property_checklist_access
+  for select using (
+    current_user_is_global_admin()
+    or exists (
+      select 1 from public.properties p
+      where p.id = property_id
+        and (
+          (current_role_is_admin() and p.tenant_id = current_user_tenant_id())
+          or exists (
+            select 1 from public.property_specialist_assignments a
+            where a.property_id = p.id and a.specialist_id = auth.uid()
+          )
+        )
+    )
+  );
+
+drop policy if exists "property_checklist_access_write" on property_checklist_access;
+create policy "property_checklist_access_write" on property_checklist_access
+  for all using (
+    current_user_is_global_admin()
+    or exists (
+      select 1 from public.properties p
+      where p.id = property_id
+        and current_role_is_admin()
+        and p.tenant_id = current_user_tenant_id()
+    )
+  )
+  with check (
+    current_user_is_global_admin()
+    or exists (
+      select 1 from public.properties p
+      where p.id = property_id
+        and current_role_is_admin()
+        and p.tenant_id = current_user_tenant_id()
+    )
   );
 
 -- property_specialist_assignments

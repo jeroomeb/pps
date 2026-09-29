@@ -4,12 +4,20 @@ import { z } from 'zod'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/dal'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 import { createClient } from '@/lib/supabase/server'
 import { cleanupInspectionStorage } from '@/lib/supabase/storage-cleanup'
 import { genPropertyId } from '@/lib/ids'
 import type { ScheduleEntry } from '@/lib/schedule'
 import { composeAddress, normalizeAddressParts } from '@/lib/address'
 import type { Database } from '@/lib/database.types'
+import { BUILDING_CATEGORIES } from '@/lib/building-category'
+import {
+  filterTemplatesForTenant,
+  replacePropertyChecklistAccess,
+  templateIdsFromForm,
+} from '@/lib/checklist-access'
+import { ensureOpenInspectionsForProperty } from '@/lib/standing-inspections'
 
 const propertySchema = z.object({
   name: z.string().trim().min(1, 'Property name is required'),
@@ -28,6 +36,8 @@ const propertySchema = z.object({
   geofence_radius_meters: z.coerce.number().min(10, 'Geofence radius must be at least 10 meters').default(100),
   payout_tier: z.enum(['tier_1', 'tier_2', 'tier_3', 'custom']).default('tier_2'),
   custom_payout_rate: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().min(0).nullable().optional()),
+  building_category: z.enum(BUILDING_CATEGORIES),
+  checklist_always_available: z.coerce.boolean().default(false),
   tenant_id: z.string().uuid().optional().nullable(),
 })
 
@@ -72,6 +82,8 @@ function propertyFormFields(formData: FormData) {
     geofence_radius_meters: formData.get('geofence_radius_meters') || 100,
     payout_tier: formData.get('payout_tier') || 'tier_2',
     custom_payout_rate: formData.get('custom_payout_rate'),
+    building_category: formData.get('building_category'),
+    checklist_always_available: formData.get('checklist_always_available') === 'on',
     tenant_id: typeof rawTenantId === 'string' && rawTenantId.trim() ? rawTenantId.trim() : null,
   }
 }
@@ -81,6 +93,7 @@ export async function createProperty(
   formData: FormData
 ): Promise<PropertyFormState> {
   const profile = await requireRole('admin')
+  const scope = await getAdminScope()
 
   const parsed = propertySchema.safeParse(propertyFormFields(formData))
 
@@ -91,9 +104,11 @@ export async function createProperty(
   const supabase = await createClient()
 
   // Target Tenant Resolution: Global admin can assign to any tenant; regular admin is locked to own tenant
-  const targetTenantId = profile.is_global_admin && parsed.data.tenant_id
-    ? parsed.data.tenant_id
-    : profile.tenant_id ?? null
+  const targetTenantId = scope.isViewingTenant
+    ? scope.tenantId
+    : profile.is_global_admin && parsed.data.tenant_id
+      ? parsed.data.tenant_id
+      : profile.tenant_id ?? null
 
   // Enforce Tenant Property License SKU limits (Shared DB, Shared Schema Isolation)
   if (targetTenantId) {
@@ -136,6 +151,8 @@ export async function createProperty(
     geofence_radius_meters: parsed.data.geofence_radius_meters,
     payout_tier: parsed.data.payout_tier,
     custom_payout_rate: parsed.data.payout_tier === 'custom' ? (parsed.data.custom_payout_rate ?? null) : null,
+    building_category: parsed.data.building_category,
+    checklist_always_available: parsed.data.checklist_always_available,
   }
 
   // Retry once on the (astronomically unlikely) human_id collision.
@@ -156,6 +173,17 @@ export async function createProperty(
     return { error: 'Could not create the property. Please try again.' }
   }
 
+  const requestedTemplates = await filterTemplatesForTenant(
+    supabase,
+    targetTenantId,
+    templateIdsFromForm(formData)
+  )
+  const accessError = await replacePropertyChecklistAccess(supabase, data.id, requestedTemplates)
+  if (accessError) {
+    return { error: accessError.message }
+  }
+  await ensureOpenInspectionsForProperty(data.id)
+
   revalidatePath('/admin/properties')
   redirect(`/admin/properties/${data.id}`)
 }
@@ -166,6 +194,7 @@ export async function updateProperty(
   formData: FormData
 ): Promise<PropertyFormState> {
   const profile = await requireRole('admin')
+  const scope = await getAdminScope()
 
   const parsed = propertySchema.safeParse(propertyFormFields(formData))
 
@@ -189,9 +218,11 @@ export async function updateProperty(
     geofence_radius_meters: parsed.data.geofence_radius_meters,
     payout_tier: parsed.data.payout_tier,
     custom_payout_rate: parsed.data.payout_tier === 'custom' ? (parsed.data.custom_payout_rate ?? null) : null,
+    building_category: parsed.data.building_category,
+    checklist_always_available: parsed.data.checklist_always_available,
   }
 
-  if (profile.is_global_admin && parsed.data.tenant_id !== undefined) {
+  if (profile.is_global_admin && !scope.isViewingTenant && parsed.data.tenant_id !== undefined) {
     updateFields.tenant_id = parsed.data.tenant_id
   }
 
@@ -203,6 +234,18 @@ export async function updateProperty(
   if (error) {
     return { error: error.message }
   }
+
+  const { data: saved } = await supabase.from('properties').select('tenant_id').eq('id', propertyId).single()
+  const requestedTemplates = await filterTemplatesForTenant(
+    supabase,
+    saved?.tenant_id ?? null,
+    templateIdsFromForm(formData)
+  )
+  const accessError = await replacePropertyChecklistAccess(supabase, propertyId, requestedTemplates)
+  if (accessError) {
+    return { error: accessError.message }
+  }
+  await ensureOpenInspectionsForProperty(propertyId)
 
   revalidatePath('/admin/properties')
   revalidatePath(`/admin/properties/${propertyId}`)

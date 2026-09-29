@@ -1,4 +1,5 @@
 import { requireRole } from '@/lib/auth/dal'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { AdminPayoutsManager, type AdminPayoutRow } from '@/components/AdminPayoutsManager'
@@ -6,7 +7,9 @@ import type { PayoutStatus } from '@/lib/database.types'
 
 export default async function AdminPayoutsPage() {
   const profile = await requireRole('admin')
+  const scope = await getAdminScope()
   const supabase = await createClient()
+  const payoutTenantId = scope.tenantId ?? profile.tenant_id
 
   // Load tenant payout configuration
   let tenantConfig = {
@@ -22,11 +25,11 @@ export default async function AdminPayoutsPage() {
     },
   }
 
-  if (profile.tenant_id) {
+  if (payoutTenantId) {
     const { data: tenant } = await supabase
       .from('tenants')
       .select('enable_payouts, default_payout_rate, payout_tier_1_rate, payout_tier_2_rate, payout_tier_3_rate, payout_matrix')
-      .eq('id', profile.tenant_id)
+      .eq('id', payoutTenantId)
       .single()
 
     if (tenant) {
@@ -42,12 +45,16 @@ export default async function AdminPayoutsPage() {
   }
 
   // Load payouts ledger with property and specialist names
-  const { data: rawPayouts } = await supabase
+  let payoutsQuery = supabase
     .from('specialist_payouts')
     .select(
       'id, inspection_id, specialist_id, property_id, amount, status, approved_at, paid_at, payment_reference, notes, created_at, properties(name), profiles!specialist_payouts_specialist_id_fkey(full_name, human_id)'
     )
     .order('created_at', { ascending: false })
+
+  if (payoutTenantId) payoutsQuery = payoutsQuery.eq('tenant_id', payoutTenantId)
+
+  const { data: rawPayouts } = await payoutsQuery
 
   const payouts: AdminPayoutRow[] = (rawPayouts ?? []).map((p) => {
     const prop = p.properties as unknown as { name?: string } | null
@@ -80,7 +87,7 @@ export default async function AdminPayoutsPage() {
       />
 
       <AdminPayoutsManager
-        tenantId={profile.tenant_id ?? '00000000-0000-0000-0000-000000000001'}
+        tenantId={payoutTenantId ?? profile.tenant_id ?? '00000000-0000-0000-0000-000000000001'}
         initialEnabled={tenantConfig.enable_payouts}
         initialDefaultRate={tenantConfig.default_payout_rate}
         initialTier1Rate={tenantConfig.payout_tier_1_rate}

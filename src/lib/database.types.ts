@@ -8,6 +8,7 @@ export type ProfileStatus = 'active' | 'inactive' | 'suspended'
 export type SpecialistAssignmentRole = 'primary' | 'backup' | 'staff'
 export type PayoutStatus = 'pending' | 'approved' | 'paid' | 'cancelled'
 export type PayoutTier = 'tier_1' | 'tier_2' | 'tier_3' | 'custom'
+export type BuildingCategory = 'luxury' | 'adult' | 'commercial'
 export type GeofenceStatus = 'pending' | 'verified' | 'outside' | 'exempt'
 
 export type PayoutMatrixRates = {
@@ -112,6 +113,10 @@ export interface Database {
           is_contractor: boolean
           status: ProfileStatus
           must_reset_password: boolean
+          ach_enabled: boolean
+          bank_name: string | null
+          bank_account_number: string | null
+          bank_routing_number: string | null
         }
         Insert: {
           id: string
@@ -134,6 +139,10 @@ export interface Database {
           is_contractor?: boolean
           status?: ProfileStatus
           must_reset_password?: boolean
+          ach_enabled?: boolean
+          bank_name?: string | null
+          bank_account_number?: string | null
+          bank_routing_number?: string | null
         }
         Update: {
           id?: string
@@ -156,6 +165,10 @@ export interface Database {
           is_contractor?: boolean
           status?: ProfileStatus
           must_reset_password?: boolean
+          ach_enabled?: boolean
+          bank_name?: string | null
+          bank_account_number?: string | null
+          bank_routing_number?: string | null
         }
         Relationships: [
           {
@@ -256,6 +269,8 @@ export interface Database {
           latitude: number | null
           longitude: number | null
           geofence_radius_meters: number
+          building_category: BuildingCategory | null
+          checklist_always_available: boolean
         }
         Insert: {
           id?: string
@@ -281,6 +296,8 @@ export interface Database {
           latitude?: number | null
           longitude?: number | null
           geofence_radius_meters?: number
+          building_category?: BuildingCategory | null
+          checklist_always_available?: boolean
         }
         Update: {
           id?: string
@@ -306,6 +323,8 @@ export interface Database {
           latitude?: number | null
           longitude?: number | null
           geofence_radius_meters?: number
+          building_category?: BuildingCategory | null
+          checklist_always_available?: boolean
         }
         Relationships: [
           {
@@ -362,6 +381,72 @@ export interface Database {
             columns: ['specialist_id']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      tenant_checklist_access: {
+        Row: {
+          tenant_id: string
+          template_id: string
+          created_at: string
+        }
+        Insert: {
+          tenant_id: string
+          template_id: string
+          created_at?: string
+        }
+        Update: {
+          tenant_id?: string
+          template_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_checklist_access_tenant_id_fkey'
+            columns: ['tenant_id']
+            isOneToOne: false
+            referencedRelation: 'tenants'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tenant_checklist_access_template_id_fkey'
+            columns: ['template_id']
+            isOneToOne: false
+            referencedRelation: 'checklist_templates'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      property_checklist_access: {
+        Row: {
+          property_id: string
+          template_id: string
+          created_at: string
+        }
+        Insert: {
+          property_id: string
+          template_id: string
+          created_at?: string
+        }
+        Update: {
+          property_id?: string
+          template_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'property_checklist_access_property_id_fkey'
+            columns: ['property_id']
+            isOneToOne: false
+            referencedRelation: 'properties'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'property_checklist_access_template_id_fkey'
+            columns: ['template_id']
+            isOneToOne: false
+            referencedRelation: 'checklist_templates'
             referencedColumns: ['id']
           },
         ]

@@ -10,7 +10,7 @@ export default async function TenantsPage() {
   await requireGlobalAdmin()
   const supabase = await createClient()
 
-  const [{ data: tenants }, { data: properties }, { data: profiles }, { data: rawSpecialists }] = await Promise.all([
+  const [{ data: tenants }, { data: properties }, { data: profiles }, { data: rawSpecialists }, { data: templates }, { data: checklistAccess }] = await Promise.all([
     supabase
       .from('tenants')
       .select('id, name, slug, license_tier, max_property_licenses, status, parent_organization_id, created_at')
@@ -22,6 +22,8 @@ export default async function TenantsPage() {
       .select('id, full_name, email, human_id, role, id_front_path, id_back_path, status, tenant_id, tenants(name)')
       .neq('status', 'inactive')
       .order('full_name'),
+    supabase.from('checklist_templates').select('id, name').order('name'),
+    supabase.from('tenant_checklist_access').select('tenant_id, template_id'),
   ])
 
   const propertyCounts = new Map<string, number>()
@@ -47,6 +49,15 @@ export default async function TenantsPage() {
     }
   }
 
+  const accessByTenant = new Map<string, string[]>()
+  for (const row of checklistAccess ?? []) {
+    const existing = accessByTenant.get(row.tenant_id) ?? []
+    existing.push(row.template_id)
+    accessByTenant.set(row.tenant_id, existing)
+  }
+
+  const templateOptions = (templates ?? []).map((template) => ({ id: template.id, name: template.name }))
+
   const tenantItems: TenantItem[] = (tenants ?? []).map((t) => ({
     id: t.id,
     name: t.name,
@@ -59,6 +70,7 @@ export default async function TenantsPage() {
     propertyCount: propertyCounts.get(t.id) ?? 0,
     staffCount: staffCounts.get(t.id) ?? 0,
     assignedStaffNames: assignedStaffMap.get(t.id) ?? [],
+    enabledTemplateIds: accessByTenant.get(t.id) ?? [],
   }))
 
   const totalTenants = tenantItems.length
@@ -88,7 +100,7 @@ export default async function TenantsPage() {
         eyebrow="Global Management Layer"
         title="Tenants & Licenses"
         subtitle="Shared Database, Shared Schema Multi-Tenant Administration & Building SKU Allocations"
-        action={<CreateTenantForm parentTenants={parentTenantsList} />}
+        action={<CreateTenantForm parentTenants={parentTenantsList} templates={templateOptions} />}
       />
 
       {/* Overview KPI Cards */}
@@ -130,6 +142,7 @@ export default async function TenantsPage() {
                 tenant={tenant}
                 parentTenants={parentTenantsList}
                 specialists={specialistsList}
+                templates={templateOptions}
               />
             ))}
           </div>

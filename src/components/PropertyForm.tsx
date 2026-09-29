@@ -9,6 +9,7 @@ import type { PropertyFormState } from '@/lib/actions/properties'
 import { WEEKDAY_LABELS, WEEKDAY_ORDER, type ScheduleEntry } from '@/lib/schedule'
 import type { AddressParts } from '@/lib/address'
 import type { PayoutTier } from '@/lib/database.types'
+import { BUILDING_CATEGORY_LABELS, type BuildingCategory } from '@/lib/building-category'
 
 const INPUT =
   'min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none'
@@ -18,6 +19,8 @@ export function PropertyForm({
   action,
   defaultValues,
   tenants,
+  templates = [],
+  accessByTenant,
 }: {
   action: (state: PropertyFormState, formData: FormData) => Promise<PropertyFormState>
   defaultValues?: AddressParts & {
@@ -35,16 +38,29 @@ export function PropertyForm({
     payoutTier?: PayoutTier
     customPayoutRate?: number | null
     tenantId?: string | null
+    buildingCategory?: BuildingCategory | null
+    checklistAlwaysAvailable?: boolean
+    enabledTemplateIds?: string[]
   }
   tenants?: { id: string; name: string }[]
+  templates?: { id: string; name: string }[]
+  accessByTenant?: Record<string, string[]>
 }) {
   const [state, formAction] = useActionState<PropertyFormState, FormData>(action, undefined)
 
   const [lat, setLat] = useState<string>(defaultValues?.latitude?.toString() ?? '')
   const [lon, setLon] = useState<string>(defaultValues?.longitude?.toString() ?? '')
   const [payoutTier, setPayoutTier] = useState<PayoutTier>(defaultValues?.payoutTier ?? 'tier_2')
+  const [buildingCategory, setBuildingCategory] = useState<BuildingCategory>(defaultValues?.buildingCategory ?? 'luxury')
+  const [selectedTenantId, setSelectedTenantId] = useState(defaultValues?.tenantId ?? '')
   const [detectingGps, setDetectingGps] = useState(false)
   const [gpsNotice, setGpsNotice] = useState<string | null>(null)
+
+  const visibleTemplates = !accessByTenant
+    ? templates
+    : selectedTenantId
+      ? templates.filter((template) => (accessByTenant[selectedTenantId] ?? []).includes(template.id))
+      : templates
 
   // Schedule is first-of-month only, so a weekday is either on or off.
   const checkedDays = new Set((defaultValues?.schedule ?? []).map((e) => e.weekday))
@@ -92,7 +108,8 @@ export function PropertyForm({
             <select
               id="property_tenant_id"
               name="tenant_id"
-              defaultValue={defaultValues?.tenantId ?? ''}
+              value={selectedTenantId}
+              onChange={(e) => setSelectedTenantId(e.target.value)}
               className={`${INPUT} bg-surface-container-lowest`}
             >
               <option value="">Amenity Op&apos;s HQ (Master / Global)</option>
@@ -268,13 +285,31 @@ export function PropertyForm({
             </h3>
           </div>
           <p className="mb-4 text-xs text-on-surface-variant">
-            Assign this property to an audit compensation tier. Specialists auditing this site will automatically receive the organization&apos;s designated tier payout rate.
+            Choose the building type and the compensation tier. The payout is the rate where those two meet on the organization&apos;s 3×3 matrix.
           </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
+              <label htmlFor="building_category" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                Property type
+              </label>
+              <select
+                id="building_category"
+                name="building_category"
+                value={buildingCategory}
+                onChange={(e) => setBuildingCategory(e.target.value as BuildingCategory)}
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              >
+                {(Object.entries(BUILDING_CATEGORY_LABELS) as [BuildingCategory, string][]).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
               <label htmlFor="payout_tier" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-                Property Compensation Tier
+                Compensation tier
               </label>
               <select
                 id="payout_tier"
@@ -308,6 +343,47 @@ export function PropertyForm({
               </div>
             )}
           </div>
+        </div>
+
+        <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+          <h3 className="font-headline text-sm font-semibold text-on-surface">Checklists for this property</h3>
+          <p className="mb-3 mt-1 text-xs text-on-surface-variant">
+            Specialists assigned to this property receive these checklists. No separate inspection assignment is required.
+          </p>
+          <label className="mb-3 flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="checklist_always_available"
+              defaultChecked={defaultValues?.checklistAlwaysAvailable ?? true}
+              className="mt-1 h-4 w-4 accent-[#ee8a4b]"
+            />
+            <span>
+              <span className="font-semibold">Available 24/7</span>
+              <span className="mt-0.5 block text-xs text-on-surface-variant">
+                After a specialist submits a checklist, a new pending copy stays on their board.
+              </span>
+            </span>
+          </label>
+          {visibleTemplates.length ? (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {visibleTemplates.map((template) => (
+                <label key={template.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="template_ids"
+                    value={template.id}
+                    defaultChecked={defaultValues?.enabledTemplateIds?.includes(template.id) ?? false}
+                    className="h-4 w-4 accent-[#ee8a4b]"
+                  />
+                  {template.name}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-on-surface-variant">
+              This organization has no checklists enabled yet. Turn them on from Tenants & Licenses first.
+            </p>
+          )}
         </div>
 
         {/* Client Feature: Photo ID Verification Toggle */}

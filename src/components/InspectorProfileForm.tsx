@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
-import { UploadCloud, CheckCircle2, Trash2 } from 'lucide-react'
+import { UploadCloud, CheckCircle2, Trash2, Landmark } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateOwnProfile } from '@/lib/actions/team'
 import { Card } from '@/components/ui/Card'
@@ -42,6 +42,10 @@ export function InspectorProfileForm({
     county: string | null
     id_front_path: string | null
     id_back_path: string | null
+    ach_enabled?: boolean
+    bank_name?: string | null
+    bank_account_number?: string | null
+    bank_routing_number?: string | null
   }
 }) {
   const showToast = useToast()
@@ -51,6 +55,10 @@ export function InspectorProfileForm({
   const [state, setState] = useState(defaults.state ?? '')
   const [zip, setZip] = useState(defaults.zip ?? '')
   const [county, setCounty] = useState(defaults.county ?? '')
+  const [achEnabled, setAchEnabled] = useState(defaults.ach_enabled ?? false)
+  const [bankName, setBankName] = useState(defaults.bank_name ?? '')
+  const [bankAccount, setBankAccount] = useState(defaults.bank_account_number ?? '')
+  const [bankRouting, setBankRouting] = useState(defaults.bank_routing_number ?? '')
   const [frontPath, setFrontPath] = useState<string | null>(defaults.id_front_path)
   const [backPath, setBackPath] = useState<string | null>(defaults.id_back_path)
   const [frontPreview, setFrontPreview] = useState<string | null>(idFrontUrl)
@@ -127,7 +135,18 @@ export function InspectorProfileForm({
 
   function handleSave() {
     startTransition(async () => {
-      const result = await updateOwnProfile({ phone, street, city, state, zip, county })
+      const result = await updateOwnProfile({
+        phone,
+        street,
+        city,
+        state,
+        zip,
+        county,
+        ach_enabled: achEnabled,
+        bank_name: bankName,
+        bank_account_number: bankAccount,
+        bank_routing_number: bankRouting,
+      })
       if (result?.error) showToast('error', result.error)
       else showToast('success', 'Profile saved.')
     })
@@ -319,6 +338,57 @@ export function InspectorProfileForm({
             )
           })}
         </div>
+      </div>
+
+      <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+        <div className="mb-2 flex items-center gap-2">
+          <Landmark size={18} className="text-primary" />
+          <h3 className="font-headline text-sm font-semibold">Payment information (ACH)</h3>
+        </div>
+        <label className="mb-3 flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={achEnabled}
+            onChange={(e) => setAchEnabled(e.target.checked)}
+            className="mt-1 h-4 w-4 accent-[#ee8a4b]"
+          />
+          <span>
+            <span className="font-semibold">Enable direct deposit</span>
+            <span className="mt-0.5 block text-xs text-on-surface-variant">
+              Turn this on to store the bank account used to pay your inspections. Leave it off if you are paid another way.
+            </span>
+          </span>
+        </label>
+        {achEnabled && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="bank_name" className={LABEL}>Bank name</label>
+              <input id="bank_name" value={bankName} onChange={(e) => setBankName(e.target.value)} className={INPUT} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="bank_account_number" className={LABEL}>Account number</label>
+              <input
+                id="bank_account_number"
+                inputMode="numeric"
+                autoComplete="off"
+                value={bankAccount}
+                onChange={(e) => setBankAccount(e.target.value.replace(/\D/g, ''))}
+                className={INPUT}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="bank_routing_number" className={LABEL}>Routing number</label>
+              <input
+                id="bank_routing_number"
+                inputMode="numeric"
+                autoComplete="off"
+                value={bankRouting}
+                onChange={(e) => setBankRouting(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                className={INPUT}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <button

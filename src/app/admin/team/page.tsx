@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { InspectorForm } from '@/components/InspectorForm'
 import { RoleToggleButton } from '@/components/RoleToggleButton'
 import { getProfile } from '@/lib/auth/dal'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -17,6 +18,7 @@ export default async function TeamPage({
 }) {
   const { state, county } = await searchParams
   const currentProfile = await getProfile()
+  const scope = await getAdminScope()
   const supabase = await createClient()
 
   // Unfiltered set drives the dropdown options and active inspections counts
@@ -41,6 +43,7 @@ export default async function TeamPage({
     .select('id, full_name, role, human_id, email, phone, city, state, county, status, must_reset_password')
     .order('full_name')
 
+  if (scope.tenantId) query = query.eq('tenant_id', scope.tenantId)
   if (state) query = query.eq('state', state)
   if (county) query = query.eq('county', county)
 

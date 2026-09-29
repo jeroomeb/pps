@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/StatusBadge'
 import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
 import { dueLabel } from '@/lib/schedule'
 import { zonedDate, formatDate } from '@/lib/timezone'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 
 // Filtered inspection list backing the clickable dashboard stats. `?status=`
 // accepts a single DB status (pending / in_progress / completed) or the
@@ -42,8 +43,11 @@ export default async function AdminInspectionsPage({
   const { status, state, county } = await searchParams
   const filter = parseFilter(status)
   const supabase = await createClient()
+  const scope = await getAdminScope()
 
-  const { data: allProperties } = await supabase.from('properties').select('state, county')
+  let locationQuery = supabase.from('properties').select('state, county')
+  if (scope.tenantId) locationQuery = locationQuery.eq('tenant_id', scope.tenantId)
+  const { data: allProperties } = await locationQuery
 
   let query = supabase
     .from('inspections')
@@ -51,6 +55,8 @@ export default async function AdminInspectionsPage({
       'id, status, created_at, completed_at, scheduled_for, property_id, properties!inner(name, state, county), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .order('created_at', { ascending: false })
+
+  if (scope.tenantId) query = query.eq('tenant_id', scope.tenantId)
 
   if (filter === 'open') {
     query = query.in('status', ['pending', 'in_progress'])

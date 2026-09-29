@@ -4,19 +4,35 @@ import { PropertyForm } from '@/components/PropertyForm'
 import { createProperty } from '@/lib/actions/properties'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { getTenantLicenseSummary, getProfile } from '@/lib/auth/dal'
+import { getAdminScope } from '@/lib/auth/tenant-view'
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/Card'
 
 export default async function NewPropertyPage() {
-  const [licenseSummary, profile, supabase] = await Promise.all([
+  const [licenseSummary, profile, supabase, scope] = await Promise.all([
     getTenantLicenseSummary(),
     getProfile(),
     createClient(),
+    getAdminScope(),
   ])
 
-  const { data: tenants } = profile.is_global_admin
-    ? await supabase.from('tenants').select('id, name').order('name')
-    : { data: null }
+  const [{ data: tenants }, { data: templates }, { data: checklistAccess }] = await Promise.all([
+    profile.is_global_admin && !scope.isViewingTenant
+      ? supabase.from('tenants').select('id, name').order('name')
+      : Promise.resolve({ data: null }),
+    supabase.from('checklist_templates').select('id, name').order('name'),
+    supabase.from('tenant_checklist_access').select('tenant_id, template_id'),
+  ])
+
+  const accessByTenant: Record<string, string[]> = {}
+  for (const row of checklistAccess ?? []) {
+    accessByTenant[row.tenant_id] = accessByTenant[row.tenant_id] ?? []
+    accessByTenant[row.tenant_id].push(row.template_id)
+  }
+  const scopedTenantId = scope.tenantId
+  const templateOptions = (templates ?? []).filter((template) =>
+    scopedTenantId ? (accessByTenant[scopedTenantId] ?? []).includes(template.id) : true
+  )
 
   return (
     <div className="max-w-2xl">
@@ -60,7 +76,12 @@ export default async function NewPropertyPage() {
         </div>
       )}
 
-      <PropertyForm action={createProperty} tenants={tenants ?? undefined} />
+      <PropertyForm
+        action={createProperty}
+        tenants={tenants ?? undefined}
+        templates={profile.is_global_admin && !scope.isViewingTenant ? (templates ?? []) : templateOptions}
+        accessByTenant={profile.is_global_admin && !scope.isViewingTenant ? accessByTenant : undefined}
+      />
     </div>
   )
 }
