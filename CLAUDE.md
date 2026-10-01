@@ -7,7 +7,7 @@ at the end of each session so the next session picks up correctly.
 > **Renamed (session 8):** the app was formerly "PPS Inspections" (Property
 > Preservation Solutions LLC). It is now **Amenity Op's**, live at
 > **https://portal.amenityops.app**. The "Inspector" role is now labeled
-> **Operational Continuity Specialist (OCS)** in the UI — but the DB `role`
+> **Operations Continuity Specialist (OCS)** in the UI — but the DB `role`
 > value, routes (`/inspector`), and `inspector_id` columns are still
 > literally `'inspector'`. Never rename those; it's a display-only change.
 
@@ -189,6 +189,9 @@ passed to Client Components from Server Components."
   picking up any "Should Fix"/"Nice to Have" item left open.
 
 ## Status Log
+
+### 2026-10-01 — Role label: Operations Continuity Specialist
+Display name only. The Role dropdown, team list, member profile, and welcome email now say **Operations Continuity Specialist**. The database `role` value stays `'inspector'`.
 
 ### 2026-09-29 — Property assignment, standing checklists, tenant dashboard, ACH
 The operating model is now “assign a specialist to a property,” not “create a one-off inspection” from the property page.

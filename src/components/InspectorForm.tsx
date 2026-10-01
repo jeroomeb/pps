@@ -122,7 +122,7 @@ export function InspectorForm({
           defaultValue="inspector"
           className="min-h-12 rounded border border-outline-variant bg-surface-container-lowest px-3"
         >
-          <option value="inspector">Operational Continuity Specialist</option>
+          <option value="inspector">Operations Continuity Specialist</option>
           <option value="admin">Admin</option>
         </select>
         <p className="text-xs text-on-surface-variant">

@@ -36,7 +36,7 @@ export async function sendWelcomeCredentialsEmail({
     console.warn('[WelcomeEmail] Could not load logo-sm.png:', err)
   }
 
-  const roleTitle = role === 'admin' ? 'Administrator' : 'Operational Continuity Specialist (OCS)'
+  const roleTitle = role === 'admin' ? 'Administrator' : 'Operations Continuity Specialist (OCS)'
   const orgLine = organizationName ? `<p style="margin: 0 0 12px 0; color: #475569; font-size: 14px;"><strong>Organization:</strong> ${escapeHtml(organizationName)}</p>` : ''
 
   const html = `

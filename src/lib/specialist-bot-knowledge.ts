@@ -1,7 +1,7 @@
 /**
  * Specialist Assistant Knowledge Base & Query Resolution Engine
  * Provides instant on-site SOP guidance, rules, troubleshooting, and platform help
- * for Operational Continuity Specialists (OCS / Field Inspectors).
+ * for Operations Continuity Specialists (OCS / Field Inspectors).
  */
 
 export interface KnowledgeTopic {

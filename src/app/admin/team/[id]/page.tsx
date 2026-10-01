@@ -98,7 +98,7 @@ export default async function TeamMemberProfilePage({
     signed(member.id_back_path),
   ])
 
-  const roleLabel = member.role === 'admin' ? 'Admin' : 'Operational Continuity Specialist'
+  const roleLabel = member.role === 'admin' ? 'Admin' : 'Operations Continuity Specialist'
   const stats = [
     { label: 'Pending', value: pending, icon: ClipboardList },
     { label: 'In Progress', value: inProgress, icon: Clock },

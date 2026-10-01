@@ -20,7 +20,7 @@ const assignSchema = z.object({
 export type AssignmentFormState = { error?: string; success?: boolean } | undefined
 
 /**
- * Assigns an Operational Continuity Specialist to a property roster.
+ * Assigns an Operations Continuity Specialist to a property roster.
  */
 export async function assignSpecialistToProperty(
   _prevState: AssignmentFormState,

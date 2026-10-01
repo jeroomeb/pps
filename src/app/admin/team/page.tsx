@@ -103,7 +103,7 @@ export default async function TeamPage({
                           )}
                         </div>
                         <p className="label-tracked flex flex-wrap items-center gap-x-2 text-on-surface-variant mt-0.5">
-                          <span>{member.role === 'admin' ? 'Admin' : 'Operational Continuity Specialist'}</span>
+                          <span>{member.role === 'admin' ? 'Admin' : 'Operations Continuity Specialist'}</span>
                           {member.human_id && (
                             <span className="font-mono normal-case">({member.human_id})</span>
                           )}
