@@ -169,12 +169,15 @@ server {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
+        proxy_set_header Connection $connection_upgrade;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
     }
 
     listen 443 ssl; # Managed by Certbot
@@ -194,6 +197,19 @@ server {
     return 404; # Managed by Certbot
 }
 ```
+
+A hardcoded `Connection 'upgrade'` on every request makes Next.js close some connections. Nginx then shows **502 Bad Gateway** even though the app is running. The header must come from this map, in `/etc/nginx/conf.d/amenityops-upgrade-map.conf` (http context, not inside the server block):
+
+```nginx
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+```
+
+`scripts/patch-nginx-502.sh` writes that map and updates the site file. The deploy workflow runs it after `git pull`.
+
+A 502 also appears for a few seconds while `npm run build` and `pm2 reload` run on this same VPS, and if Node runs out of memory (PDF generation uses `sharp`). Those clear when PM2 restarts the process. The Connection header bug is the one that hits random page loads while the app looks healthy.
 
 ### Nginx Maintenance Commands:
 ```bash

@@ -190,6 +190,9 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-10-09 — Intermittent 502 on amenityops.app
+`https://amenityops.app` is Nginx on the Hostinger VPS (`nginx/1.18.0`). `https://portal.amenityops.app` is Vercel and was not the 502 in the screenshot. Checked live: `/login` returned 200 twenty times in a row, so the app was up. The documented site config sent `Connection: upgrade` on every request, which makes Next.js drop some connections and Nginx answer 502. `scripts/patch-nginx-502.sh` writes the upgrade map and 120s proxy timeouts; `.github/workflows/deploy.yml` runs it after `git pull`. It is not on the server until this is pushed to `main` (or the script is run over SSH). A short 502 can still happen during the on-server production build and `pm2 reload`.
+
 ### 2026-10-01 — Role label: Operations Continuity Specialist
 Display name only. The Role dropdown, team list, member profile, and welcome email now say **Operations Continuity Specialist**. The database `role` value stays `'inspector'`.
 
