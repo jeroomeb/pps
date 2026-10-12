@@ -15,6 +15,13 @@ const ALLOW_LOGGED_OUT = [
 const REDIRECT_IF_LOGGED_IN = ['/login', '/forgot-password']
 
 export async function updateSession(request: NextRequest) {
+  const path = request.nextUrl.pathname
+
+  // Cron routes authenticate via Bearer secret inside the route handler
+  if (path.startsWith('/api/cron/')) {
+    return NextResponse.next()
+  }
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient<Database>(
