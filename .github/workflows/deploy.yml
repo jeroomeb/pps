@@ -65,6 +65,6 @@ jobs:
 
             # Restart application with PM2
             echo "🔄 Reloading PM2 process..."
-            pm2 reload amenityops || pm2 restart amenityops --update-env
+            pm2 reload amenityops --update-env || pm2 restart amenityops --update-env
 
             echo "✅ Deployment completed successfully! Amenity Op's is live."
