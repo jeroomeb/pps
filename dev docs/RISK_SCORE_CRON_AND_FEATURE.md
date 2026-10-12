@@ -129,18 +129,19 @@ A California property and a New York property both hit 4:00 PM local because the
 
 ---
 
-## Install the cron on the VPS (not done yet)
+## Install the cron on the VPS (Completed 2026-10-12)
 
 Status as of 2026-10-12:
 
-- Code is in the local repo.
+- Code is committed and deployed to the VPS via GitHub Actions.
 - Migration 0017 is on the live database.
-- The sample score **42** for Jerome’s Home was inserted by hand for a screen test (see below).
-- `CRON_SECRET` is **not** confirmed in `/var/www/amenityops/.env.local`.
-- No root crontab calls this route.
-- The live site at amenityops.app does not show this until the code is deployed.
+- `src/lib/supabase/proxy.ts` bypasses authentication redirects for `/api/cron/*` endpoints so Bearer `CRON_SECRET` works directly.
+- `CRON_SECRET` is configured in `/var/www/amenityops/.env.local`.
+- PM2 reload uses `--update-env`.
+- Root crontab is installed and runs hourly (`0 * * * *`).
+- Manual `curl` test against `http://127.0.0.1:3000/api/cron/risk-scores` returned HTTP `200 OK` with `{"ok":true,"scored":0,"skipped":3}`.
 
-After deploy, on the VPS (`187.124.132.193`, app at `/var/www/amenityops`, PM2 name `amenityops`):
+Reference setup commands on the VPS (`187.124.132.193`, app at `/var/www/amenityops`, PM2 name `amenityops`):
 
 1. Put a long random value in `/var/www/amenityops/.env.local`:
 

@@ -115,25 +115,13 @@ Property id `7e43b766-ca7e-4884-bf5b-43eb2245295b`. Local app `http://localhost:
 
 Delete SQL is in `PREDICTIVE_RISK_SCORE_CLIENT_TEST.md` and `RISK_SCORE_CRON_AND_FEATURE.md`. The sample row may still be there until that delete is run.
 
-### Cron job — in code, not on the VPS
+### Cron job — deployed and active on VPS (2026-10-12)
 
 Route: `GET` / `POST` `/api/cron/risk-scores` with `Authorization: Bearer $CRON_SECRET`.
 
 Hourly run: skip before 4:00 PM local; skip if today’s row exists; skip if history is too short; otherwise insert one row.
 
-**Not done:** set `CRON_SECRET` on the VPS, `pm2 reload`, root crontab calling `http://127.0.0.1:3000/api/cron/risk-scores`. Full install steps: `dev docs/RISK_SCORE_CRON_AND_FEATURE.md`.
-
-### Not committed in that session
-
-The user asked for a commit message later. The risk-score work was still uncommitted at the end of the 10 October chat. Do not commit unless asked. If committing, author as `jeroomeb` for the Vercel Hobby gate (production app is now the VPS).
-
-Suggested message from that chat:
-
-```
-feat(risk): score each property at 4pm in its own timezone
-```
-
-Keep the docs-folder move out of that commit if the message is only about the score.
+Completed: `CRON_SECRET` configured on VPS, `src/lib/supabase/proxy.ts` bypass added for `/api/cron/`, GitHub Actions automated deploy successful, PM2 reloaded with `--update-env`, and root crontab installed. Live check returned `HTTP 200 OK` with `{"ok":true,"scored":0,"skipped":3}`.
 
 ---
 
@@ -148,11 +136,9 @@ Keep the docs-folder move out of that commit if the message is only about the sc
 
 ---
 
-## 7. What to do next (as of 2026-10-12)
+## 7. Status & next steps (as of 2026-10-12)
 
-1. Confirm whether the Jerome’s Home sample score **42** is still in `property_risk_scores`. Delete it if the banner should not stay on a live property.
-2. Commit the risk-score code when asked (file list in the build record).
-3. Deploy to `/var/www/amenityops` on **187.124.132.193**. Confirm GitHub Actions `VPS_HOST` is the new IP before pushing to `main`.
-4. Set `CRON_SECRET`, reload PM2, prove 401 without the header and 200 with it, then add the hourly crontab. Details in `RISK_SCORE_CRON_AND_FEATURE.md`.
-5. Confirm HTTPS / certbot on the new VPS if it was never finished.
-6. Leave lead generation and the reply assistant until the client asks to build them.
+1. **Risk score & cron:** Fully implemented, committed, deployed via GitHub Actions, and verified on the VPS. Hourly root cron is active.
+2. **Jerome's Home sample row:** Confirm whether the manual test score `42` should be removed from `property_risk_scores`.
+3. **HTTPS / SSL:** Confirm certbot on the new VPS if not already completed.
+4. **Lead generation & reply assistant:** Deferred until explicitly requested by the client.

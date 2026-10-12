@@ -190,6 +190,14 @@ passed to Client Components from Server Components."
 
 ## Status Log
 
+### 2026-10-12 — Predictive risk score deployed & cron installed
+The predictive risk score feature and hourly cron job were committed, deployed to production VPS (`187.124.132.193`), and verified live.
+- Fixed `src/lib/supabase/proxy.ts` to allow `/api/cron/` endpoints to bypass session auth check so Bearer `CRON_SECRET` works.
+- Updated `.github/workflows/deploy.yml` with `--update-env` on PM2 reload. GitHub Actions deployment passed green.
+- Configured `CRON_SECRET` in `/var/www/amenityops/.env.local`.
+- Installed hourly root crontab on VPS targeting `http://127.0.0.1:3000/api/cron/risk-scores`.
+- Live test returned `HTTP 200 OK` with `{"ok":true,"scored":0,"skipped":3}` across active properties.
+
 ### 2026-10-12 — Session record and cron guide
 Compiled the October chats into `dev docs/SESSION_OCT_2026_FULL_RECORD.md` (502, VPS move, audit, docs folder, lead reply design, risk score build and test). Cron install and the new feature in one place: `dev docs/RISK_SCORE_CRON_AND_FEATURE.md`. Migration 0017 is on the live DB. Cron is still not on the VPS. Jerome’s Home may still have the sample score 42 until the delete SQL is run.
 
