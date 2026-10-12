@@ -49,8 +49,6 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const path = request.nextUrl.pathname
-
   if (!user && !ALLOW_LOGGED_OUT.includes(path)) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
