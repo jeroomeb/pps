@@ -76,7 +76,8 @@ create table if not exists checklist_template_items (
   service_category text not null,
   item_name text not null,
   description text,
-  sort_order int not null default 0
+  sort_order int not null default 0,
+  risk_domain text check (risk_domain in ('life_safety', 'appearance', 'asset_protection'))
 );
 
 create table if not exists properties (
@@ -108,7 +109,8 @@ create table if not exists properties (
   longitude double precision,
   geofence_radius_meters integer not null default 100,
   building_category text check (building_category in ('luxury', 'adult', 'commercial')),
-  checklist_always_available boolean not null default false
+  checklist_always_available boolean not null default false,
+  timezone text not null default 'America/New_York'
 );
 
 create table if not exists property_specialist_assignments (
@@ -174,7 +176,11 @@ create table if not exists inspections (
   arrived_at timestamptz,
   departed_at timestamptz,
   dwell_time_seconds integer,
-  geofence_status text not null default 'pending' check (geofence_status in ('pending', 'verified', 'outside', 'exempt'))
+  geofence_status text not null default 'pending' check (geofence_status in ('pending', 'verified', 'outside', 'exempt')),
+  predicted_score integer check (predicted_score is null or predicted_score between 1 and 100),
+  predicted_flags jsonb,
+  predicted_summary text,
+  predicted_local_date date
 );
 
 create table if not exists inspection_items (
@@ -188,8 +194,24 @@ create table if not exists inspection_items (
   status text check (status in ('pass', 'fail', 'na')),
   comment text,
   photo_path text,
+  risk_domain text check (risk_domain in ('life_safety', 'appearance', 'asset_protection')),
   unique (inspection_id, template_item_id)
 );
+
+create table if not exists property_risk_scores (
+  id uuid primary key default gen_random_uuid(),
+  property_id uuid not null references properties (id) on delete cascade,
+  local_date date not null,
+  score integer not null check (score between 1 and 100),
+  flags jsonb not null default '[]'::jsonb,
+  summary text not null default '',
+  weather text,
+  calculated_at timestamptz not null default now(),
+  unique (property_id, local_date)
+);
+
+create index if not exists property_risk_scores_property_date_idx
+  on property_risk_scores (property_id, local_date desc);
 
 create index if not exists inspections_property_id_idx on inspections (property_id);
 create index if not exists inspections_inspector_id_idx on inspections (inspector_id);
@@ -308,6 +330,7 @@ alter table tenant_checklist_access enable row level security;
 alter table property_checklist_access enable row level security;
 alter table inspections enable row level security;
 alter table inspection_items enable row level security;
+alter table property_risk_scores enable row level security;
 alter table schedule_dismissals enable row level security;
 alter table specialist_payouts enable row level security;
 alter table inspection_geo_logs enable row level security;
@@ -629,6 +652,32 @@ create policy "inspection_items_update" on inspection_items
           or (current_role_is_admin() and i.tenant_id = current_user_tenant_id())
         )
         and i.status not in ('completed', 'cancelled')
+    )
+  );
+
+drop policy if exists "property_risk_scores_select" on property_risk_scores;
+create policy "property_risk_scores_select" on property_risk_scores
+  for select using (
+    exists (
+      select 1 from properties p
+      where p.id = property_risk_scores.property_id
+        and (
+          current_user_is_global_admin()
+          or (
+            p.tenant_id = current_user_tenant_id()
+            and (
+              current_role_is_admin()
+              or exists (
+                select 1 from property_specialist_assignments psa
+                where psa.property_id = p.id and psa.specialist_id = auth.uid()
+              )
+              or exists (
+                select 1 from inspections i
+                where i.property_id = p.id and i.inspector_id = auth.uid()
+              )
+            )
+          )
+        )
     )
   );
 

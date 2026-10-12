@@ -19,7 +19,7 @@ export default async function EditPropertyPage({
     supabase
       .from('properties')
       .select(
-        'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule, require_id_photo, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, payout_tier, custom_payout_rate, tenant_id, building_category, checklist_always_available'
+        'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule, require_id_photo, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, payout_tier, custom_payout_rate, tenant_id, building_category, checklist_always_available, timezone'
       )
       .eq('id', id)
       .single(),
@@ -68,6 +68,7 @@ export default async function EditPropertyPage({
           tenantId: property.tenant_id,
           buildingCategory: (property.building_category as BuildingCategory | null) ?? 'luxury',
           checklistAlwaysAvailable: property.checklist_always_available ?? false,
+          timezone: property.timezone,
           enabledTemplateIds: (propertyAccess ?? []).map((row) => row.template_id),
         }}
         templates={

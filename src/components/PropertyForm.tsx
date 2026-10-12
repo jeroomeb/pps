@@ -10,6 +10,11 @@ import { WEEKDAY_LABELS, WEEKDAY_ORDER, type ScheduleEntry } from '@/lib/schedul
 import type { AddressParts } from '@/lib/address'
 import type { PayoutTier } from '@/lib/database.types'
 import { BUILDING_CATEGORY_LABELS, type BuildingCategory } from '@/lib/building-category'
+import {
+  PROPERTY_TIMEZONES,
+  PROPERTY_TIMEZONE_LABELS,
+  propertyTimezoneOrDefault,
+} from '@/lib/property-timezones'
 
 const INPUT =
   'min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none'
@@ -40,6 +45,7 @@ export function PropertyForm({
     tenantId?: string | null
     buildingCategory?: BuildingCategory | null
     checklistAlwaysAvailable?: boolean
+    timezone?: string | null
     enabledTemplateIds?: string[]
   }
   tenants?: { id: string; name: string }[]
@@ -52,6 +58,7 @@ export function PropertyForm({
   const [lon, setLon] = useState<string>(defaultValues?.longitude?.toString() ?? '')
   const [payoutTier, setPayoutTier] = useState<PayoutTier>(defaultValues?.payoutTier ?? 'tier_2')
   const [buildingCategory, setBuildingCategory] = useState<BuildingCategory>(defaultValues?.buildingCategory ?? 'luxury')
+  const [timezone, setTimezone] = useState(propertyTimezoneOrDefault(defaultValues?.timezone))
   const [selectedTenantId, setSelectedTenantId] = useState(defaultValues?.tenantId ?? '')
   const [detectingGps, setDetectingGps] = useState(false)
   const [gpsNotice, setGpsNotice] = useState<string | null>(null)
@@ -306,6 +313,27 @@ export function PropertyForm({
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="timezone" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                Property timezone
+              </label>
+              <select
+                id="timezone"
+                name="timezone"
+                value={timezone}
+                onChange={(e) => setTimezone(propertyTimezoneOrDefault(e.target.value))}
+                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+              >
+                {PROPERTY_TIMEZONES.map((zone) => (
+                  <option key={zone} value={zone}>
+                    {PROPERTY_TIMEZONE_LABELS[zone]}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-on-surface-variant">
+                The evening risk score is ready at 4:00 PM in this timezone.
+              </p>
             </div>
             <div className="flex flex-col gap-1">
               <label htmlFor="payout_tier" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">

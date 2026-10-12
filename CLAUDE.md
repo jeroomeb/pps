@@ -183,12 +183,33 @@ passed to Client Components from Server Components."
 - `src/app/error.tsx` / `global-error.tsx` / `not-found.tsx` — branded error
   boundaries (session 6); previously any thrown server error hit Next's
   default white screen.
-- `REVIEW.md` — the full pre-handover audit (session 6): architecture,
+- `dev docs/REVIEW.md` — the full pre-handover audit (session 6): architecture,
   bugs, security/RLS table-by-table, performance, a11y, deployment readiness,
   with a fix log of what was actually applied vs. deferred. Re-read it before
   picking up any "Should Fix"/"Nice to Have" item left open.
 
 ## Status Log
+
+### 2026-10-12 — Session record and cron guide
+Compiled the October chats into `dev docs/SESSION_OCT_2026_FULL_RECORD.md` (502, VPS move, audit, docs folder, lead reply design, risk score build and test). Cron install and the new feature in one place: `dev docs/RISK_SCORE_CRON_AND_FEATURE.md`. Migration 0017 is on the live DB. Cron is still not on the VPS. Jerome’s Home may still have the sample score 42 until the delete SQL is run.
+
+### 2026-10-10 — Client test guide for the risk score
+`dev docs/PREDICTIVE_RISK_SCORE_CLIENT_TEST.md` explains the evening score for Jerome and walks through the Jerome's Home screen test, including the sample-score SQL and the delete. The sample row for Jerome's Home (`7e43b766-ca7e-4884-bf5b-43eb2245295b`, score 42) was inserted in the live database during this test and may still be there until that delete is run.
+
+### 2026-10-10 — Nightly risk score built
+The evening risk score is in the app. Full file list and test steps: `dev docs/PREDICTIVE_RISK_SCORE_BUILD_RECORD.md`. **Migration `0017_property_risk_scores.sql` must be applied in the Supabase SQL editor before any screen that reads the new columns will work.** Score is 1–100, weighted failure rate in TypeScript, ready at 4:00 PM in `properties.timezone`. The hourly job is `GET /api/cron/risk-scores` with `Authorization: Bearer $CRON_SECRET`. Opening a pending or in-progress checklist freezes that evening’s score onto the inspection. Flagged categories move to the top for display only. The report and PDF compare the frozen score with pass/fail/N/A counts. No score when completed history spans fewer than 30 days. `npm run test:risk` covers the scorer (6 tests). `npx tsc --noEmit` is clean. Not committed. Cron is not on the VPS until `CRON_SECRET` is set and a root crontab calls the route.
+
+### 2026-10-09 — Risk score development plan
+`dev docs/PREDICTIVE_RISK_SCORE_DEVELOPMENT_PLAN.md` is the build plan. Score is 1–100 at 4:00 PM in the property’s own timezone. Scoring stays in TypeScript (weighted failure rates), not a Python service on the VPS. Daily rows live in `property_risk_scores`; the visit freezes a copy so the morning report cannot change after the fact. Nothing is built yet.
+
+### 2026-10-09 — Platform audit and dev docs folder
+`dev docs/PLATFORM_AUDIT.md` is the honest audit for the client: cross-tenant report access, plain-text bank numbers, no tests, one Eastern clock, unbounded lists, fragile deploys, hand-applied migrations, and hidden query failures. Project markdown now lives in `dev docs/`. `README.md`, `CLAUDE.md`, and `AGENTS.md` stay at the repo root.
+
+### 2026-10-09 — Nightly risk score (design only)
+`dev docs/PREDICTIVE_RISK_SCORE.md` describes the client’s predictive risk score. Each property with enough checklist history gets a 1–100 evening score by 4:00 PM Eastern, life-safety weighted above appearance. The top two or three categories move to the top of that night’s checklist. The morning report compares the prediction with what the visit found. Nothing is built. Lead generation and the reply assistant stay later.
+
+### 2026-10-09 — Lead reply assistant (design only)
+`dev docs/LEAD_REPLY_ASSISTANT.md` describes a draft-only assistant for the marketing mailbox. It reads a lead reply, writes a suggested answer from the outreach rules, and saves a draft. A person sends it by hand. Nothing is built. The older outreach docs still describe the large 2,500-company plan. This assistant does not change that plan and does not send the cold sequence.
 
 ### 2026-10-09 — Intermittent 502 on amenityops.app
 `https://amenityops.app` is Nginx on the Hostinger VPS (`nginx/1.18.0`). `https://portal.amenityops.app` is Vercel and was not the 502 in the screenshot. Checked live: `/login` returned 200 twenty times in a row, so the app was up. The documented site config sent `Connection: upgrade` on every request, which makes Next.js drop some connections and Nginx answer 502. `scripts/patch-nginx-502.sh` writes the upgrade map and 120s proxy timeouts; `.github/workflows/deploy.yml` runs it after `git pull`. It is not on the server until this is pushed to `main` (or the script is run over SSH). A short 502 can still happen during the on-server production build and `pm2 reload`.
@@ -1273,7 +1294,7 @@ re-verified live via the same Playwright harness (admin login, real Supabase):
   (200, application/pdf) and visually confirmed via Quick Look render.
 
 ### 2026-07-17 to 2026-07-20 — Pre-handover audit, ~25 fixes applied, temp Vercel deploy, Resend + signup fully resolved (session 6)
-User asked for a full inside-out audit (bugs + design, phone/web, admin/inspector) as pre-handover prep. Read all 65 source files, scanned full git history for secrets, ran `tsc`/`eslint`/`npm audit`/`npm run build`, queried live Supabase auth settings, and verified Resend SDK error behavior against `node_modules` before writing anything up. Full findings (6 Critical / 26 Should Fix / 21 Nice to Have) are in **`REVIEW.md`** — that file is the source of truth for what was found and what's still open; this entry only summarizes what changed.
+User asked for a full inside-out audit (bugs + design, phone/web, admin/inspector) as pre-handover prep. Read all 65 source files, scanned full git history for secrets, ran `tsc`/`eslint`/`npm audit`/`npm run build`, queried live Supabase auth settings, and verified Resend SDK error behavior against `node_modules` before writing anything up. Full findings (6 Critical / 26 Should Fix / 21 Nice to Have) are in **`dev docs/REVIEW.md`** — that file is the source of truth for what was found and what's still open; this entry only summarizes what changed.
 
 **Fixed and verified live** (not just build-clean — see verification methodology below):
 - **Silent email failures**: the Resend SDK resolves `{ error }` instead of throwing on API errors, so both send call sites (`complete` route, `resend` route) were reporting success on a failed send. `sendReportEmail` now throws on `result.error`.
@@ -1295,6 +1316,6 @@ User asked for a full inside-out audit (bugs + design, phone/web, admin/inspecto
 
 **Temporary Vercel deployment:** `npx vercel login` (device auth) → `npx vercel --yes` created project `hassan-wedontcode/pps` (GitHub auto-link to `jeroomeb/pps` failed silently — this CLI session doesn't have repo access — deploy proceeded anyway from the local upload). Pushed all six `.env.local` vars into the Vercel production env via `vercel env add ... --force`, redeployed. Aliased to `ppsdemo.vercel.app` per user request; that alias initially hit Vercel's SSO wall even though the default auto-generated alias didn't — root cause: project's `ssoProtection` was `all_except_custom_domains`, and a manually-added `*.vercel.app` alias doesn't count as a "custom domain" for that exemption. Fixed via a direct `PATCH /v9/projects/{id}` call to the Vercel API (no CLI command exposes this) setting `ssoProtection: null`. **Remember:** a manual alias doesn't follow new prod deploys automatically — re-run `vercel alias set` after every `vercel --prod`, as was needed after the `EMAIL_FROM` fix.
 
-**Deliberately deferred** (explicit user calls, not oversights): moving the deployment to the client's own Vercel account, tests/CI, the `database.types.ts` `Relationships`/cast cleanup (28 occurrences), migrations tooling adoption, Sentry/observability, remaining Nice-to-Haves — full list in `REVIEW.md`'s "Suggested fix order."
+**Deliberately deferred** (explicit user calls, not oversights): moving the deployment to the client's own Vercel account, tests/CI, the `database.types.ts` `Relationships`/cast cleanup (28 occurrences), migrations tooling adoption, Sentry/observability, remaining Nice-to-Haves — full list in `dev docs/REVIEW.md`'s "Suggested fix order."
 
 **Verified:** `tsc --noEmit`, `eslint` (same 3 pre-existing PDF alt-text warnings only), `npm run build` all clean after every batch of fixes. Live demo confirmed reachable and functional (`307` on `/`, `200` on `/login`) at each deploy step.

@@ -8,6 +8,8 @@ import { validateInspectionItems } from '@/lib/inspection-validation'
 import { formatDateTime } from '@/lib/timezone'
 import { isBuildingCategory, payoutMatrixKey } from '@/lib/building-category'
 import { renewStandingInspection } from '@/lib/standing-inspections'
+import { outcomeCounts, parseRiskFlags } from '@/lib/risk-score'
+import type { RiskDomain } from '@/lib/risk-domain'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -23,7 +25,7 @@ export async function POST(
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, properties(name, address, email, custom_payout_rate, payout_tier, building_category), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, predicted_score, predicted_flags, predicted_summary, properties(name, address, email, custom_payout_rate, payout_tier, building_category), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()
@@ -55,7 +57,7 @@ export async function POST(
 
   const { data: items, error: itemsError } = await supabase
     .from('inspection_items')
-    .select('id, service_category, item_name, description, status, comment, photo_path, sort_order')
+    .select('id, service_category, item_name, description, status, comment, photo_path, sort_order, risk_domain')
     .eq('inspection_id', inspectionId)
     .order('sort_order')
 
@@ -95,6 +97,25 @@ export async function POST(
   const completedAt = new Date()
   const completedAtLabel = formatDateTime(completedAt)
 
+  const predictedFlags = parseRiskFlags(inspection.predicted_flags)
+  const prediction =
+    inspection.predicted_score == null || !inspection.predicted_summary
+      ? null
+      : {
+          score: inspection.predicted_score,
+          summary: inspection.predicted_summary,
+          areas: predictedFlags.map((flag) => ({
+            label: flag.label,
+            ...outcomeCounts(
+              items.map((item) => ({
+                riskDomain: item.risk_domain as RiskDomain | null,
+                status: item.status,
+              })),
+              flag.domain
+            ),
+          })),
+        }
+
   const pdfBuffer = await renderInspectionPdf({
     reportId: inspectionId.slice(0, 8).toUpperCase(),
     propertyName: property.name,
@@ -103,6 +124,7 @@ export async function POST(
     inspectorName: inspectorProfile.full_name,
     completedAt: completedAtLabel,
     items: itemsWithPhotoUrls,
+    prediction,
   })
 
   const pdfPath = `${inspectionId}.pdf`

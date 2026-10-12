@@ -10,6 +10,8 @@ export type PayoutStatus = 'pending' | 'approved' | 'paid' | 'cancelled'
 export type PayoutTier = 'tier_1' | 'tier_2' | 'tier_3' | 'custom'
 export type BuildingCategory = 'luxury' | 'adult' | 'commercial'
 export type GeofenceStatus = 'pending' | 'verified' | 'outside' | 'exempt'
+export type RiskDomain = 'life_safety' | 'appearance' | 'asset_protection'
+export type RiskFlag = { domain: RiskDomain; label: string; rate: number }
 
 export type PayoutMatrixRates = {
   tier_1: number
@@ -217,6 +219,7 @@ export interface Database {
           item_name: string
           description: string | null
           sort_order: number
+          risk_domain: RiskDomain | null
         }
         Insert: {
           id?: string
@@ -225,6 +228,7 @@ export interface Database {
           item_name: string
           description?: string | null
           sort_order?: number
+          risk_domain?: RiskDomain | null
         }
         Update: {
           id?: string
@@ -233,6 +237,7 @@ export interface Database {
           item_name?: string
           description?: string | null
           sort_order?: number
+          risk_domain?: RiskDomain | null
         }
         Relationships: [
           {
@@ -271,6 +276,7 @@ export interface Database {
           geofence_radius_meters: number
           building_category: BuildingCategory | null
           checklist_always_available: boolean
+          timezone: string
         }
         Insert: {
           id?: string
@@ -298,6 +304,7 @@ export interface Database {
           geofence_radius_meters?: number
           building_category?: BuildingCategory | null
           checklist_always_available?: boolean
+          timezone?: string
         }
         Update: {
           id?: string
@@ -325,6 +332,7 @@ export interface Database {
           geofence_radius_meters?: number
           building_category?: BuildingCategory | null
           checklist_always_available?: boolean
+          timezone?: string
         }
         Relationships: [
           {
@@ -511,6 +519,10 @@ export interface Database {
           departed_at: string | null
           dwell_time_seconds: number | null
           geofence_status: GeofenceStatus
+          predicted_score: number | null
+          predicted_flags: RiskFlag[] | null
+          predicted_summary: string | null
+          predicted_local_date: string | null
         }
         Insert: {
           id?: string
@@ -532,6 +544,10 @@ export interface Database {
           departed_at?: string | null
           dwell_time_seconds?: number | null
           geofence_status?: GeofenceStatus
+          predicted_score?: number | null
+          predicted_flags?: RiskFlag[] | null
+          predicted_summary?: string | null
+          predicted_local_date?: string | null
         }
         Update: {
           id?: string
@@ -553,6 +569,10 @@ export interface Database {
           departed_at?: string | null
           dwell_time_seconds?: number | null
           geofence_status?: GeofenceStatus
+          predicted_score?: number | null
+          predicted_flags?: RiskFlag[] | null
+          predicted_summary?: string | null
+          predicted_local_date?: string | null
         }
         Relationships: [
           {
@@ -604,6 +624,7 @@ export interface Database {
           status: ItemStatus | null
           comment: string | null
           photo_path: string | null
+          risk_domain: RiskDomain | null
         }
         Insert: {
           id?: string
@@ -616,6 +637,7 @@ export interface Database {
           status?: ItemStatus | null
           comment?: string | null
           photo_path?: string | null
+          risk_domain?: RiskDomain | null
         }
         Update: {
           id?: string
@@ -628,6 +650,7 @@ export interface Database {
           status?: ItemStatus | null
           comment?: string | null
           photo_path?: string | null
+          risk_domain?: RiskDomain | null
         }
         Relationships: [
           {
@@ -642,6 +665,47 @@ export interface Database {
             columns: ['template_item_id']
             isOneToOne: false
             referencedRelation: 'checklist_template_items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      property_risk_scores: {
+        Row: {
+          id: string
+          property_id: string
+          local_date: string
+          score: number
+          flags: RiskFlag[]
+          summary: string
+          weather: string | null
+          calculated_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          local_date: string
+          score: number
+          flags?: RiskFlag[]
+          summary?: string
+          weather?: string | null
+          calculated_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          local_date?: string
+          score?: number
+          flags?: RiskFlag[]
+          summary?: string
+          weather?: string | null
+          calculated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'property_risk_scores_property_id_fkey'
+            columns: ['property_id']
+            isOneToOne: false
+            referencedRelation: 'properties'
             referencedColumns: ['id']
           },
         ]

@@ -6,6 +6,8 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { InspectionReport } from '@/lib/pdf/InspectionReport'
 import { isSafeInspectionPhotoPath } from '@/lib/storage-paths'
 import { formatDateTime } from '@/lib/timezone'
+import { outcomeCounts, parseRiskFlags } from '@/lib/risk-score'
+import type { RiskDomain } from '@/lib/risk-domain'
 
 type ReportItem = {
   service_category: string
@@ -14,6 +16,7 @@ type ReportItem = {
   status: 'pass' | 'fail' | 'na' | null
   comment: string | null
   photoUrl: string | null
+  risk_domain?: RiskDomain | null
 }
 
 const MIME_BY_EXT: Record<string, string> = {
@@ -114,6 +117,11 @@ export async function renderInspectionPdf(input: {
   inspectorName: string
   completedAt: string
   items: ReportItem[]
+  prediction?: {
+    score: number
+    summary: string
+    areas: { label: string; passed: number; failed: number; na: number }[]
+  } | null
 }): Promise<Buffer> {
   return renderToBuffer(InspectionReport({ logoUrl: getLogoDataUri(), ...input }))
 }
@@ -131,7 +139,7 @@ export async function regenerateInspectionPdf(
   const { data: inspection, error } = await admin
     .from('inspections')
     .select(
-      'id, completed_at, properties(name, address), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, completed_at, predicted_score, predicted_flags, predicted_summary, properties(name, address), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()
@@ -140,7 +148,7 @@ export async function regenerateInspectionPdf(
 
   const { data: items } = await admin
     .from('inspection_items')
-    .select('id, service_category, item_name, description, status, comment, photo_path, sort_order')
+    .select('id, service_category, item_name, description, status, comment, photo_path, sort_order, risk_domain')
     .eq('inspection_id', inspectionId)
     .order('sort_order')
 
@@ -156,6 +164,25 @@ export async function regenerateInspectionPdf(
     ? formatDateTime(inspection.completed_at)
     : ''
 
+  const predictedFlags = parseRiskFlags(inspection.predicted_flags)
+  const prediction =
+    inspection.predicted_score == null || !inspection.predicted_summary
+      ? null
+      : {
+          score: inspection.predicted_score,
+          summary: inspection.predicted_summary,
+          areas: predictedFlags.map((flag) => ({
+            label: flag.label,
+            ...outcomeCounts(
+              itemsWithPhotoUrls.map((item) => ({
+                riskDomain: item.risk_domain,
+                status: item.status,
+              })),
+              flag.domain
+            ),
+          })),
+        }
+
   const pdfBuffer = await renderInspectionPdf({
     reportId: inspectionId.slice(0, 8).toUpperCase(),
     propertyName: property.name,
@@ -164,6 +191,7 @@ export async function regenerateInspectionPdf(
     inspectorName: inspectorProfile.full_name,
     completedAt: completedAtLabel,
     items: itemsWithPhotoUrls,
+    prediction,
   })
 
   const pdfPath = `${inspectionId}.pdf`

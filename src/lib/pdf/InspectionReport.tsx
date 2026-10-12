@@ -188,6 +188,7 @@ export function InspectionReport({
   inspectorName,
   completedAt,
   items,
+  prediction = null,
 }: {
   logoUrl: string
   reportId?: string
@@ -197,6 +198,11 @@ export function InspectionReport({
   inspectorName: string
   completedAt: string
   items: ReportItem[]
+  prediction?: {
+    score: number
+    summary: string
+    areas: { label: string; passed: number; failed: number; na: number }[]
+  } | null
 }) {
   const failures = items.filter((item) => item.status === 'fail')
   const rest = items.filter((item) => item.status !== 'fail')
@@ -255,6 +261,19 @@ export function InspectionReport({
             </Text>
           </View>
         </View>
+
+        {prediction ? (
+          <View style={styles.metaBox}>
+            <Text style={styles.metaLabel}>Evening risk score</Text>
+            <Text style={styles.metaValue}>{prediction.score}</Text>
+            <Text style={styles.itemDescription}>{prediction.summary}</Text>
+            {prediction.areas.map((area) => (
+              <Text key={area.label} style={styles.itemDescription}>
+                {area.label}: {area.passed} passed, {area.failed} failed, {area.na} not applicable
+              </Text>
+            ))}
+          </View>
+        ) : null}
 
         {failures.length > 0 && (
           <View>

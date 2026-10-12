@@ -19,7 +19,7 @@ export default async function ChecklistDetailPage({
     supabase.from('checklist_templates').select('id, name').eq('id', id).single(),
     supabase
       .from('checklist_template_items')
-      .select('id, service_category, item_name, description')
+      .select('id, service_category, item_name, description, risk_domain')
       .eq('template_id', id)
       .order('sort_order'),
   ])

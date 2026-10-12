@@ -116,7 +116,7 @@ The migration also copies every current checklist template onto every existing t
 | `src/components/TenantViewBanner.tsx` | Sticky banner while HQ is inside a tenant dashboard. Exit and close-tab controls. |
 | `src/app/admin/tenants/[id]/open/route.ts` | Global-admin-only route. Confirms the tenant exists, sets the view cookie, redirects to `/admin`. |
 | `src/app/api/tenant-view/exit/route.ts` | Clears the view cookie and redirects to `/admin/tenants`. |
-| `docs/PROPERTY_ASSIGNMENT_CHECKLISTS_AND_TENANT_VIEW.md` | This file. |
+| `dev docs/PROPERTY_ASSIGNMENT_CHECKLISTS_AND_TENANT_VIEW.md` | This file. |
 
 ---
 

@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { ChevronDown, ChevronUp, ChevronDown as ChevronDownIcon } from 'lucide-react'
-import { reorderTemplateItems } from '@/lib/actions/checklists'
+import { reorderTemplateItems, setTemplateItemRiskDomain } from '@/lib/actions/checklists'
+import { RISK_DOMAINS, RISK_DOMAIN_LABELS, type RiskDomain } from '@/lib/risk-domain'
 import { DeleteItemButton } from '@/components/DeleteItemButton'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
@@ -12,6 +13,7 @@ type Item = {
   service_category: string
   item_name: string
   description: string | null
+  risk_domain: RiskDomain | null
 }
 
 type CategoryBlock = { category: string; items: Item[] }
@@ -136,6 +138,45 @@ export function ChecklistItemReorder({
                   {item.description && (
                     <p className="text-sm text-on-surface-variant">{item.description}</p>
                   )}
+                  <label className="mt-2 block text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                    Risk area
+                    <select
+                      value={item.risk_domain ?? ''}
+                      disabled={pending}
+                      onChange={(event) => {
+                        const domain = event.target.value as RiskDomain | ''
+                        const previous = blocks
+                        const next = blocks.map((entry, index) =>
+                          index !== categoryIndex
+                            ? entry
+                            : {
+                                ...entry,
+                                items: entry.items.map((row) =>
+                                  row.id === item.id
+                                    ? { ...row, risk_domain: domain || null }
+                                    : row
+                                ),
+                              }
+                        )
+                        setBlocks(next)
+                        startTransition(async () => {
+                          const result = await setTemplateItemRiskDomain(item.id, templateId, domain)
+                          if (result?.error) {
+                            setBlocks(previous)
+                            showToast('error', result.error)
+                          }
+                        })
+                      }}
+                      className="mt-1 block min-h-10 w-full max-w-xs rounded border border-outline-variant bg-surface px-2 text-sm font-normal normal-case tracking-normal text-on-surface"
+                    >
+                      <option value="">Not used in the score</option>
+                      {RISK_DOMAINS.map((domain) => (
+                        <option key={domain} value={domain}>
+                          {RISK_DOMAIN_LABELS[domain]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <button

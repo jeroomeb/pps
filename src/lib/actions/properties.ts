@@ -12,6 +12,7 @@ import type { ScheduleEntry } from '@/lib/schedule'
 import { composeAddress, normalizeAddressParts } from '@/lib/address'
 import type { Database } from '@/lib/database.types'
 import { BUILDING_CATEGORIES } from '@/lib/building-category'
+import { PROPERTY_TIMEZONES } from '@/lib/property-timezones'
 import {
   filterTemplatesForTenant,
   replacePropertyChecklistAccess,
@@ -38,6 +39,7 @@ const propertySchema = z.object({
   custom_payout_rate: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().min(0).nullable().optional()),
   building_category: z.enum(BUILDING_CATEGORIES),
   checklist_always_available: z.coerce.boolean().default(false),
+  timezone: z.enum(PROPERTY_TIMEZONES).default('America/New_York'),
   tenant_id: z.string().uuid().optional().nullable(),
 })
 
@@ -84,6 +86,7 @@ function propertyFormFields(formData: FormData) {
     custom_payout_rate: formData.get('custom_payout_rate'),
     building_category: formData.get('building_category'),
     checklist_always_available: formData.get('checklist_always_available') === 'on',
+    timezone: formData.get('timezone') || 'America/New_York',
     tenant_id: typeof rawTenantId === 'string' && rawTenantId.trim() ? rawTenantId.trim() : null,
   }
 }
@@ -153,6 +156,7 @@ export async function createProperty(
     custom_payout_rate: parsed.data.payout_tier === 'custom' ? (parsed.data.custom_payout_rate ?? null) : null,
     building_category: parsed.data.building_category,
     checklist_always_available: parsed.data.checklist_always_available,
+    timezone: parsed.data.timezone,
   }
 
   // Retry once on the (astronomically unlikely) human_id collision.
@@ -220,6 +224,7 @@ export async function updateProperty(
     custom_payout_rate: parsed.data.payout_tier === 'custom' ? (parsed.data.custom_payout_rate ?? null) : null,
     building_category: parsed.data.building_category,
     checklist_always_available: parsed.data.checklist_always_available,
+    timezone: parsed.data.timezone,
   }
 
   if (profile.is_global_admin && !scope.isViewingTenant && parsed.data.tenant_id !== undefined) {

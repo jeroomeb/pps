@@ -29,6 +29,9 @@ import { deleteProperty } from '@/lib/actions/properties'
 import { parseSchedule, scheduleEntryLabel, dueLabel } from '@/lib/schedule'
 import { zonedDate, formatDate } from '@/lib/timezone'
 import { BUILDING_CATEGORY_LABELS, isBuildingCategory } from '@/lib/building-category'
+import { RiskScoreBanner } from '@/components/RiskScoreBanner'
+import { parseRiskFlags } from '@/lib/risk-score'
+import { localDateString, propertyTimezoneOrDefault } from '@/lib/property-timezones'
 
 export default async function PropertyDetailPage({
   params,
@@ -71,6 +74,15 @@ export default async function PropertyDetailPage({
   if (!property || (scope.tenantId && property.tenant_id !== scope.tenantId)) {
     notFound()
   }
+
+  const localDate = localDateString(new Date(), propertyTimezoneOrDefault(property.timezone))
+  const { data: eveningScore } = await supabase
+    .from('property_risk_scores')
+    .select('score, summary, flags')
+    .eq('property_id', id)
+    .eq('local_date', localDate)
+    .maybeSingle()
+  const eveningFlags = parseRiskFlags(eveningScore?.flags)
 
   const profileMap = new Map((allProfiles ?? []).map((p) => [p.id, p]))
 
@@ -117,6 +129,13 @@ export default async function PropertyDetailPage({
 
   return (
     <div>
+      {eveningScore && (
+        <RiskScoreBanner
+          score={eveningScore.score}
+          summary={eveningScore.summary}
+          areas={eveningFlags.map((flag) => flag.label)}
+        />
+      )}
       <PageHeader
         eyebrow="Property"
         title={property.name}

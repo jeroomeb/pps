@@ -5,11 +5,13 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
+import { inferRiskDomain, isRiskDomain, type RiskDomain } from '@/lib/risk-domain'
 
 const itemSchema = z.object({
   service_category: z.string().trim().min(1),
   item_name: z.string().trim().min(1),
   description: z.string().trim().optional(),
+  risk_domain: z.string().trim().optional(),
 })
 
 const templateSchema = z.object({
@@ -69,6 +71,7 @@ export async function createTemplate(
         item_name: item.item_name,
         description: item.description || null,
         sort_order: index,
+        risk_domain: inferRiskDomain(item.service_category, item.item_name, item.description),
       }))
     )
 
@@ -94,6 +97,7 @@ export async function addTemplateItem(
     service_category: formData.get('service_category'),
     item_name: formData.get('item_name'),
     description: formData.get('description') ?? '',
+    risk_domain: formData.get('risk_domain'),
   })
 
   if (!parsed.success) {
@@ -111,12 +115,20 @@ export async function addTemplateItem(
     .limit(1)
     .maybeSingle()
 
+  const chosen = isRiskDomain(parsed.data.risk_domain) ? parsed.data.risk_domain : null
   const { error } = await supabase.from('checklist_template_items').insert({
     template_id: templateId,
     service_category: parsed.data.service_category,
     item_name: parsed.data.item_name,
     description: parsed.data.description || null,
     sort_order: (lastItem?.sort_order ?? -1) + 1,
+    risk_domain:
+      chosen ??
+      inferRiskDomain(
+        parsed.data.service_category,
+        parsed.data.item_name,
+        parsed.data.description
+      ),
   })
 
   if (error) {
@@ -189,7 +201,7 @@ export async function reorderTemplateItems(
 
   const { data: existing, error: fetchError } = await supabase
     .from('checklist_template_items')
-    .select('id, template_id, service_category, item_name, description')
+    .select('id, template_id, service_category, item_name, description, risk_domain')
     .eq('template_id', templateId)
 
   if (fetchError) {
@@ -213,6 +225,7 @@ export async function reorderTemplateItems(
       service_category: item.service_category,
       item_name: item.item_name,
       description: item.description,
+      risk_domain: item.risk_domain,
       sort_order: index,
     }
   })
@@ -225,6 +238,22 @@ export async function reorderTemplateItems(
     return { error: error.message }
   }
 
+  revalidatePath(`/admin/checklists/${templateId}`)
+}
+
+export async function setTemplateItemRiskDomain(
+  itemId: string,
+  templateId: string,
+  domain: RiskDomain | ''
+): Promise<{ error?: string } | void> {
+  await requireRole('admin')
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('checklist_template_items')
+    .update({ risk_domain: isRiskDomain(domain) ? domain : null })
+    .eq('id', itemId)
+    .eq('template_id', templateId)
+  if (error) return { error: error.message }
   revalidatePath(`/admin/checklists/${templateId}`)
 }
 

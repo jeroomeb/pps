@@ -8,6 +8,8 @@ import { ChecklistItemCard, type ChecklistItemData } from '@/components/Checklis
 import { CancelInspectionButton } from '@/components/CancelInspectionButton'
 import { GpsTelemetryTracker } from '@/components/GpsTelemetryTracker'
 import { Card } from '@/components/ui/Card'
+import { RiskScoreBanner } from '@/components/RiskScoreBanner'
+import type { RiskDomain } from '@/lib/risk-domain'
 import { useToast } from '@/components/ui/Toast'
 import { validateInspectionItems } from '@/lib/inspection-validation'
 import { saveInspectionItem } from '@/lib/actions/inspections'
@@ -36,6 +38,9 @@ export function ActiveInspectionChecklist({
   propertyLatitude = null,
   propertyLongitude = null,
   geofenceRadiusMeters = 100,
+  riskScore = null,
+  riskSummary = null,
+  riskAreas = [],
 }: {
   inspectionId: string
   propertyId: string
@@ -51,13 +56,19 @@ export function ActiveInspectionChecklist({
    * raw timestamp here would use the browser's timezone instead of the app's. */
   startedLabel: string
   scheduledLabel?: string | null
-  initialItems: (ChecklistItemData & { service_category: string })[]
+  initialItems: (ChecklistItemData & {
+    service_category: string
+    risk_domain?: RiskDomain | null
+  })[]
   /** Admins get reschedule/cancel controls inline; specialists never do. */
   isAdmin?: boolean
   enableGpsGeofencing?: boolean
   propertyLatitude?: number | null
   propertyLongitude?: number | null
   geofenceRadiusMeters?: number
+  riskScore?: number | null
+  riskSummary?: string | null
+  riskAreas?: { domain: RiskDomain; label: string }[]
 }) {
   const router = useRouter()
   const showToast = useToast()
@@ -149,8 +160,15 @@ export function ActiveInspectionChecklist({
       if (!map.has(item.service_category)) map.set(item.service_category, [])
       map.get(item.service_category)!.push(item)
     }
-    return map
-  }, [items])
+    const entries = [...map.entries()]
+    const flagged = new Set((riskAreas ?? []).map((area) => area.domain))
+    if (!flagged.size) return entries
+    const first = entries.filter(([, categoryItems]) =>
+      categoryItems.some((item) => item.risk_domain && flagged.has(item.risk_domain))
+    )
+    const rest = entries.filter((entry) => !first.includes(entry))
+    return [...first, ...rest]
+  }, [items, riskAreas])
 
   async function handleComplete() {
     setSubmitting(true)
@@ -205,6 +223,13 @@ export function ActiveInspectionChecklist({
         <ArrowLeft size={16} />
         Back to My Inspections
       </Link>
+      {riskScore != null && riskSummary && (
+        <RiskScoreBanner
+          score={riskScore}
+          summary={riskSummary}
+          areas={(riskAreas ?? []).map((area) => area.label)}
+        />
+      )}
       <Card className="mb-6">
         <div className="mb-3 flex items-baseline justify-between">
           <div>
@@ -373,7 +398,7 @@ export function ActiveInspectionChecklist({
       )}
 
       <div className="flex flex-col gap-6">
-        {[...grouped.entries()].map(([category, categoryItems]) => (
+        {grouped.map(([category, categoryItems]) => (
           <section key={category}>
             <h2 className="label-tracked mb-2 text-on-surface-variant">{category}</h2>
             <div className="flex flex-col gap-3">

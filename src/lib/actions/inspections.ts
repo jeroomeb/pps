@@ -83,7 +83,7 @@ export async function createInspection(
 
   const { data: templateItems, error: templateItemsError } = await supabase
     .from('checklist_template_items')
-    .select('id, service_category, item_name, description, sort_order')
+    .select('id, service_category, item_name, description, sort_order, risk_domain')
     .eq('template_id', parsed.data.template_id)
     .order('sort_order')
 
@@ -100,6 +100,7 @@ export async function createInspection(
       item_name: item.item_name,
       description: item.description,
       sort_order: item.sort_order,
+      risk_domain: item.risk_domain,
     }))
   )
 

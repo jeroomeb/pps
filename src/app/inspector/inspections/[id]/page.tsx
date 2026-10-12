@@ -4,6 +4,8 @@ import { Clock, ArrowLeft, MapPin, Phone, Ban } from 'lucide-react'
 import { getProfile } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { ActiveInspectionChecklist } from '@/components/ActiveInspectionChecklist'
+import { RiskScoreBanner } from '@/components/RiskScoreBanner'
+import { freezeEveningScore } from '@/lib/risk-score-job'
 import { ReadOnlyInspectionView } from '@/components/ReadOnlyInspectionView'
 import { parseSchedule, scheduleEntryLabel } from '@/lib/schedule'
 import {
@@ -25,7 +27,7 @@ export default async function InspectionDetailPage({
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, created_at, completed_at, scheduled_for, cancellation_reason, arrived_at, departed_at, dwell_time_seconds, geofence_status, properties(id, name, address, phone, notes, required_schedule, enable_gps_geofencing, latitude, longitude, geofence_radius_meters), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, created_at, completed_at, scheduled_for, cancellation_reason, arrived_at, departed_at, dwell_time_seconds, geofence_status, predicted_score, predicted_flags, predicted_summary, properties(id, name, address, phone, notes, required_schedule, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, timezone), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', id)
     .single()
@@ -57,7 +59,7 @@ export default async function InspectionDetailPage({
 
   const { data: items } = await supabase
     .from('inspection_items')
-    .select('id, service_category, item_name, description, status, comment, photo_path')
+    .select('id, service_category, item_name, description, status, comment, photo_path, risk_domain')
     .eq('inspection_id', id)
     .order('sort_order')
 
@@ -85,6 +87,7 @@ export default async function InspectionDetailPage({
     latitude: number | null
     longitude: number | null
     geofence_radius_meters: number
+    timezone: string | null
   }
   const template = inspection.checklist_templates as unknown as { name: string }
   const inspector = inspection.profiles as unknown as { full_name: string }
@@ -92,6 +95,16 @@ export default async function InspectionDetailPage({
   // Reference-only weekday list (see src/lib/schedule.ts) — plain strings, no
   // ScheduleEntry[] crosses into the client components below.
   const inspectionDays = parseSchedule(property.required_schedule).map(scheduleEntryLabel)
+
+  const prediction = await freezeEveningScore(supabase, {
+    id: inspection.id,
+    status: inspection.status,
+    propertyId: inspection.property_id,
+    timezone: property.timezone,
+    predictedScore: inspection.predicted_score,
+    predictedFlags: inspection.predicted_flags,
+    predictedSummary: inspection.predicted_summary,
+  })
 
   if (inspection.status === 'completed') {
     const { data: geoLogs } = await supabase
@@ -101,6 +114,14 @@ export default async function InspectionDetailPage({
       .order('logged_at', { ascending: true })
 
     return (
+      <>
+      {prediction && (
+        <RiskScoreBanner
+          score={prediction.score}
+          summary={prediction.summary}
+          areas={prediction.flags.map((flag) => flag.label)}
+        />
+      )}
       <ReadOnlyInspectionView
         inspectionId={id}
         propertyName={property.name}
@@ -121,6 +142,7 @@ export default async function InspectionDetailPage({
         propertyLongitude={property.longitude}
         geoLogs={geoLogs ?? []}
       />
+      </>
     )
   }
 
@@ -283,6 +305,9 @@ export default async function InspectionDetailPage({
         propertyLatitude={property.latitude}
         propertyLongitude={property.longitude}
         geofenceRadiusMeters={property.geofence_radius_meters}
+        riskScore={prediction?.score ?? null}
+        riskSummary={prediction?.summary ?? null}
+        riskAreas={prediction?.flags ?? []}
       />
     </>
   )

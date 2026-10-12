@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef } from 'react'
 import { SubmitButton } from '@/components/SubmitButton'
 import { Card } from '@/components/ui/Card'
 import { addTemplateItem, type TemplateFormState } from '@/lib/actions/checklists'
+import { RISK_DOMAINS, RISK_DOMAIN_LABELS } from '@/lib/risk-domain'
 
 export function AddChecklistItemForm({ templateId }: { templateId: string }) {
   const action = addTemplateItem.bind(null, templateId)
@@ -67,6 +68,30 @@ export function AddChecklistItemForm({ templateId }: { templateId: string }) {
             rows={1}
             className="min-h-12 rounded border border-outline-variant px-3 py-2 focus:border-primary-container focus:outline-none"
           />
+        </div>
+        <div className="flex flex-1 flex-col gap-1 lg:min-w-48">
+          <label
+            htmlFor="new_item_risk_domain"
+            className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+          >
+            Risk area
+          </label>
+          <select
+            id="new_item_risk_domain"
+            name="risk_domain"
+            required
+            defaultValue=""
+            className="min-h-12 rounded border border-outline-variant bg-surface px-3 focus:border-primary-container focus:outline-none"
+          >
+            <option value="" disabled>
+              Choose an area
+            </option>
+            {RISK_DOMAINS.map((domain) => (
+              <option key={domain} value={domain}>
+                {RISK_DOMAIN_LABELS[domain]}
+              </option>
+            ))}
+          </select>
         </div>
         {state?.error && (
           <p className="w-full rounded bg-error-container px-3 py-2 text-sm text-on-error-container">

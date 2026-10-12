@@ -131,7 +131,7 @@ async function openInspectionIfNeeded({
 
   const { data: templateItems, error: itemsLookupError } = await admin
     .from('checklist_template_items')
-    .select('id, service_category, item_name, description, sort_order')
+    .select('id, service_category, item_name, description, sort_order, risk_domain')
     .eq('template_id', templateId)
     .order('sort_order')
 
@@ -162,6 +162,7 @@ async function openInspectionIfNeeded({
       item_name: item.item_name,
       description: item.description,
       sort_order: item.sort_order,
+      risk_domain: item.risk_domain,
     }))
   )
 
