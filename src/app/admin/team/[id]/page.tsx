@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   ChevronRight,
   ExternalLink,
+  Building,
+  ShieldCheck,
 } from 'lucide-react'
 import { requireRole } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
@@ -33,7 +35,7 @@ export default async function TeamMemberProfilePage({
   const { data: member } = await supabase
     .from('profiles')
     .select(
-      'id, full_name, role, email, phone, address, street, city, state, zip, county, human_id, id_front_path, id_back_path, status, must_reset_password'
+      'id, full_name, role, email, phone, address, street, city, state, zip, county, human_id, id_front_path, id_back_path, status, must_reset_password, tenant_id, tenants(id, name)'
     )
     .eq('id', id)
     .single()
@@ -98,7 +100,10 @@ export default async function TeamMemberProfilePage({
     signed(member.id_back_path),
   ])
 
-  const roleLabel = member.role === 'admin' ? 'Admin' : 'Operations Continuity Specialist'
+  const tenantName = (member.tenants as unknown as { name?: string } | null)?.name
+  const roleLabel = member.role === 'admin'
+    ? (member.tenant_id ? `${tenantName ?? 'Corporate'} Administrator` : 'HQ Administrator (Master / Global)')
+    : 'Operations Continuity Specialist'
   const stats = [
     { label: 'Pending', value: pending, icon: ClipboardList },
     { label: 'In Progress', value: inProgress, icon: Clock },
@@ -128,7 +133,16 @@ export default async function TeamMemberProfilePage({
         backLabel="Team"
         subtitle={
           <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            {member.human_id && <span className="font-mono font-semibold">{member.human_id}</span>}
+            {tenantName ? (
+              <span className="flex items-center gap-1 font-semibold text-primary">
+                <Building size={13} /> {tenantName}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 font-semibold text-on-surface-variant">
+                <ShieldCheck size={13} /> Amenity Op&apos;s HQ
+              </span>
+            )}
+            {member.human_id && <span className="font-mono font-semibold">({member.human_id})</span>}
             {member.email && (
               <span className="flex items-center gap-1">
                 <Mail size={13} /> {member.email}
@@ -157,9 +171,16 @@ export default async function TeamMemberProfilePage({
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 transition-colors"
+            title={
+              member.role === 'admin'
+                ? (member.tenant_id ? `Open ${tenantName ?? 'Tenant'} Admin Dashboard` : `Open HQ Admin Dashboard`)
+                : `Open Specialist Panel for ${member.full_name}`
+            }
           >
             <ExternalLink size={15} />
-            Open Specialist Panel
+            {member.role === 'admin'
+              ? (member.tenant_id ? `Open ${tenantName ?? 'Tenant'} Dashboard` : 'Open HQ Dashboard')
+              : 'Open Specialist Panel'}
           </a>
         }
       />

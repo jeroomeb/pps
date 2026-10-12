@@ -80,14 +80,24 @@ export async function createTeamMember(
   // admin), and copies the email. We add a human-readable OCS id here,
   // associate their tenant_id, and promote admins explicitly.
   // Explicitly set must_reset_password: true so newly provisioned accounts
-  // are forced to configure their own private password upon first sign-in.
   if (created.user) {
-    const patch: { role?: 'admin'; human_id: string; tenant_id?: string | null; must_reset_password: boolean } = {
+    const patch: {
+      role?: 'admin'
+      human_id: string
+      tenant_id?: string | null
+      must_reset_password: boolean
+      is_global_admin?: boolean
+    } = {
       human_id: genSpecialistId(),
       tenant_id: targetTenantId,
       must_reset_password: true,
     }
-    if (parsed.data.role === 'admin') patch.role = 'admin'
+    if (parsed.data.role === 'admin') {
+      patch.role = 'admin'
+      if (!targetTenantId) {
+        patch.is_global_admin = true
+      }
+    }
 
     // Retry once on the unlikely human_id collision.
     let roleError = null

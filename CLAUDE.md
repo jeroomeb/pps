@@ -1326,4 +1326,16 @@ User asked for a full inside-out audit (bugs + design, phone/web, admin/inspecto
 
 **Deliberately deferred** (explicit user calls, not oversights): moving the deployment to the client's own Vercel account, tests/CI, the `database.types.ts` `Relationships`/cast cleanup (28 occurrences), migrations tooling adoption, Sentry/observability, remaining Nice-to-Haves — full list in `dev docs/REVIEW.md`'s "Suggested fix order."
 
-**Verified:** `tsc --noEmit`, `eslint` (same 3 pre-existing PDF alt-text warnings only), `npm run build` all clean after every batch of fixes. Live demo confirmed reachable and functional (`307` on `/`, `200` on `/login`) at each deploy step.
+### 2026-10-12 — Role-aware admin dashboard viewing & tenant team filtering (session 9)
+Client reported two issues from review:
+1. Admin accounts created under Amenity Op's HQ (Master/Global) showed as admin in team list, but clicking "view dashboard" redirected to `/inspector` and displayed them as an Operations Continuity Specialist.
+2. Provisional corporate tenant accounts appeared in the HQ team list without tenant distinction, and clicking "view dashboard" also routed them to `/inspector`.
+
+**Fixed and verified:**
+- `src/app/admin/impersonate/[id]/route.ts`: Role-aware routing. For `role === 'admin'`: clears specialist impersonation cookie; if tenant admin and caller is HQ Global Admin, sets `amenity_view_tenant_id` cookie and redirects to `/admin` (the corporate tenant admin dashboard); if HQ admin, clears tenant view cookie and redirects to `/admin`. For `role === 'inspector'`: sets `amenity_impersonate_id` cookie and redirects to `/inspector`.
+- `src/lib/auth/dal.ts`: Guarded `getImpersonatedSpecialist` with `if (!targetProfile || targetProfile.role !== 'inspector') return null` to prevent admin accounts from ever resolving as specialist impersonations.
+- `src/app/admin/team/page.tsx`: Added tenant badges (`[Building] TenantName` vs `[ShieldCheck] Amenity Op's HQ`), distinct role labels (`HQ Administrator` vs `{Tenant} Administrator`), and an Organization filter dropdown in `AddressFilterBar`.
+- `src/app/admin/team/[id]/page.tsx`: Updated header subtitle with tenant badge and dynamic action button ("Open HQ Dashboard" / "Open {Tenant} Dashboard" vs "Open Specialist Panel").
+- `src/lib/actions/team.ts`: Automatically sets `is_global_admin = true` when an administrator is created without a tenant ID.
+- Detailed record created in `dev docs/ADMIN_DASHBOARD_AND_TENANT_TEAM_FIX.md`.
+- Verified: `npx tsc --noEmit` passed clean (0 errors), `npm run test:risk` 6/6 tests passed.

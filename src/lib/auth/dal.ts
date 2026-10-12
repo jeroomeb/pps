@@ -270,7 +270,7 @@ export const getImpersonatedSpecialist = cache(async (): Promise<ProfileWithTena
       .eq('id', impersonateId)
       .single()
 
-    if (!targetProfile) return null
+    if (!targetProfile || targetProfile.role !== 'inspector') return null
     const tenant = targetProfile.tenants as unknown as TenantInfo | null
 
     return {

@@ -8,10 +8,11 @@ export type AddressFilterValues = {
   state?: string
   county?: string
   zip?: string
+  tenant?: string
 }
 
 /**
- * Server-rendered location filter — a plain GET form, matching the
+ * Server-rendered location & organization filter — a plain GET form, matching the
  * searchParams pattern the inspections list already uses. `hidden` carries any
  * other active params (e.g. `status`) through the submit so filters compose.
  */
@@ -21,6 +22,7 @@ export function AddressFilterBar({
   states,
   counties,
   zips,
+  organizations,
   hidden = {},
 }: {
   /** Path this form submits to, e.g. "/admin/properties". */
@@ -29,13 +31,14 @@ export function AddressFilterBar({
   states: string[]
   counties: string[]
   zips?: string[]
+  organizations?: { id: string; name: string }[]
   hidden?: Record<string, string | undefined>
 }) {
-  const hasAny = Boolean(values.state || values.county || values.zip)
+  const hasAny = Boolean(values.state || values.county || values.zip || values.tenant)
   const hiddenEntries = Object.entries(hidden).filter(([, v]) => v)
 
   // Nothing to filter by yet — don't show an empty control strip.
-  if (!states.length && !counties.length && !(zips ?? []).length) return null
+  if (!states.length && !counties.length && !(zips ?? []).length && !(organizations ?? []).length) return null
 
   return (
     <form
@@ -48,8 +51,25 @@ export function AddressFilterBar({
 
       <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
         <Filter size={13} />
-        Location
+        Filter
       </span>
+
+      {organizations && organizations.length > 0 && (
+        <select
+          name="tenant"
+          defaultValue={values.tenant ?? ''}
+          className={SELECT}
+          aria-label="Organization"
+        >
+          <option value="">All Organizations</option>
+          <option value="hq">Amenity Op&apos;s HQ (Master)</option>
+          {organizations.map((org) => (
+            <option key={org.id} value={org.id}>
+              {org.name}
+            </option>
+          ))}
+        </select>
+      )}
 
       {states.length > 0 && (
         <select name="state" defaultValue={values.state ?? ''} className={SELECT} aria-label="State">
