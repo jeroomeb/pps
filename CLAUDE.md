@@ -1337,5 +1337,19 @@ Client reported two issues from review:
 - `src/app/admin/team/page.tsx`: Added tenant badges (`[Building] TenantName` vs `[ShieldCheck] Amenity Op's HQ`), distinct role labels (`HQ Administrator` vs `{Tenant} Administrator`), and an Organization filter dropdown in `AddressFilterBar`.
 - `src/app/admin/team/[id]/page.tsx`: Updated header subtitle with tenant badge and dynamic action button ("Open HQ Dashboard" / "Open {Tenant} Dashboard" vs "Open Specialist Panel").
 - `src/lib/actions/team.ts`: Automatically sets `is_global_admin = true` when an administrator is created without a tenant ID.
-- Detailed record created in `dev docs/ADMIN_DASHBOARD_AND_TENANT_TEAM_FIX.md`.
 - Verified: `npx tsc --noEmit` passed clean (0 errors), `npm run test:risk` 6/6 tests passed.
+
+### 2026-10-13 — Client Spreadsheet Items 14–25 Implementation (session 10)
+Client shared 12 roadmap items (14 to 25) from their feedback spreadsheet. Verified and implemented:
+- **Items 14 & 15 (Tenant Isolation on Properties & Team):** In `properties/page.tsx` and `team/page.tsx`, default query for HQ admins (`!scope.tenantId`) now isolates to `.is('tenant_id', null)`, preventing provisional tenant counts from inflating HQ totals. Organization dropdown provides filtering by All Organizations or specific tenants.
+- **Item 16 (Lock Organization Dropdown for Tenants):** In `InspectorForm.tsx`, when in tenant scope, the tenant dropdown is hidden and replaced by a locked read-only badge and hidden input with `tenant_id`.
+- **Items 17 & 18 (Text Search on Properties and Teams):** Added search input to `AddressFilterBar.tsx` (`q` param) and wired search filtering across names, addresses, emails, and human IDs.
+- **Item 19 (Optional Required Inspection Days):** Added an enable/disable toggle in `PropertyForm.tsx` so weekday scheduling can be toggled off for ad-hoc properties.
+- **Item 20 (Multiple Inspectors per Property):** Verified already complete via `PropertyRosterManager.tsx` supporting unlimited assignments (Primary, Backup, Staff).
+- **Item 21 (Suppress Overdue on 24/7 Checklists):** Updated `dueLabel()` in `schedule.ts` with `isAlwaysAvailable?: boolean`. Passes `checklist_always_available` across admin dashboard, inspections page, property page, and specialist dashboard to suppress false overdue alerts.
+- **Items 22 & 23 (HQ Dashboard & Reports Isolation):** In `admin/page.tsx` and `admin/reports/page.tsx`, default queries isolate to `.is('tenant_id', null)`, keeping provisional tenant upcoming visits and completed reports off the HQ overview.
+- **Item 24 (Disable Payouts for Provisional Tenants):** In `nav-items.ts`, Payouts tab is hidden for non-global admins unless enabled for their tenant. Added server-side redirect guard in `admin/payouts/page.tsx`.
+- **Item 25 (Disable Photo ID Upload for Tenant Staff):** In `inspector/profile/page.tsx` and `InspectorProfileForm.tsx`, photo ID front/back upload is hidden for provisional tenant staff (`profile.tenant_id !== null`), applying only to HQ 1099 specialists.
+- Detailed record created in `dev docs/CLIENT_SPREADSHEET_ITEMS_14_TO_25_AUDIT.md`.
+- Verified: `npx tsc --noEmit` clean (0 errors), `npm run test:risk` 6/6 tests passed.
+

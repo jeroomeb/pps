@@ -34,6 +34,7 @@ export default async function InspectorProfilePage() {
     .select('properties(require_id_photo)')
     .eq('specialist_id', profile.id)
 
+  const isHqStaff = !profile.tenant_id
   const hasMandatoryIdProperty =
     (assignments ?? []).some((a) => {
       const prop = a.properties as unknown as { require_id_photo?: boolean } | null
@@ -49,6 +50,7 @@ export default async function InspectorProfilePage() {
         fullName={profile.full_name}
         email={profile.email}
         isIdVerificationMandatory={hasMandatoryIdProperty}
+        allowIdUpload={isHqStaff}
         defaults={{
           phone: row?.phone ?? null,
           street: row?.street ?? null,

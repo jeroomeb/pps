@@ -69,8 +69,12 @@ export type DueTone = 'overdue' | 'today' | 'soon' | 'future'
  */
 export function dueLabel(
   date: Date,
-  today: Date = zonedDate()
+  today: Date = zonedDate(),
+  isAlwaysAvailable?: boolean
 ): { text: string; tone: DueTone } {
+  if (isAlwaysAvailable) {
+    return { text: '24/7 Available', tone: 'today' }
+  }
   const diff = daysBetween(today, date)
   if (diff < 0) {
     const n = Math.abs(diff)

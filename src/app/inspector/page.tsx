@@ -33,7 +33,7 @@ export default async function InspectorDashboardPage({
   const { data: inspections } = await supabase
     .from('inspections')
     .select(
-      'id, status, created_at, completed_at, scheduled_for, properties(name, address, phone), checklist_templates(name)'
+      'id, status, created_at, completed_at, scheduled_for, properties(name, address, phone, checklist_always_available), checklist_templates(name)'
     )
     .eq('inspector_id', targetSpecialistId)
     // A cancelled inspection is not the specialist's problem any more — it
@@ -50,10 +50,11 @@ export default async function InspectorDashboardPage({
       name: string
       address: string
       phone: string | null
+      checklist_always_available?: boolean
     } | null
     const template = i.checklist_templates as unknown as { name: string } | null
     const scheduled = i.scheduled_for ? zonedDate(new Date(i.scheduled_for)) : null
-    const due = scheduled && i.status !== 'completed' ? dueLabel(scheduled, now) : null
+    const due = scheduled && i.status !== 'completed' ? dueLabel(scheduled, now, property?.checklist_always_available) : null
     return {
       id: i.id,
       status: i.status,

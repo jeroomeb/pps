@@ -22,7 +22,12 @@ export default async function ReportsPage() {
     .eq('status', 'completed')
     .order('completed_at', { ascending: false, nullsFirst: false })
 
-  if (scope.tenantId) reportsQuery = reportsQuery.eq('tenant_id', scope.tenantId)
+  if (scope.tenantId) {
+    reportsQuery = reportsQuery.eq('tenant_id', scope.tenantId)
+  } else {
+    // Isolate HQ reports: provisional tenants historical report data is not displayed on HQ reports
+    reportsQuery = reportsQuery.is('tenant_id', null)
+  }
 
   const { data: inspections } = await reportsQuery
 

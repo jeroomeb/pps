@@ -81,9 +81,10 @@ export function getNavItems(
     return INSPECTOR_NAV_ITEMS
   }
 
-  // Admins & Global/Super Admins always have access to the Payouts module in the menu
-  // so they can access settings, view records, or toggle the feature on/off anytime.
-  return isGlobalAdmin ? GLOBAL_ADMIN_NAV_ITEMS : ADMIN_NAV_ITEMS
+  // Admins & Global Admins: Payouts tab is disabled for provisional tenants
+  // unless explicitly enabled for their tenant organization.
+  if (isGlobalAdmin) return GLOBAL_ADMIN_NAV_ITEMS
+  return enablePayouts ? ADMIN_NAV_ITEMS : ADMIN_NAV_ITEMS.filter((i) => i.href !== '/admin/payouts')
 }
 
 /** Does this item match the path at all? Not "is it THE active one" — see

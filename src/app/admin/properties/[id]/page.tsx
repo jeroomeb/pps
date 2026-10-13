@@ -308,7 +308,11 @@ export default async function PropertyDetailPage({
                   // would read as still-outstanding work.
                   const due =
                     inspection.scheduled_for && !isCompleted && !isCancelled
-                      ? dueLabel(zonedDate(new Date(inspection.scheduled_for)))
+                      ? dueLabel(
+                          zonedDate(new Date(inspection.scheduled_for)),
+                          undefined,
+                          property.checklist_always_available
+                        )
                       : null
                   return (
                     <div

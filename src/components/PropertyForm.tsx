@@ -71,6 +71,7 @@ export function PropertyForm({
 
   // Schedule is first-of-month only, so a weekday is either on or off.
   const checkedDays = new Set((defaultValues?.schedule ?? []).map((e) => e.weekday))
+  const [enableSchedule, setEnableSchedule] = useState(checkedDays.size > 0)
 
   function handleDetectCurrentLocation() {
     if (typeof window === 'undefined' || !('geolocation' in navigator)) {
@@ -435,31 +436,49 @@ export function PropertyForm({
           </label>
         </div>
 
-        <fieldset className="flex flex-col gap-2">
-          <legend className={`${LABEL} mb-1`}>Required Inspection Days</legend>
-          <p className="text-xs text-on-surface-variant">
-            Pick which days of the week this property needs inspecting. Shown on the property page
-            and to the assigned specialist for reference — inspections are still scheduled
-            individually below.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {WEEKDAY_ORDER.map((w) => (
-              <label
-                key={w}
-                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-outline-variant px-3 text-sm font-semibold transition hover:bg-surface-container-low has-[:checked]:border-primary has-[:checked]:bg-primary-container has-[:checked]:text-on-primary-container"
-              >
-                <input
-                  type="checkbox"
-                  name="schedule"
-                  value={`1-${w}`}
-                  defaultChecked={checkedDays.has(w)}
-                  className="h-4 w-4 accent-[#ee8a4b]"
-                />
-                {WEEKDAY_LABELS[w]}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={enableSchedule}
+              onChange={(e) => setEnableSchedule(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-[#ee8a4b]"
+            />
+            <div>
+              <p className="text-sm font-semibold text-on-surface">
+                Enable Required Inspection Days
+              </p>
+              <p className="text-xs text-on-surface-variant">
+                Specify declared recurring weekdays when audits should be scheduled. Make optional or disable for ad-hoc / on-demand properties.
+              </p>
+            </div>
+          </label>
+
+          {enableSchedule && (
+            <div className="mt-4 border-t border-outline-variant/60 pt-3">
+              <p className="text-xs text-on-surface-variant mb-2">
+                Pick which days of the week this property needs inspecting (shown to specialists as reference):
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {WEEKDAY_ORDER.map((w) => (
+                  <label
+                    key={w}
+                    className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-outline-variant px-3 text-sm font-semibold transition hover:bg-surface-container-low has-[:checked]:border-primary has-[:checked]:bg-primary-container has-[:checked]:text-on-primary-container"
+                  >
+                    <input
+                      type="checkbox"
+                      name="schedule"
+                      value={`1-${w}`}
+                      defaultChecked={checkedDays.has(w)}
+                      className="h-4 w-4 accent-[#ee8a4b]"
+                    />
+                    {WEEKDAY_LABELS[w]}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {state?.error && (
           <p className="rounded bg-error-container px-3 py-2 text-sm text-on-error-container">

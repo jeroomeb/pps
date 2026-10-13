@@ -1,10 +1,14 @@
-import { Filter, X } from 'lucide-react'
+import { Filter, X, Search } from 'lucide-react'
 import Link from 'next/link'
 
 const SELECT =
   'min-h-10 rounded border border-outline-variant bg-surface-container-lowest px-2 text-sm focus:border-primary-container focus:outline-none'
 
+const SEARCH_INPUT =
+  'min-h-10 rounded border border-outline-variant bg-surface-container-lowest pl-8 pr-3 text-sm focus:border-primary-container focus:outline-none placeholder:text-on-surface-variant/60'
+
 export type AddressFilterValues = {
+  q?: string
   state?: string
   county?: string
   zip?: string
@@ -12,7 +16,7 @@ export type AddressFilterValues = {
 }
 
 /**
- * Server-rendered location & organization filter — a plain GET form, matching the
+ * Server-rendered location, organization & keyword filter — a plain GET form, matching the
  * searchParams pattern the inspections list already uses. `hidden` carries any
  * other active params (e.g. `status`) through the submit so filters compose.
  */
@@ -23,6 +27,7 @@ export function AddressFilterBar({
   counties,
   zips,
   organizations,
+  searchPlaceholder,
   hidden = {},
 }: {
   /** Path this form submits to, e.g. "/admin/properties". */
@@ -32,13 +37,20 @@ export function AddressFilterBar({
   counties: string[]
   zips?: string[]
   organizations?: { id: string; name: string }[]
+  searchPlaceholder?: string
   hidden?: Record<string, string | undefined>
 }) {
-  const hasAny = Boolean(values.state || values.county || values.zip || values.tenant)
+  const hasAny = Boolean(
+    values.q ||
+    values.state ||
+    values.county ||
+    values.zip ||
+    (values.tenant && values.tenant !== 'hq')
+  )
   const hiddenEntries = Object.entries(hidden).filter(([, v]) => v)
 
   // Nothing to filter by yet — don't show an empty control strip.
-  if (!states.length && !counties.length && !(zips ?? []).length && !(organizations ?? []).length) return null
+  if (!states.length && !counties.length && !(zips ?? []).length && !(organizations ?? []).length && !searchPlaceholder) return null
 
   return (
     <form
@@ -49,6 +61,20 @@ export function AddressFilterBar({
         <input key={k} type="hidden" name={k} value={v} />
       ))}
 
+      {searchPlaceholder && (
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant/70" />
+          <input
+            type="search"
+            name="q"
+            defaultValue={values.q ?? ''}
+            placeholder={searchPlaceholder}
+            className={`w-full ${SEARCH_INPUT}`}
+            aria-label={searchPlaceholder}
+          />
+        </div>
+      )}
+
       <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
         <Filter size={13} />
         Filter
@@ -57,12 +83,12 @@ export function AddressFilterBar({
       {organizations && organizations.length > 0 && (
         <select
           name="tenant"
-          defaultValue={values.tenant ?? ''}
+          defaultValue={values.tenant ?? 'hq'}
           className={SELECT}
           aria-label="Organization"
         >
-          <option value="">All Organizations</option>
           <option value="hq">Amenity Op&apos;s HQ (Master)</option>
+          <option value="all">All Organizations</option>
           {organizations.map((org) => (
             <option key={org.id} value={org.id}>
               {org.name}

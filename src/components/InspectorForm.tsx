@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useRef, useState } from 'react'
-import { KeyRound, Mail, Sparkles, Check } from 'lucide-react'
+import { KeyRound, Mail, Sparkles, Check, Building } from 'lucide-react'
 import { SubmitButton } from '@/components/SubmitButton'
 import { Card } from '@/components/ui/Card'
 import { createTeamMember, type TeamMemberFormState } from '@/lib/actions/team'
@@ -12,8 +12,12 @@ const LABEL_CLASSES = 'text-sm font-semibold uppercase tracking-wide'
 
 export function InspectorForm({
   tenants,
+  currentTenantId,
+  currentTenantName,
 }: {
   tenants?: { id: string; name: string }[]
+  currentTenantId?: string | null
+  currentTenantName?: string | null
 }) {
   const [state, formAction] = useActionState<TeamMemberFormState, FormData>(
     createTeamMember,
@@ -41,24 +45,37 @@ export function InspectorForm({
       action={formAction}
       className="flex flex-col gap-4"
     >
-      {tenants && tenants.length > 0 && (
+      {currentTenantId ? (
         <div className="flex flex-col gap-1">
-          <label htmlFor="member_tenant_id" className="text-sm font-semibold uppercase tracking-wide">
+          <span className="text-sm font-semibold uppercase tracking-wide">
             Assigned Organization / Tenant
-          </label>
-          <select
-            id="member_tenant_id"
-            name="tenant_id"
-            className="min-h-12 rounded border border-outline-variant bg-surface-container-lowest px-3 focus:border-primary-container focus:outline-none"
-          >
-            <option value="">Amenity Op&apos;s HQ (Master / Global)</option>
-            {tenants.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+          </span>
+          <div className="flex min-h-12 items-center gap-2 rounded border border-outline-variant/60 bg-surface-container-high px-3 text-sm font-medium text-primary">
+            <Building size={16} className="shrink-0" />
+            <span>{currentTenantName ?? 'Assigned Tenant'}</span>
+          </div>
+          <input type="hidden" name="tenant_id" value={currentTenantId} />
         </div>
+      ) : (
+        tenants && tenants.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <label htmlFor="member_tenant_id" className="text-sm font-semibold uppercase tracking-wide">
+              Assigned Organization / Tenant
+            </label>
+            <select
+              id="member_tenant_id"
+              name="tenant_id"
+              className="min-h-12 rounded border border-outline-variant bg-surface-container-lowest px-3 focus:border-primary-container focus:outline-none"
+            >
+              <option value="">Amenity Op&apos;s HQ (Master / Global)</option>
+              {tenants.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )
       )}
 
       <div className="flex flex-col gap-1">

@@ -33,13 +33,17 @@ export default async function AdminDashboardPage() {
   let inspectionsQuery = supabase
     .from('inspections')
     .select(
-      'id, property_id, status, created_at, completed_at, scheduled_for, properties(name), checklist_templates(name)'
+      'id, property_id, status, created_at, completed_at, scheduled_for, properties(name, checklist_always_available), checklist_templates(name)'
     )
     .order('created_at', { ascending: false })
 
   if (scope.tenantId) {
     propertiesQuery = propertiesQuery.eq('tenant_id', scope.tenantId)
     inspectionsQuery = inspectionsQuery.eq('tenant_id', scope.tenantId)
+  } else {
+    // Isolate HQ dashboard so provisional tenant data does not display on HQ overview
+    propertiesQuery = propertiesQuery.is('tenant_id', null)
+    inspectionsQuery = inspectionsQuery.is('tenant_id', null)
   }
 
   const [{ data: properties }, { data: inspections }] = await Promise.all([
@@ -60,9 +64,13 @@ export default async function AdminDashboardPage() {
   const upcoming = allInspections
     .filter((i) => i.status !== 'completed' && i.status !== 'cancelled' && i.scheduled_for)
     .map((i) => {
-      const property = i.properties as unknown as { name: string } | null
+      const property = i.properties as unknown as { name: string; checklist_always_available?: boolean } | null
       const template = i.checklist_templates as unknown as { name: string } | null
-      const due = dueLabel(zonedDate(new Date(i.scheduled_for!)), now)
+      const due = dueLabel(
+        zonedDate(new Date(i.scheduled_for!)),
+        now,
+        property?.checklist_always_available ?? false
+      )
       return {
         id: i.id,
         propertyName: property?.name ?? 'Unknown property',

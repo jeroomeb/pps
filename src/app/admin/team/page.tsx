@@ -14,9 +14,9 @@ import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
 export default async function TeamPage({
   searchParams,
 }: {
-  searchParams: Promise<{ state?: string; county?: string; tenant?: string }>
+  searchParams: Promise<{ q?: string; state?: string; county?: string; tenant?: string }>
 }) {
-  const { state, county, tenant } = await searchParams
+  const { q, state, county, tenant } = await searchParams
   const currentProfile = await getProfile()
   const scope = await getAdminScope()
   const supabase = await createClient()
@@ -43,12 +43,22 @@ export default async function TeamPage({
     .select('id, full_name, role, human_id, email, phone, city, state, county, status, must_reset_password, tenant_id, tenants(id, name)')
     .order('full_name')
 
+  // Tenant isolation: if in a tenant scope, filter to that tenant.
+  // If in HQ scope: default to HQ only (tenant_id is null) so provisional tenant staff
+  // do not inflate the HQ count, unless explicitly choosing "all" or a specific tenant.
   if (scope.tenantId) {
     query = query.eq('tenant_id', scope.tenantId)
-  } else if (tenant === 'hq') {
-    query = query.is('tenant_id', null)
-  } else if (tenant) {
+  } else if (tenant === 'all') {
+    // Show all organizations
+  } else if (tenant && tenant !== 'hq') {
     query = query.eq('tenant_id', tenant)
+  } else {
+    // Default for HQ: isolate provisional tenants from HQ count
+    query = query.is('tenant_id', null)
+  }
+
+  if (q) {
+    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%,human_id.ilike.%${q}%`)
   }
 
   if (state) query = query.eq('state', state)
@@ -65,16 +75,22 @@ export default async function TeamPage({
     human_id: m.human_id,
   }))
 
+  const activeTenantId = scope.tenantId ?? currentProfile.tenant_id
+  const activeTenantName = activeTenantId
+    ? (allTenants ?? []).find((t) => t.id === activeTenantId)?.name ?? currentProfile.tenant?.name ?? null
+    : null
+
   return (
     <div>
       <PageHeader eyebrow="Team" title="Team Members" />
 
       <AddressFilterBar
         action="/admin/team"
-        values={{ state, county, tenant }}
+        values={{ q, state, county, tenant }}
         states={distinctValues(allMembers ?? [], 'state')}
         counties={distinctValues(allMembers ?? [], 'county')}
         organizations={currentProfile.is_global_admin ? (allTenants ?? []).map((t) => ({ id: t.id, name: t.name })) : undefined}
+        searchPlaceholder="Search team by name, email, or ID…"
       />
 
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1.3fr_1fr]">
@@ -283,7 +299,11 @@ export default async function TeamPage({
 
         <section>
           <h2 className="mb-3 font-headline text-lg font-semibold">Add Team Member</h2>
-          <InspectorForm tenants={allTenants ?? undefined} />
+          <InspectorForm
+            tenants={allTenants ?? undefined}
+            currentTenantId={activeTenantId}
+            currentTenantName={activeTenantName}
+          />
         </section>
       </div>
     </div>

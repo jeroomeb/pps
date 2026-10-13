@@ -52,11 +52,15 @@ export default async function AdminInspectionsPage({
   let query = supabase
     .from('inspections')
     .select(
-      'id, status, created_at, completed_at, scheduled_for, property_id, properties!inner(name, state, county), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, created_at, completed_at, scheduled_for, property_id, properties!inner(name, state, county, checklist_always_available), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .order('created_at', { ascending: false })
 
-  if (scope.tenantId) query = query.eq('tenant_id', scope.tenantId)
+  if (scope.tenantId) {
+    query = query.eq('tenant_id', scope.tenantId)
+  } else {
+    query = query.is('tenant_id', null)
+  }
 
   if (filter === 'open') {
     query = query.in('status', ['pending', 'in_progress'])
@@ -108,7 +112,11 @@ export default async function AdminInspectionsPage({
               // read as still-outstanding work.
               const due =
                 inspection.scheduled_for && !isCompleted && !isCancelled
-                  ? dueLabel(zonedDate(new Date(inspection.scheduled_for)))
+                  ? dueLabel(
+                      zonedDate(new Date(inspection.scheduled_for)),
+                      undefined,
+                      (property as unknown as { checklist_always_available?: boolean })?.checklist_always_available
+                    )
                   : null
               return (
                 <div

@@ -23,6 +23,7 @@ export function InspectorProfileForm({
   idFrontUrl,
   idBackUrl,
   isIdVerificationMandatory = true,
+  allowIdUpload = true,
 }: {
   userId: string
   humanId: string | null
@@ -33,6 +34,7 @@ export function InspectorProfileForm({
   idFrontUrl: string | null
   idBackUrl: string | null
   isIdVerificationMandatory?: boolean
+  allowIdUpload?: boolean
   defaults: {
     phone: string | null
     street: string | null
@@ -252,93 +254,95 @@ export function InspectorProfileForm({
         are assigned.
       </p>
 
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <p className={LABEL}>Driver&apos;s License / Identification</p>
-          <span
-            className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-              isIdVerificationMandatory
-                ? 'bg-amber-500/10 text-amber-700'
-                : 'bg-surface-container-highest text-on-surface-variant'
-            }`}
-          >
-            {isIdVerificationMandatory ? 'Mandatory for assigned properties' : 'Optional (Exempt by Property)'}
-          </span>
-        </div>
-        <p className="mb-3 text-xs text-on-surface-variant">
-          {isIdVerificationMandatory
-            ? 'Your assigned properties mandate a verified government photo ID (front & back) on file before conducting audits.'
-            : 'Your assigned properties are configured as internal/corporate facilities where photo ID upload is optional.'}
-        </p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {(['front', 'back'] as Side[]).map((side) => {
-            const has = side === 'front' ? frontPath : backPath
-            const preview = side === 'front' ? frontPreview : backPreview
-            const ref = side === 'front' ? frontRef : backRef
-            return (
-              <div key={side} className="flex flex-col gap-2">
-                <p className="label-tracked text-on-surface-variant">{side}</p>
-                <input
-                  ref={ref}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleUpload(side, e)}
-                />
+      {allowIdUpload && (
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <p className={LABEL}>Driver&apos;s License / Identification</p>
+            <span
+              className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                isIdVerificationMandatory
+                  ? 'bg-amber-500/10 text-amber-700'
+                  : 'bg-surface-container-highest text-on-surface-variant'
+              }`}
+            >
+              {isIdVerificationMandatory ? 'Mandatory for assigned properties' : 'Optional (Exempt by Property)'}
+            </span>
+          </div>
+          <p className="mb-3 text-xs text-on-surface-variant">
+            {isIdVerificationMandatory
+              ? 'Your assigned properties mandate a verified government photo ID (front & back) on file before conducting audits.'
+              : 'Your assigned properties are configured as internal/corporate facilities where photo ID upload is optional.'}
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {(['front', 'back'] as Side[]).map((side) => {
+              const has = side === 'front' ? frontPath : backPath
+              const preview = side === 'front' ? frontPreview : backPreview
+              const ref = side === 'front' ? frontRef : backRef
+              return (
+                <div key={side} className="flex flex-col gap-2">
+                  <p className="label-tracked text-on-surface-variant">{side}</p>
+                  <input
+                    ref={ref}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleUpload(side, e)}
+                  />
 
-                {preview ? (
-                  <>
-                    <ZoomableImage
-                      src={preview}
-                      alt={`Your uploaded ID ${side}`}
-                      thumbClassName="h-40 w-full border border-outline-variant"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => ref.current?.click()}
-                        disabled={uploading === side || pending}
-                        className="min-h-10 flex-1 rounded-lg border border-outline-variant text-xs font-semibold uppercase tracking-wide hover:bg-surface-container disabled:opacity-50"
-                      >
-                        {uploading === side ? 'Uploading…' : 'Replace'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveId(side)}
-                        disabled={uploading === side || pending}
-                        className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-outline-variant px-3 text-xs font-semibold uppercase tracking-wide text-error hover:bg-error-container/40 disabled:opacity-50"
-                      >
-                        <Trash2 size={13} />
-                        Remove
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => ref.current?.click()}
-                    disabled={uploading === side}
-                    className={`flex min-h-40 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-sm font-semibold ${
-                      has
-                        ? 'border-success text-success'
-                        : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
-                    }`}
-                  >
-                    {has ? <CheckCircle2 size={20} /> : <UploadCloud size={20} />}
-                    {uploading === side
-                      ? 'Uploading…'
-                      : has
-                        ? // Path saved but no preview URL — e.g. the signed URL
-                          // could not be minted. Don't claim it's missing.
-                          `ID ${side} uploaded — preview unavailable, tap to replace`
-                        : `Upload ID ${side}`}
-                  </button>
-                )}
-              </div>
-            )
-          })}
+                  {preview ? (
+                    <>
+                      <ZoomableImage
+                        src={preview}
+                        alt={`Your uploaded ID ${side}`}
+                        thumbClassName="h-40 w-full border border-outline-variant"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => ref.current?.click()}
+                          disabled={uploading === side || pending}
+                          className="min-h-10 flex-1 rounded-lg border border-outline-variant text-xs font-semibold uppercase tracking-wide hover:bg-surface-container disabled:opacity-50"
+                        >
+                          {uploading === side ? 'Uploading…' : 'Replace'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveId(side)}
+                          disabled={uploading === side || pending}
+                          className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-outline-variant px-3 text-xs font-semibold uppercase tracking-wide text-error hover:bg-error-container/40 disabled:opacity-50"
+                        >
+                          <Trash2 size={13} />
+                          Remove
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => ref.current?.click()}
+                      disabled={uploading === side}
+                      className={`flex min-h-40 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-sm font-semibold ${
+                        has
+                          ? 'border-success text-success'
+                          : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
+                      }`}
+                    >
+                      {has ? <CheckCircle2 size={20} /> : <UploadCloud size={20} />}
+                      {uploading === side
+                        ? 'Uploading…'
+                        : has
+                          ? // Path saved but no preview URL — e.g. the signed URL
+                            // could not be minted. Don't claim it's missing.
+                            `ID ${side} uploaded — preview unavailable, tap to replace`
+                          : `Upload ID ${side}`}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
         <div className="mb-2 flex items-center gap-2">

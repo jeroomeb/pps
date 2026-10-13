@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Building2, ChevronRight, Plus, KeyRound, Users } from 'lucide-react'
+import { Building2, ChevronRight, Plus, KeyRound, Users, Building, ShieldCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile, getTenantLicenseSummary } from '@/lib/auth/dal'
 import { getAdminScope } from '@/lib/auth/tenant-view'
@@ -19,24 +19,42 @@ type PropertyRow = {
   email: string
   phone: string | null
   human_id: string | null
+  tenant_id?: string | null
+  tenants?: { id: string; name: string } | null
 }
 
 export default async function PropertiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ state?: string; county?: string; zip?: string }>
+  searchParams: Promise<{ q?: string; state?: string; county?: string; zip?: string; tenant?: string }>
 }) {
-  const { state, county, zip } = await searchParams
+  const { q, state, county, zip, tenant } = await searchParams
   const supabase = await createClient()
   const scope = await getAdminScope()
-  const hasFilter = Boolean(state || county || zip)
+  const hasFilter = Boolean(q || state || county || zip || (tenant && tenant !== 'hq'))
 
   let filteredQuery = supabase
     .from('properties')
-    .select('id, name, address, city, state, zip, county, email, phone, human_id')
+    .select('id, name, address, city, state, zip, county, email, phone, human_id, tenant_id, tenants(id, name)')
     .order('name')
 
-  if (scope.tenantId) filteredQuery = filteredQuery.eq('tenant_id', scope.tenantId)
+  // Tenant isolation: if in a tenant scope, filter to that tenant.
+  // If in HQ scope: default to HQ only (tenant_id is null) so provisional tenant properties
+  // do not inflate the HQ count, unless explicitly choosing "all" or a specific tenant.
+  if (scope.tenantId) {
+    filteredQuery = filteredQuery.eq('tenant_id', scope.tenantId)
+  } else if (tenant === 'all') {
+    // Show all organizations
+  } else if (tenant && tenant !== 'hq') {
+    filteredQuery = filteredQuery.eq('tenant_id', tenant)
+  } else {
+    // Default for HQ: isolate provisional tenants from HQ count
+    filteredQuery = filteredQuery.is('tenant_id', null)
+  }
+
+  if (q) {
+    filteredQuery = filteredQuery.or(`name.ilike.%${q}%,address.ilike.%${q}%,human_id.ilike.%${q}%`)
+  }
   if (state) filteredQuery = filteredQuery.eq('state', state)
   if (county) filteredQuery = filteredQuery.eq('county', county)
   if (zip) filteredQuery = filteredQuery.eq('zip', zip)
@@ -47,6 +65,7 @@ export default async function PropertiesPage({
     { data: allLocationProps },
     { data: rosterAssignments },
     profile,
+    { data: allTenants },
   ] = await Promise.all([
     filteredQuery,
     hasFilter
@@ -58,6 +77,7 @@ export default async function PropertiesPage({
       : Promise.resolve({ data: null }),
     supabase.from('property_specialist_assignments').select('property_id, role'),
     getProfile(),
+    supabase.from('tenants').select('id, name').order('name'),
   ])
 
   const properties = (propertiesResult.data ?? []) as PropertyRow[]
@@ -124,10 +144,12 @@ export default async function PropertiesPage({
 
       <AddressFilterBar
         action="/admin/properties"
-        values={{ state, county, zip }}
+        values={{ q, state, county, zip, tenant }}
         states={distinctValues(locationDataSource, 'state')}
         counties={distinctValues(locationDataSource, 'county')}
         zips={distinctValues(locationDataSource, 'zip')}
+        organizations={profile.is_global_admin ? (allTenants ?? []).map((t) => ({ id: t.id, name: t.name })) : undefined}
+        searchPlaceholder="Search by name, address, or ID…"
       />
 
       {properties?.length ? (
@@ -150,6 +172,7 @@ export default async function PropertiesPage({
                 const href = `/admin/properties/${property.id}`
                 const cell = 'block px-4 py-3'
                 const roster = rosterCountMap.get(property.id)
+                const tenantName = property.tenants?.name
                 return (
                   <tr
                     key={property.id}
@@ -159,7 +182,22 @@ export default async function PropertiesPage({
                       <Link href={href} prefetch={false} className={cell}>{property.human_id ?? '—'}</Link>
                     </td>
                     <td className="p-0 font-semibold">
-                      <Link href={href} className={cell}>{property.name}</Link>
+                      <Link href={href} className={cell}>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span>{property.name}</span>
+                          {tenantName ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                              <Building size={10} className="shrink-0" />
+                              {tenantName}
+                            </span>
+                          ) : profile.is_global_admin && tenant === 'all' ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-secondary-container px-1.5 py-0.5 text-[10px] font-semibold text-on-secondary-container">
+                              <ShieldCheck size={10} className="shrink-0" />
+                              HQ
+                            </span>
+                          ) : null}
+                        </div>
+                      </Link>
                     </td>
                     <td className="p-0">
                       <Link href={href} prefetch={false} className={cell}>
@@ -202,6 +240,7 @@ export default async function PropertiesPage({
           <div className="flex flex-col divide-y divide-outline-variant lg:hidden">
             {properties.map((property) => {
               const roster = rosterCountMap.get(property.id)
+              const tenantName = property.tenants?.name
               return (
                 <Link
                   key={property.id}
@@ -209,8 +248,14 @@ export default async function PropertiesPage({
                   className="flex items-center justify-between gap-3 p-4"
                 >
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="font-headline font-semibold">{property.name}</p>
+                      {tenantName ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                          <Building size={10} className="shrink-0" />
+                          {tenantName}
+                        </span>
+                      ) : null}
                       {roster && roster.total > 0 && (
                         <span className="rounded bg-primary-container/30 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                           {roster.total} Staff

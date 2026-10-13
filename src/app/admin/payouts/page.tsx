@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { requireRole } from '@/lib/auth/dal'
 import { getAdminScope } from '@/lib/auth/tenant-view'
 import { createClient } from '@/lib/supabase/server'
@@ -8,6 +9,12 @@ import type { PayoutStatus } from '@/lib/database.types'
 export default async function AdminPayoutsPage() {
   const profile = await requireRole('admin')
   const scope = await getAdminScope()
+
+  // Guard access: provisional tenants cannot access payouts unless explicitly enabled
+  if (!profile.is_global_admin && !scope.enablePayouts) {
+    redirect('/admin')
+  }
+
   const supabase = await createClient()
   const payoutTenantId = scope.tenantId ?? profile.tenant_id
 
