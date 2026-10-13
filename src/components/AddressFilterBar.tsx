@@ -23,29 +23,32 @@ export type AddressFilterValues = {
 export function AddressFilterBar({
   action,
   values,
-  states,
-  counties,
+  states = [],
+  counties = [],
   zips,
   organizations,
+  defaultTenant = 'hq',
   searchPlaceholder,
   hidden = {},
 }: {
   /** Path this form submits to, e.g. "/admin/properties". */
   action: string
   values: AddressFilterValues
-  states: string[]
-  counties: string[]
+  states?: string[]
+  counties?: string[]
   zips?: string[]
   organizations?: { id: string; name: string }[]
+  defaultTenant?: string
   searchPlaceholder?: string
   hidden?: Record<string, string | undefined>
 }) {
+  const effectiveDefaultTenant = defaultTenant ?? 'hq'
   const hasAny = Boolean(
     values.q ||
     values.state ||
     values.county ||
     values.zip ||
-    (values.tenant && values.tenant !== 'hq')
+    (values.tenant && values.tenant !== effectiveDefaultTenant)
   )
   const hiddenEntries = Object.entries(hidden).filter(([, v]) => v)
 
@@ -83,12 +86,21 @@ export function AddressFilterBar({
       {organizations && organizations.length > 0 && (
         <select
           name="tenant"
-          defaultValue={values.tenant ?? 'hq'}
+          defaultValue={values.tenant ?? effectiveDefaultTenant}
           className={SELECT}
           aria-label="Organization"
         >
-          <option value="hq">Amenity Op&apos;s HQ (Master)</option>
-          <option value="all">All Organizations</option>
+          {effectiveDefaultTenant === 'all' ? (
+            <>
+              <option value="all">All Organizations</option>
+              <option value="hq">Amenity Op&apos;s HQ (Master)</option>
+            </>
+          ) : (
+            <>
+              <option value="hq">Amenity Op&apos;s HQ (Master)</option>
+              <option value="all">All Organizations</option>
+            </>
+          )}
           {organizations.map((org) => (
             <option key={org.id} value={org.id}>
               {org.name}

@@ -1353,3 +1353,15 @@ Client shared 12 roadmap items (14 to 25) from their feedback spreadsheet. Verif
 - Detailed record created in `dev docs/CLIENT_SPREADSHEET_ITEMS_14_TO_25_AUDIT.md`.
 - Verified: `npx tsc --noEmit` clean (0 errors), `npm run test:risk` 6/6 tests passed.
 
+### 2026-10-14 — Dashboard & Reports Restoral + Organization Filtering (session 11)
+Client reviewed implementation of items 14–25 and provided feedback:
+- Requested to restore platform-wide summaries and feeds by default on the Dashboard and Reports tabs so the Global HQ Admin has an overall pulse of the platform.
+- Requested adding the Organization dropdown and search filter (which they praised as a "huge game changer") to both the Dashboard and Reports tabs so they can filter to All Organizations (default), Master HQ, or specific corporate tenants at will.
+
+**Fixed and verified:**
+- `src/components/AddressFilterBar.tsx`: Made `states` and `counties` optional arrays (default `[]`) and added `defaultTenant` prop (default `'hq'`). When `defaultTenant="all"`, "All Organizations" is selected by default, and Clear resets back to the platform-wide view.
+- `src/app/admin/page.tsx`: Restored default platform-wide summaries (Total Properties, Pending, In Progress) and overall Upcoming Inspections across all organizations. Added `AddressFilterBar` with Organization dropdown (`defaultTenant="all"`). Added organization badges (`[Building] TenantName` vs `[ShieldCheck] HQ`) to Upcoming Inspections and Active Now rows when viewing all organizations.
+- `src/app/admin/reports/page.tsx`: Restored default platform-wide completed inspection reports across all organizations. Added `AddressFilterBar` with text search (`q`) and Organization dropdown (`tenant`). Added organization badges to completed report cards. Supported searching across property names, human IDs, template names, specialist names, and tenant names.
+- Detailed record created in `dev docs/CLIENT_DASHBOARD_AND_REPORTS_RESTORE_FILTER_UPDATE.md`.
+- Verified: `npx tsc --noEmit` passed clean (0 errors), `npm run test:risk` 6/6 tests passed.
+

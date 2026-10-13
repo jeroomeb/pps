@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import {
   Building2,
+  Building,
+  ShieldCheck,
   ClipboardList,
   Plus,
   CalendarClock,
@@ -12,9 +14,11 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getAdminScope } from '@/lib/auth/tenant-view'
+import { getProfile } from '@/lib/auth/dal'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { AddressFilterBar } from '@/components/AddressFilterBar'
 import { dueLabel } from '@/lib/schedule'
 import { zonedDate, formatDateTime } from '@/lib/timezone'
 
@@ -25,30 +29,43 @@ const QUICK_ACTIONS = [
   { href: '/admin/team', label: 'Manage Team', icon: Users, primary: false },
 ]
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tenant?: string }>
+}) {
+  const { tenant } = (await searchParams) ?? {}
   const supabase = await createClient()
   const scope = await getAdminScope()
+  const profile = await getProfile()
 
   let propertiesQuery = supabase.from('properties').select('id, name').order('name')
   let inspectionsQuery = supabase
     .from('inspections')
     .select(
-      'id, property_id, status, created_at, completed_at, scheduled_for, properties(name, checklist_always_available), checklist_templates(name)'
+      'id, property_id, tenant_id, status, created_at, completed_at, scheduled_for, properties(name, checklist_always_available), checklist_templates(name), tenants(id, name)'
     )
     .order('created_at', { ascending: false })
 
   if (scope.tenantId) {
     propertiesQuery = propertiesQuery.eq('tenant_id', scope.tenantId)
     inspectionsQuery = inspectionsQuery.eq('tenant_id', scope.tenantId)
-  } else {
-    // Isolate HQ dashboard so provisional tenant data does not display on HQ overview
+  } else if (tenant === 'hq') {
     propertiesQuery = propertiesQuery.is('tenant_id', null)
     inspectionsQuery = inspectionsQuery.is('tenant_id', null)
+  } else if (tenant && tenant !== 'all') {
+    propertiesQuery = propertiesQuery.eq('tenant_id', tenant)
+    inspectionsQuery = inspectionsQuery.eq('tenant_id', tenant)
+  } else {
+    // Default: "all" or undefined -> Overall platform summary across all organizations
   }
 
-  const [{ data: properties }, { data: inspections }] = await Promise.all([
+  const [{ data: properties }, { data: inspections }, { data: allTenants }] = await Promise.all([
     propertiesQuery,
     inspectionsQuery,
+    profile.is_global_admin && !scope.tenantId
+      ? supabase.from('tenants').select('id, name').order('name')
+      : Promise.resolve({ data: null }),
   ])
 
   const allProperties = properties ?? []
@@ -56,6 +73,7 @@ export default async function AdminDashboardPage() {
 
   const pendingCount = allInspections.filter((i) => i.status === 'pending').length
   const inProgress = allInspections.filter((i) => i.status === 'in_progress')
+  const isViewingAll = !scope.tenantId && (!tenant || tenant === 'all')
 
   // Real scheduled inspections only — no derived/auto-generated due dates.
   // Cancelled ones are excluded too, or a called-off visit keeps surfacing
@@ -66,6 +84,7 @@ export default async function AdminDashboardPage() {
     .map((i) => {
       const property = i.properties as unknown as { name: string; checklist_always_available?: boolean } | null
       const template = i.checklist_templates as unknown as { name: string } | null
+      const tenantObj = i.tenants as unknown as { name: string } | null
       const due = dueLabel(
         zonedDate(new Date(i.scheduled_for!)),
         now,
@@ -75,6 +94,7 @@ export default async function AdminDashboardPage() {
         id: i.id,
         propertyName: property?.name ?? 'Unknown property',
         templateName: template?.name ?? '—',
+        tenantName: tenantObj?.name ?? null,
         scheduledLabel: formatDateTime(i.scheduled_for),
         dueText: due.text,
         dueTone: due.tone,
@@ -83,24 +103,27 @@ export default async function AdminDashboardPage() {
     })
     .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
 
+  const tenantParam = tenant && tenant !== 'all' ? `&tenant=${tenant}` : ''
+  const propTenantParam = tenant && tenant !== 'all' ? `?tenant=${tenant}` : ''
+
   const stats = [
     {
       label: 'Total Properties',
       value: allProperties.length,
       icon: Building2,
-      href: '/admin/properties',
+      href: `/admin/properties${propTenantParam}`,
     },
     {
       label: 'Pending',
       value: pendingCount,
       icon: ClipboardList,
-      href: '/admin/inspections?status=pending',
+      href: `/admin/inspections?status=pending${tenantParam}`,
     },
     {
       label: 'In Progress',
       value: inProgress.length,
       icon: Clock,
-      href: '/admin/inspections?status=in_progress',
+      href: `/admin/inspections?status=in_progress${tenantParam}`,
     },
   ]
 
@@ -119,6 +142,15 @@ export default async function AdminDashboardPage() {
           </Link>
         }
       />
+
+      {profile.is_global_admin && !scope.tenantId && (
+        <AddressFilterBar
+          action="/admin"
+          values={{ tenant: tenant ?? 'all' }}
+          organizations={(allTenants ?? []).map((t) => ({ id: t.id, name: t.name }))}
+          defaultTenant="all"
+        />
+      )}
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {stats.map((stat) => {
@@ -154,7 +186,22 @@ export default async function AdminDashboardPage() {
                     className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-container-low"
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-semibold">{row.propertyName}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="truncate font-semibold">{row.propertyName}</p>
+                        {isViewingAll && (
+                          row.tenantName ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                              <Building size={10} className="shrink-0" />
+                              {row.tenantName}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded bg-secondary-container px-1.5 py-0.5 text-[10px] font-semibold text-on-secondary-container">
+                              <ShieldCheck size={10} className="shrink-0" />
+                              HQ
+                            </span>
+                          )
+                        )}
+                      </div>
                       <p className="truncate text-xs text-on-surface-variant">
                         {row.templateName} · {row.scheduledLabel}
                       </p>
@@ -231,6 +278,7 @@ export default async function AdminDashboardPage() {
                     const template = inspection.checklist_templates as unknown as {
                       name: string
                     } | null
+                    const tenantObj = inspection.tenants as unknown as { name: string } | null
                     return (
                       <Link
                         key={inspection.id}
@@ -238,9 +286,24 @@ export default async function AdminDashboardPage() {
                         className="group flex items-center gap-3 p-4 transition hover:bg-surface-container-low"
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-semibold">
-                            {property?.name ?? 'Unknown property'}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <p className="truncate font-semibold">
+                              {property?.name ?? 'Unknown property'}
+                            </p>
+                            {isViewingAll && (
+                              tenantObj?.name ? (
+                                <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                                  <Building size={10} className="shrink-0" />
+                                  {tenantObj.name}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded bg-secondary-container px-1.5 py-0.5 text-[10px] font-semibold text-on-secondary-container">
+                                  <ShieldCheck size={10} className="shrink-0" />
+                                  HQ
+                                </span>
+                              )
+                            )}
+                          </div>
                           <p className="truncate text-xs text-on-surface-variant">
                             {template?.name ?? '—'}
                           </p>
