@@ -36,6 +36,14 @@ export default async function ChecklistDetailPage({
     .sort()
     .join('|')
 
+  const existingCategories = Array.from(
+    new Set(
+      (items ?? [])
+        .map((item) => item.service_category?.trim())
+        .filter((cat): cat is string => Boolean(cat))
+    )
+  )
+
   return (
     <div className="max-w-3xl">
       <PageHeader
@@ -57,7 +65,7 @@ export default async function ChecklistDetailPage({
 
       <section className="mb-8">
         <h2 className="mb-3 font-headline text-lg font-semibold">Add Item</h2>
-        <AddChecklistItemForm templateId={id} />
+        <AddChecklistItemForm templateId={id} existingCategories={existingCategories} />
       </section>
 
       <section className="flex flex-col gap-3">
