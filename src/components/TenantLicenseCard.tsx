@@ -103,12 +103,15 @@ export function TenantLicenseCard({
     )
   }
 
-  const usagePct =
-    tenant.max_property_licenses > 0
+  const isHqMaster = tenant.slug === 'hq' || tenant.name.toLowerCase().includes('hq')
+
+  const usagePct = isHqMaster
+    ? 100
+    : tenant.max_property_licenses > 0
       ? Math.min(100, Math.round((tenant.propertyCount / tenant.max_property_licenses) * 100))
       : 0
 
-  const isAtCapacity = tenant.propertyCount >= tenant.max_property_licenses
+  const isAtCapacity = !isHqMaster && tenant.propertyCount >= tenant.max_property_licenses
 
   const parentOrgName =
     parentTenants.find((pt) => pt.id === tenant.parent_organization_id)?.name ?? null
@@ -216,22 +219,22 @@ export function TenantLicenseCard({
                   defaultValue={tenant.license_tier}
                   className="min-h-9 rounded border border-outline-variant px-2 text-xs bg-surface-container-lowest focus:border-primary-container focus:outline-none"
                 >
-                  <option value="starter">Starter</option>
-                  <option value="standard">Standard</option>
-                  <option value="pro">Pro</option>
-                  <option value="enterprise">Enterprise</option>
+                  <option value="starter">Starter (Single Site)</option>
+                  <option value="standard">Standard (Up to 5)</option>
+                  {tenant.license_tier === 'pro' && <option value="pro">Pro (Legacy)</option>}
+                  <option value="enterprise">Enterprise (Custom)</option>
                 </select>
               </div>
 
               <div className="flex flex-col gap-1">
                 <label className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                  Max Licenses
+                  Max Licenses {isHqMaster && <span className="text-[10px] text-success">(Unlimited for HQ)</span>}
                 </label>
                 <input
                   name="max_property_licenses"
                   type="number"
                   min={1}
-                  max={500}
+                  max={10000}
                   defaultValue={tenant.max_property_licenses}
                   required
                   className="min-h-9 rounded border border-outline-variant px-2.5 text-xs focus:border-primary-container focus:outline-none"
@@ -400,8 +403,10 @@ export function TenantLicenseCard({
                 <span className="flex items-center gap-1 font-semibold text-on-surface-variant">
                   <KeyRound size={13} className="text-primary" /> Property Licenses
                 </span>
-                <span className="font-bold">
-                  {tenant.propertyCount} / {tenant.max_property_licenses} used
+                <span className={`font-bold ${isHqMaster ? 'text-success' : ''}`}>
+                  {isHqMaster
+                    ? `${tenant.propertyCount} Properties (HQ Master - Unlimited)`
+                    : `${tenant.propertyCount} / ${tenant.max_property_licenses} used`}
                 </span>
               </div>
 
@@ -409,7 +414,13 @@ export function TenantLicenseCard({
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
                 <div
                   className={`h-full transition-all duration-300 ${
-                    isAtCapacity ? 'bg-error' : usagePct > 80 ? 'bg-primary' : 'bg-primary-container'
+                    isHqMaster
+                      ? 'bg-success'
+                      : isAtCapacity
+                        ? 'bg-error'
+                        : usagePct > 80
+                          ? 'bg-primary'
+                          : 'bg-primary-container'
                   }`}
                   style={{ width: `${usagePct}%` }}
                 />

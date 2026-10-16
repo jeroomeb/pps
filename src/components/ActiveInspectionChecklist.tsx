@@ -41,6 +41,7 @@ export function ActiveInspectionChecklist({
   riskScore = null,
   riskSummary = null,
   riskAreas = [],
+  riskRecurringItems = [],
 }: {
   inspectionId: string
   propertyId: string
@@ -69,6 +70,7 @@ export function ActiveInspectionChecklist({
   riskScore?: number | null
   riskSummary?: string | null
   riskAreas?: { domain: RiskDomain; label: string }[]
+  riskRecurringItems?: { itemName: string; domain: string; count: number }[]
 }) {
   const router = useRouter()
   const showToast = useToast()
@@ -228,6 +230,7 @@ export function ActiveInspectionChecklist({
           score={riskScore}
           summary={riskSummary}
           areas={(riskAreas ?? []).map((area) => area.label)}
+          recurringItems={riskRecurringItems}
         />
       )}
       <Card className="mb-6">

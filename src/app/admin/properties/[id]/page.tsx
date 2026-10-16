@@ -78,11 +78,12 @@ export default async function PropertyDetailPage({
   const localDate = localDateString(new Date(), propertyTimezoneOrDefault(property.timezone))
   const { data: eveningScore } = await supabase
     .from('property_risk_scores')
-    .select('score, summary, flags')
+    .select('score, summary, flags, recurring_items, weather')
     .eq('property_id', id)
     .eq('local_date', localDate)
     .maybeSingle()
   const eveningFlags = parseRiskFlags(eveningScore?.flags)
+  const eveningRecurring = (eveningScore?.recurring_items as unknown as { itemName: string; domain: string; count: number }[]) ?? []
 
   const profileMap = new Map((allProfiles ?? []).map((p) => [p.id, p]))
 
@@ -129,11 +130,13 @@ export default async function PropertyDetailPage({
 
   return (
     <div>
-      {eveningScore && (
+      {eveningScore && property.enable_predictive_scoring !== false && (
         <RiskScoreBanner
           score={eveningScore.score}
           summary={eveningScore.summary}
           areas={eveningFlags.map((flag) => flag.label)}
+          recurringItems={eveningRecurring}
+          weather={eveningScore.weather}
         />
       )}
       <PageHeader

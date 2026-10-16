@@ -201,7 +201,8 @@ export function InspectionReport({
   prediction?: {
     score: number
     summary: string
-    areas: { label: string; passed: number; failed: number; na: number }[]
+    areas?: { label: string; passed: number; failed: number; na: number }[]
+    recurringItems?: { itemName: string; count: number }[]
   } | null
 }) {
   const failures = items.filter((item) => item.status === 'fail')
@@ -262,18 +263,76 @@ export function InspectionReport({
           </View>
         </View>
 
-        {prediction ? (
-          <View style={styles.metaBox}>
-            <Text style={styles.metaLabel}>Evening risk score</Text>
-            <Text style={styles.metaValue}>{prediction.score}</Text>
-            <Text style={styles.itemDescription}>{prediction.summary}</Text>
-            {prediction.areas.map((area) => (
-              <Text key={area.label} style={styles.itemDescription}>
-                {area.label}: {area.passed} passed, {area.failed} failed, {area.na} not applicable
+        {prediction ? (() => {
+          const score = prediction.score
+          const tier = score <= 25 ? 1 : score <= 50 ? 2 : score <= 75 ? 3 : 4
+          const tierBorderColor = tier === 1 ? '#10b981' : tier === 2 ? '#f59e0b' : tier === 3 ? '#f97316' : '#ef4444'
+          const tierBgColor = tier === 1 ? '#ecfdf5' : tier === 2 ? '#fffbeb' : tier === 3 ? '#fff7ed' : '#fef2f2'
+          const tierName = tier === 1 ? 'LOW RISK (STANDARD OPERATIONS)' : tier === 2 ? 'MODERATE RISK (ELEVATED MONITORING)' : tier === 3 ? 'HIGH RISK (TARGETED PRE-SHIFT MITIGATION)' : 'CRITICAL RISK (IMMEDIATE INTERVENTION REQUIRED)'
+          const tierMeaning =
+            tier === 1
+              ? 'The property has clean compliance logs, great weather conditions, minimal recent asset anomalies, and low occupancy stress.'
+              : tier === 2
+                ? 'Minor predictive anomalies detected. Typically triggered by early-stage asset friction.'
+                : tier === 3
+                  ? 'High probability of an asset failure or municipal citation. Compounding historical signals.'
+                  : 'Severe operational, safety, or legal liability breakdown is highly imminent during the graveyard shift.'
+
+          return (
+            <View
+              style={{
+                marginBottom: 20,
+                padding: 12,
+                borderRadius: 4,
+                borderWidth: 1.5,
+                borderColor: tierBorderColor,
+                backgroundColor: tierBgColor,
+              }}
+              wrap={false}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <Text style={{ fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: tierBorderColor, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  PREDICTIVE RISK RATING: {tierName}
+                </Text>
+                <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold', color: CHARCOAL }}>
+                  Score: {score} / 100
+                </Text>
+              </View>
+              <Text style={{ fontSize: 9.5, color: CHARCOAL, marginBottom: 4, fontFamily: 'Helvetica-Bold' }}>
+                {prediction.summary}
               </Text>
-            ))}
-          </View>
-        ) : null}
+              <Text style={{ fontSize: 8.5, color: MUTED, marginBottom: 6 }}>
+                Operational Mandate: {tierMeaning}
+              </Text>
+
+              {prediction.recurringItems && prediction.recurringItems.length > 0 && (
+                <View style={{ marginTop: 4, paddingTop: 4, borderTopWidth: 0.5, borderTopColor: BORDER }}>
+                  <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#991b1b', textTransform: 'uppercase', marginBottom: 2 }}>
+                    Regular Occurrence Items Flagged for this Property:
+                  </Text>
+                  {prediction.recurringItems.map((rec) => (
+                    <Text key={rec.itemName} style={{ fontSize: 8.5, color: CHARCOAL }}>
+                      • {rec.itemName} ({rec.count}× failed in lookback window)
+                    </Text>
+                  ))}
+                </View>
+              )}
+
+              {prediction.areas && prediction.areas.length > 0 && (
+                <View style={{ marginTop: 4, paddingTop: 4, borderTopWidth: 0.5, borderTopColor: BORDER }}>
+                  <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: MUTED, textTransform: 'uppercase', marginBottom: 2 }}>
+                    Pre-Shift Predictions vs. Audit Outcomes:
+                  </Text>
+                  {prediction.areas.map((area) => (
+                    <Text key={area.label} style={{ fontSize: 8.5, color: MUTED }}>
+                      {area.label}: {area.passed} passed, {area.failed} failed, {area.na} not applicable
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          )
+        })() : null}
 
         {failures.length > 0 && (
           <View>

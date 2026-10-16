@@ -27,7 +27,7 @@ export default async function InspectionDetailPage({
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, created_at, completed_at, scheduled_for, cancellation_reason, arrived_at, departed_at, dwell_time_seconds, geofence_status, predicted_score, predicted_flags, predicted_summary, properties(id, name, address, phone, notes, required_schedule, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, timezone), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, created_at, completed_at, scheduled_for, cancellation_reason, arrived_at, departed_at, dwell_time_seconds, geofence_status, predicted_score, predicted_flags, predicted_summary, predicted_recurring_items, properties(id, name, address, phone, notes, required_schedule, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, timezone, enable_predictive_scoring), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', id)
     .single()
@@ -88,6 +88,7 @@ export default async function InspectionDetailPage({
     longitude: number | null
     geofence_radius_meters: number
     timezone: string | null
+    enable_predictive_scoring?: boolean
   }
   const template = inspection.checklist_templates as unknown as { name: string }
   const inspector = inspection.profiles as unknown as { full_name: string }
@@ -96,15 +97,18 @@ export default async function InspectionDetailPage({
   // ScheduleEntry[] crosses into the client components below.
   const inspectionDays = parseSchedule(property.required_schedule).map(scheduleEntryLabel)
 
-  const prediction = await freezeEveningScore(supabase, {
-    id: inspection.id,
-    status: inspection.status,
-    propertyId: inspection.property_id,
-    timezone: property.timezone,
-    predictedScore: inspection.predicted_score,
-    predictedFlags: inspection.predicted_flags,
-    predictedSummary: inspection.predicted_summary,
-  })
+  const prediction = property.enable_predictive_scoring !== false
+    ? await freezeEveningScore(supabase, {
+        id: inspection.id,
+        status: inspection.status,
+        propertyId: inspection.property_id,
+        timezone: property.timezone,
+        predictedScore: inspection.predicted_score,
+        predictedFlags: inspection.predicted_flags,
+        predictedRecurringItems: inspection.predicted_recurring_items,
+        predictedSummary: inspection.predicted_summary,
+      })
+    : null
 
   if (inspection.status === 'completed') {
     const { data: geoLogs } = await supabase
@@ -115,11 +119,12 @@ export default async function InspectionDetailPage({
 
     return (
       <>
-      {prediction && (
+      {prediction && property.enable_predictive_scoring !== false && (
         <RiskScoreBanner
           score={prediction.score}
           summary={prediction.summary}
           areas={prediction.flags.map((flag) => flag.label)}
+          recurringItems={prediction.recurringItems}
         />
       )}
       <ReadOnlyInspectionView
@@ -308,6 +313,7 @@ export default async function InspectionDetailPage({
         riskScore={prediction?.score ?? null}
         riskSummary={prediction?.summary ?? null}
         riskAreas={prediction?.flags ?? []}
+        riskRecurringItems={prediction?.recurringItems ?? []}
       />
     </>
   )

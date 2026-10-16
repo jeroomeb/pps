@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { scorePropertyRisk, type ScoreHistoryItem } from './risk-score'
+import {
+  scorePropertyRisk,
+  getRiskTier,
+  RISK_TIERS,
+  type ScoreHistoryItem,
+} from './risk-score'
 
 const ZONE = 'America/New_York'
 
@@ -154,4 +159,61 @@ test('a single failing area is not padded with empty flags', () => {
   assert.ok(result)
   assert.equal(result.flags.length, 1)
   assert.equal(result.flags[0]?.domain, 'appearance')
+})
+
+test('correctly maps 4-tier risk intervals and operational meanings', () => {
+  assert.equal(getRiskTier(1).tier, 1)
+  assert.equal(getRiskTier(25).tier, 1)
+  assert.equal(getRiskTier(26).tier, 2)
+  assert.equal(getRiskTier(50).tier, 2)
+  assert.equal(getRiskTier(51).tier, 3)
+  assert.equal(getRiskTier(75).tier, 3)
+  assert.equal(getRiskTier(76).tier, 4)
+  assert.equal(getRiskTier(100).tier, 4)
+
+  assert.equal(RISK_TIERS[1].name, 'Low Risk')
+  assert.equal(RISK_TIERS[2].name, 'Moderate Risk')
+  assert.equal(RISK_TIERS[3].name, 'High Risk')
+  assert.equal(RISK_TIERS[4].name, 'Critical Risk')
+  assert.match(RISK_TIERS[4].meaning, /graveyard shift/)
+})
+
+test('identifies recurring failed question titles in historical window', () => {
+  const dates = ['2026-01-08', '2026-01-22', '2026-02-05', '2026-02-19', '2026-03-05']
+  const items: ScoreHistoryItem[] = [
+    ...dates.map((d) => ({
+      riskDomain: 'life_safety' as const,
+      status: 'fail' as const,
+      completedAt: `${d}T18:00:00.000Z`,
+      itemName: 'Pool Gate Self-Latch',
+    })),
+    ...dates.slice(0, 3).map((d) => ({
+      riskDomain: 'life_safety' as const,
+      status: 'fail' as const,
+      completedAt: `${d}T18:00:00.000Z`,
+      itemName: 'Exit Sign Illumination',
+    })),
+    ...dates.slice(0, 1).map((d) => ({
+      riskDomain: 'appearance' as const,
+      status: 'fail' as const,
+      completedAt: `${d}T18:00:00.000Z`,
+      itemName: 'Litter in Breezeway',
+    })),
+  ]
+
+  const result = scorePropertyRisk({
+    timezone: ZONE,
+    localDate: '2026-03-19',
+    raining: false,
+    holidayWeekend: false,
+    items,
+  })
+
+  assert.ok(result)
+  assert.ok(result.recurringItems.length >= 2)
+  assert.equal(result.recurringItems[0].itemName, 'Pool Gate Self-Latch')
+  assert.equal(result.recurringItems[0].count, 5)
+  assert.equal(result.recurringItems[1].itemName, 'Exit Sign Illumination')
+  assert.equal(result.recurringItems[1].count, 3)
+  assert.ok(result.tier.tier >= 1)
 })

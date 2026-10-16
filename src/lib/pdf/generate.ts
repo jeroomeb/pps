@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { InspectionReport } from '@/lib/pdf/InspectionReport'
 import { isSafeInspectionPhotoPath } from '@/lib/storage-paths'
 import { formatDateTime } from '@/lib/timezone'
-import { outcomeCounts, parseRiskFlags } from '@/lib/risk-score'
+import { outcomeCounts, parseRiskFlags, parseRecurringItems } from '@/lib/risk-score'
 import type { RiskDomain } from '@/lib/risk-domain'
 
 type ReportItem = {
@@ -120,7 +120,8 @@ export async function renderInspectionPdf(input: {
   prediction?: {
     score: number
     summary: string
-    areas: { label: string; passed: number; failed: number; na: number }[]
+    areas?: { label: string; passed: number; failed: number; na: number }[]
+    recurringItems?: { itemName: string; count: number }[]
   } | null
 }): Promise<Buffer> {
   return renderToBuffer(InspectionReport({ logoUrl: getLogoDataUri(), ...input }))
@@ -139,7 +140,7 @@ export async function regenerateInspectionPdf(
   const { data: inspection, error } = await admin
     .from('inspections')
     .select(
-      'id, completed_at, predicted_score, predicted_flags, predicted_summary, properties(name, address), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, completed_at, predicted_score, predicted_flags, predicted_summary, predicted_recurring_items, properties(name, address), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()
@@ -165,12 +166,14 @@ export async function regenerateInspectionPdf(
     : ''
 
   const predictedFlags = parseRiskFlags(inspection.predicted_flags)
+  const recurringItems = parseRecurringItems(inspection.predicted_recurring_items)
   const prediction =
     inspection.predicted_score == null || !inspection.predicted_summary
       ? null
       : {
           score: inspection.predicted_score,
           summary: inspection.predicted_summary,
+          recurringItems,
           areas: predictedFlags.map((flag) => ({
             label: flag.label,
             ...outcomeCounts(

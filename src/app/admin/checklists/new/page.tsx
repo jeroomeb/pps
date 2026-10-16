@@ -1,7 +1,10 @@
 import { ChecklistTemplateForm } from '@/components/ChecklistTemplateForm'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { requireGlobalAdmin } from '@/lib/auth/dal'
 
-export default function NewChecklistPage() {
+export default async function NewChecklistPage() {
+  await requireGlobalAdmin()
+
   return (
     <div className="max-w-3xl">
       <PageHeader

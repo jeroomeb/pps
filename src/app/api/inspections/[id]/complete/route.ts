@@ -8,7 +8,7 @@ import { validateInspectionItems } from '@/lib/inspection-validation'
 import { formatDateTime } from '@/lib/timezone'
 import { isBuildingCategory, payoutMatrixKey } from '@/lib/building-category'
 import { renewStandingInspection } from '@/lib/standing-inspections'
-import { outcomeCounts, parseRiskFlags } from '@/lib/risk-score'
+import { outcomeCounts, parseRiskFlags, parseRecurringItems } from '@/lib/risk-score'
 import type { RiskDomain } from '@/lib/risk-domain'
 
 export const runtime = 'nodejs'
@@ -25,7 +25,7 @@ export async function POST(
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, predicted_score, predicted_flags, predicted_summary, properties(name, address, email, custom_payout_rate, payout_tier, building_category), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, predicted_score, predicted_flags, predicted_summary, predicted_recurring_items, properties(name, address, email, custom_payout_rate, payout_tier, building_category), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()
@@ -98,12 +98,14 @@ export async function POST(
   const completedAtLabel = formatDateTime(completedAt)
 
   const predictedFlags = parseRiskFlags(inspection.predicted_flags)
+  const recurringItems = parseRecurringItems(inspection.predicted_recurring_items)
   const prediction =
     inspection.predicted_score == null || !inspection.predicted_summary
       ? null
       : {
           score: inspection.predicted_score,
           summary: inspection.predicted_summary,
+          recurringItems,
           areas: predictedFlags.map((flag) => ({
             label: flag.label,
             ...outcomeCounts(

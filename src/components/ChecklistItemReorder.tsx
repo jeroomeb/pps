@@ -50,9 +50,11 @@ function swap<T>(arr: T[], i: number, j: number): T[] {
 export function ChecklistItemReorder({
   templateId,
   items,
+  readOnly = false,
 }: {
   templateId: string
   items: Item[]
+  readOnly?: boolean
 }) {
   const showToast = useToast()
   const [pending, startTransition] = useTransition()
@@ -99,34 +101,38 @@ export function ChecklistItemReorder({
               {block.category} ({block.items.length})
             </span>
             <span className="flex items-center gap-1">
-              <button
-                type="button"
-                disabled={pending || categoryIndex === 0}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  moveCategory(categoryIndex, -1)
-                }}
-                aria-label={`Move ${block.category} category up`}
-                title="Move category up"
-                className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-30"
-              >
-                <ChevronUp size={16} />
-              </button>
-              <button
-                type="button"
-                disabled={pending || categoryIndex === blocks.length - 1}
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  moveCategory(categoryIndex, 1)
-                }}
-                aria-label={`Move ${block.category} category down`}
-                title="Move category down"
-                className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-30"
-              >
-                <ChevronDownIcon size={16} />
-              </button>
+              {!readOnly && (
+                <>
+                  <button
+                    type="button"
+                    disabled={pending || categoryIndex === 0}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      moveCategory(categoryIndex, -1)
+                    }}
+                    aria-label={`Move ${block.category} category up`}
+                    title="Move category up"
+                    className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-30"
+                  >
+                    <ChevronUp size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pending || categoryIndex === blocks.length - 1}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      moveCategory(categoryIndex, 1)
+                    }}
+                    aria-label={`Move ${block.category} category down`}
+                    title="Move category down"
+                    className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-30"
+                  >
+                    <ChevronDownIcon size={16} />
+                  </button>
+                </>
+              )}
               <ChevronDown size={16} className="ml-1 transition group-open:rotate-180" />
             </span>
           </summary>
@@ -138,69 +144,82 @@ export function ChecklistItemReorder({
                   {item.description && (
                     <p className="text-sm text-on-surface-variant">{item.description}</p>
                   )}
-                  <label className="mt-2 block text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                    Risk area
-                    <select
-                      value={item.risk_domain ?? ''}
-                      disabled={pending}
-                      onChange={(event) => {
-                        const domain = event.target.value as RiskDomain | ''
-                        const previous = blocks
-                        const next = blocks.map((entry, index) =>
-                          index !== categoryIndex
-                            ? entry
-                            : {
-                                ...entry,
-                                items: entry.items.map((row) =>
-                                  row.id === item.id
-                                    ? { ...row, risk_domain: domain || null }
-                                    : row
-                                ),
-                              }
-                        )
-                        setBlocks(next)
-                        startTransition(async () => {
-                          const result = await setTemplateItemRiskDomain(item.id, templateId, domain)
-                          if (result?.error) {
-                            setBlocks(previous)
-                            showToast('error', result.error)
-                          }
-                        })
-                      }}
-                      className="mt-1 block min-h-10 w-full max-w-xs rounded border border-outline-variant bg-surface px-2 text-sm font-normal normal-case tracking-normal text-on-surface"
+                  {readOnly ? (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                        Risk area:
+                      </span>
+                      <span className="rounded bg-surface-container-high px-2 py-0.5 text-xs font-medium text-on-surface">
+                        {item.risk_domain ? RISK_DOMAIN_LABELS[item.risk_domain] : 'Not used in score'}
+                      </span>
+                    </div>
+                  ) : (
+                    <label className="mt-2 block text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                      Risk area
+                      <select
+                        value={item.risk_domain ?? ''}
+                        disabled={pending}
+                        onChange={(event) => {
+                          const domain = event.target.value as RiskDomain | ''
+                          const previous = blocks
+                          const next = blocks.map((entry, index) =>
+                            index !== categoryIndex
+                              ? entry
+                              : {
+                                  ...entry,
+                                  items: entry.items.map((row) =>
+                                    row.id === item.id
+                                      ? { ...row, risk_domain: domain || null }
+                                      : row
+                                  ),
+                                }
+                          )
+                          setBlocks(next)
+                          startTransition(async () => {
+                            const result = await setTemplateItemRiskDomain(item.id, templateId, domain)
+                            if (result?.error) {
+                              setBlocks(previous)
+                              showToast('error', result.error)
+                            }
+                          })
+                        }}
+                        className="mt-1 block min-h-10 w-full max-w-xs rounded border border-outline-variant bg-surface px-2 text-sm font-normal normal-case tracking-normal text-on-surface"
+                      >
+                        <option value="">Not used in the score</option>
+                        {RISK_DOMAINS.map((domain) => (
+                          <option key={domain} value={domain}>
+                            {RISK_DOMAIN_LABELS[domain]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+                {!readOnly && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={pending || itemIndex === 0}
+                      onClick={() => moveItem(categoryIndex, itemIndex, -1)}
+                      aria-label={`Move ${item.item_name} up`}
+                      title="Move up"
+                      className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-30"
                     >
-                      <option value="">Not used in the score</option>
-                      {RISK_DOMAINS.map((domain) => (
-                        <option key={domain} value={domain}>
-                          {RISK_DOMAIN_LABELS[domain]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    disabled={pending || itemIndex === 0}
-                    onClick={() => moveItem(categoryIndex, itemIndex, -1)}
-                    aria-label={`Move ${item.item_name} up`}
-                    title="Move up"
-                    className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-30"
-                  >
-                    <ChevronUp size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={pending || itemIndex === block.items.length - 1}
-                    onClick={() => moveItem(categoryIndex, itemIndex, 1)}
-                    aria-label={`Move ${item.item_name} down`}
-                    title="Move down"
-                    className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-30"
-                  >
-                    <ChevronDownIcon size={16} />
-                  </button>
-                  <DeleteItemButton itemId={item.id} templateId={templateId} />
-                </div>
+                      <ChevronUp size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending || itemIndex === block.items.length - 1}
+                      onClick={() => moveItem(categoryIndex, itemIndex, 1)}
+                      aria-label={`Move ${item.item_name} down`}
+                      title="Move down"
+                      className="flex h-11 w-11 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-30"
+                    >
+                      <ChevronDownIcon size={16} />
+                    </button>
+                    <DeleteItemButton itemId={item.id} templateId={templateId} />
+                  </div>
+                )}
               </Card>
             ))}
           </div>

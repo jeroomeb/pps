@@ -40,6 +40,27 @@ export function ChecklistTemplateForm() {
           placeholder="e.g. Waterfront Villas Checklist Master"
           className="min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none"
         />
+
+        <div className="mt-3 flex items-start gap-2.5 rounded-md border border-outline-variant/60 bg-surface-container-low/50 p-3">
+          <input
+            type="checkbox"
+            id="enable_predictive_scoring"
+            name="enable_predictive_scoring"
+            defaultChecked
+            className="mt-0.5 h-4 w-4 rounded border-outline-variant text-[#ee8a4b] focus:ring-[#ee8a4b]"
+          />
+          <div className="flex flex-col">
+            <label
+              htmlFor="enable_predictive_scoring"
+              className="text-xs font-semibold text-on-surface cursor-pointer"
+            >
+              Enable Predictive Risk Scoring for this Checklist
+            </label>
+            <p className="text-[11px] text-on-surface-variant">
+              When enabled, inspections using this checklist participate in pre-shift risk score calculations and recurring failure trends.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3">

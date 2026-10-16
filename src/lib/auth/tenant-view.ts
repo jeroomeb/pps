@@ -11,6 +11,7 @@ export type AdminScope = {
   tenantName: string | null
   isViewingTenant: boolean
   enablePayouts: boolean
+  isGlobalAdmin: boolean
 }
 
 /**
@@ -28,6 +29,7 @@ export const getAdminScope = cache(async (): Promise<AdminScope> => {
       tenantName: profile.tenant?.name ?? null,
       isViewingTenant: false,
       enablePayouts: profile.tenant?.enable_payouts ?? false,
+      isGlobalAdmin: false,
     }
   }
 
@@ -39,6 +41,7 @@ export const getAdminScope = cache(async (): Promise<AdminScope> => {
       tenantName: null,
       isViewingTenant: false,
       enablePayouts: profile.tenant?.enable_payouts ?? false,
+      isGlobalAdmin: true,
     }
   }
 
@@ -55,6 +58,7 @@ export const getAdminScope = cache(async (): Promise<AdminScope> => {
       tenantName: null,
       isViewingTenant: false,
       enablePayouts: false,
+      isGlobalAdmin: true,
     }
   }
 
@@ -63,5 +67,6 @@ export const getAdminScope = cache(async (): Promise<AdminScope> => {
     tenantName: tenant.name,
     isViewingTenant: true,
     enablePayouts: tenant.enable_payouts ?? false,
+    isGlobalAdmin: true,
   }
 })

@@ -159,11 +159,19 @@ export function CreateTenantForm({
               id="license_tier"
               name="license_tier"
               defaultValue="standard"
+              onChange={(e) => {
+                const tier = e.target.value
+                const skuInput = document.getElementById('max_property_licenses') as HTMLInputElement | null
+                if (skuInput) {
+                  if (tier === 'starter') skuInput.value = '1'
+                  else if (tier === 'standard') skuInput.value = '5'
+                  else if (tier === 'enterprise') skuInput.value = '25'
+                }
+              }}
               className="min-h-11 rounded border border-outline-variant px-3 text-sm bg-surface-container-lowest focus:border-primary-container focus:outline-none"
             >
               <option value="starter">Starter (Single Site)</option>
-              <option value="standard">Standard (Up to 5)</option>
-              <option value="pro">Pro (Up to 20)</option>
+              <option value="standard">Standard (Up to 5 Properties)</option>
               <option value="enterprise">Enterprise (Custom)</option>
             </select>
           </div>
@@ -177,12 +185,12 @@ export function CreateTenantForm({
               name="max_property_licenses"
               type="number"
               min={1}
-              max={500}
+              max={1000}
               defaultValue={5}
               required
               className="min-h-11 rounded border border-outline-variant px-3 text-sm focus:border-primary-container focus:outline-none"
             />
-            <p className="text-[11px] text-on-surface-variant">Max physical buildings allowed</p>
+            <p className="text-[11px] text-on-surface-variant">Customizable physical building capacity</p>
           </div>
 
           <div className="flex flex-col gap-1">

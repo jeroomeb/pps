@@ -7,6 +7,7 @@ import { saveInspectionItem } from '@/lib/actions/inspections'
 import { saveDraftItem, clearDraftItem } from '@/lib/inspection-drafts'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
+import { stampPhotoWithAuditTrail, getQuickCoordinates } from '@/lib/photo-watermark'
 
 type ItemStatus = 'pass' | 'fail' | 'na'
 
@@ -113,32 +114,46 @@ export function ChecklistItemCard({
 
     setUploading(true)
     setPhotoSavedNoPreview(false)
-    const supabase = createClient()
-    const ext = file.name.split('.').pop() || 'jpg'
-    const objectPath = `${inspectionId}/${item.id}-${Date.now()}.${ext}`
 
-    const { error: uploadError } = await supabase.storage
-      .from('photos')
-      .upload(objectPath, file, { upsert: true })
+    try {
+      // Capture non-blocking GPS & stamp photo with permanent QA audit trail
+      const gps = await getQuickCoordinates()
+      const stampedFile = await stampPhotoWithAuditTrail(file, {
+        inspectionId,
+        itemName: item.item_name,
+        gpsCoordinates: gps,
+      })
 
-    if (uploadError) {
-      showToast('error', `Photo upload failed: ${uploadError.message}`)
+      const supabase = createClient()
+      const ext = 'jpg'
+      const objectPath = `${inspectionId}/${item.id}-${Date.now()}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(objectPath, stampedFile, { upsert: true, contentType: 'image/jpeg' })
+
+      if (uploadError) {
+        showToast('error', `Photo upload failed: ${uploadError.message}`)
+        setUploading(false)
+        return
+      }
+
+      const { data: signed } = await supabase.storage
+        .from('photos')
+        .createSignedUrl(objectPath, 3600)
+
+      if (signed?.signedUrl) {
+        setPhotoUrl(signed.signedUrl)
+      } else {
+        setPhotoSavedNoPreview(true)
+        showToast('info', 'Photo saved, but the preview could not load.')
+      }
       setUploading(false)
-      return
+      persist({ photo_path: objectPath })
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Photo processing failed.')
+      setUploading(false)
     }
-
-    const { data: signed } = await supabase.storage
-      .from('photos')
-      .createSignedUrl(objectPath, 3600)
-
-    if (signed?.signedUrl) {
-      setPhotoUrl(signed.signedUrl)
-    } else {
-      setPhotoSavedNoPreview(true)
-      showToast('info', 'Photo saved, but the preview could not load.')
-    }
-    setUploading(false)
-    persist({ photo_path: objectPath })
   }
 
   const hasPhoto = Boolean(photoUrl || photoSavedNoPreview)

@@ -41,6 +41,7 @@ const propertySchema = z.object({
   checklist_always_available: z.coerce.boolean().default(false),
   timezone: z.enum(PROPERTY_TIMEZONES).default('America/New_York'),
   tenant_id: z.string().uuid().optional().nullable(),
+  enable_predictive_scoring: z.coerce.boolean().default(true),
 })
 
 export type PropertyFormState = { error?: string } | undefined
@@ -88,6 +89,10 @@ function propertyFormFields(formData: FormData) {
     checklist_always_available: formData.get('checklist_always_available') === 'on',
     timezone: formData.get('timezone') || 'America/New_York',
     tenant_id: typeof rawTenantId === 'string' && rawTenantId.trim() ? rawTenantId.trim() : null,
+    enable_predictive_scoring:
+      formData.has('enable_predictive_scoring')
+        ? formData.get('enable_predictive_scoring') === 'on' || formData.get('enable_predictive_scoring') === 'true'
+        : true,
   }
 }
 
@@ -114,10 +119,11 @@ export async function createProperty(
       : profile.tenant_id ?? null
 
   // Enforce Tenant Property License SKU limits (Shared DB, Shared Schema Isolation)
+  // Amenity Op's Master HQ has uncapped/unlimited licenses (Point 6)
   if (targetTenantId) {
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id, name, max_property_licenses, status')
+      .select('id, name, slug, max_property_licenses, status')
       .eq('id', targetTenantId)
       .single()
 
@@ -125,14 +131,17 @@ export async function createProperty(
       if (tenant.status === 'suspended') {
         return { error: 'Your organization account is suspended. Please contact support.' }
       }
-      const { count } = await supabase
-        .from('properties')
-        .select('id', { count: 'exact', head: true })
-        .eq('tenant_id', tenant.id)
+      const isHqMaster = tenant.slug === 'hq' || tenant.name.toLowerCase().includes('hq')
+      if (!isHqMaster) {
+        const { count } = await supabase
+          .from('properties')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', tenant.id)
 
-      if ((count ?? 0) >= tenant.max_property_licenses) {
-        return {
-          error: `License limit reached: Organization "${tenant.name}" has allocated all ${tenant.max_property_licenses} property licenses on its plan. Upgrade the license to add more properties.`,
+        if ((count ?? 0) >= tenant.max_property_licenses) {
+          return {
+            error: `License limit reached: Organization "${tenant.name}" has allocated all ${tenant.max_property_licenses} property licenses on its plan. Upgrade the license to add more properties.`,
+          }
         }
       }
     }
@@ -157,6 +166,7 @@ export async function createProperty(
     building_category: parsed.data.building_category,
     checklist_always_available: parsed.data.checklist_always_available,
     timezone: parsed.data.timezone,
+    enable_predictive_scoring: parsed.data.enable_predictive_scoring,
   }
 
   // Retry once on the (astronomically unlikely) human_id collision.
@@ -225,6 +235,7 @@ export async function updateProperty(
     building_category: parsed.data.building_category,
     checklist_always_available: parsed.data.checklist_always_available,
     timezone: parsed.data.timezone,
+    enable_predictive_scoring: parsed.data.enable_predictive_scoring,
   }
 
   if (profile.is_global_admin && !scope.isViewingTenant && parsed.data.tenant_id !== undefined) {

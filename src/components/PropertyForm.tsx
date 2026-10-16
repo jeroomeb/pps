@@ -47,6 +47,7 @@ export function PropertyForm({
     checklistAlwaysAvailable?: boolean
     timezone?: string | null
     enabledTemplateIds?: string[]
+    enablePredictiveScoring?: boolean
   }
   tenants?: { id: string; name: string }[]
   templates?: { id: string; name: string }[]
@@ -431,6 +432,26 @@ export function PropertyForm({
               <p className="text-xs text-on-surface-variant">
                 Enable for 1099 independent contractor audits to enforce photo ID document submission.
                 Disable for properties maintained by internal corporate / W-2 facilities staff.
+              </p>
+            </div>
+          </label>
+        </div>
+
+        {/* Point 3: Predictive Risk Modeling Toggle */}
+        <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              name="enable_predictive_scoring"
+              defaultChecked={defaultValues?.enablePredictiveScoring ?? true}
+              className="mt-1 h-4 w-4 accent-[#ee8a4b]"
+            />
+            <div>
+              <p className="text-sm font-semibold text-on-surface">
+                Enable Predictive Risk Scoring & Analytics
+              </p>
+              <p className="text-xs text-on-surface-variant">
+                When enabled, the automated engine computes nightly 1–100 risk ratings, flags recurring anomalies, and warns overnight teams based on 30+ days of audit history.
               </p>
             </div>
           </label>

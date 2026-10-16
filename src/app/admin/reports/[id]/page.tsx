@@ -9,7 +9,8 @@ import { ResendEmailButton } from '@/components/ResendEmailButton'
 import { ZoomableImage } from '@/components/ZoomableImage'
 import { InspectionGeoTelemetryCard, type GeoLogEntry } from '@/components/InspectionGeoTelemetryCard'
 import { formatDateTime } from '@/lib/timezone'
-import { outcomeCounts, parseRiskFlags } from '@/lib/risk-score'
+import { outcomeCounts, parseRiskFlags, parseRecurringItems } from '@/lib/risk-score'
+import { RiskScoreBanner } from '@/components/RiskScoreBanner'
 import type { RiskDomain } from '@/lib/risk-domain'
 
 export default async function ReportViewPage({
@@ -26,7 +27,7 @@ export default async function ReportViewPage({
   const { data: inspection } = await admin
     .from('inspections')
     .select(
-      'id, status, created_at, completed_at, scheduled_for, email_status, email_error, arrived_at, departed_at, dwell_time_seconds, geofence_status, predicted_score, predicted_flags, predicted_summary, properties(name, address, email, phone, human_id, enable_gps_geofencing, latitude, longitude, geofence_radius_meters), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, created_at, completed_at, scheduled_for, email_status, email_error, arrived_at, departed_at, dwell_time_seconds, geofence_status, predicted_score, predicted_flags, predicted_summary, predicted_recurring_items, properties(name, address, email, phone, human_id, enable_gps_geofencing, latitude, longitude, geofence_radius_meters), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', id)
     .single()
@@ -173,21 +174,27 @@ export default async function ReportViewPage({
         </div>
 
         {inspection.predicted_score != null && inspection.predicted_summary && (
-          <div className="mb-8 rounded-lg border border-primary-container bg-primary-container/15 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-              Predicted risk compared with this visit
-            </p>
-            <p className="font-headline text-3xl font-bold">{inspection.predicted_score}</p>
-            <p className="mt-1 text-sm">{inspection.predicted_summary}</p>
+          <div className="mb-8">
+            <RiskScoreBanner
+              score={inspection.predicted_score}
+              summary={inspection.predicted_summary}
+              areas={predictedFlags.map((flag) => flag.label)}
+              recurringItems={parseRecurringItems(inspection.predicted_recurring_items)}
+            />
             {predictionAreas.length > 0 && (
-              <ul className="mt-3 flex flex-col gap-1 text-sm">
-                {predictionAreas.map((area) => (
-                  <li key={area.label}>
-                    <span className="font-semibold">{area.label}:</span> {area.passed} passed,{' '}
-                    {area.failed} failed, {area.na} not applicable
-                  </li>
-                ))}
-              </ul>
+              <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4 text-sm">
+                <p className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+                  Pre-Shift Predictions vs. Completed Audit Outcome
+                </p>
+                <ul className="flex flex-col gap-1 text-sm text-on-surface">
+                  {predictionAreas.map((area) => (
+                    <li key={area.label}>
+                      <span className="font-semibold">{area.label}:</span> {area.passed} passed,{' '}
+                      {area.failed} failed, {area.na} not applicable
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}

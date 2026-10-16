@@ -12,6 +12,7 @@ export type BuildingCategory = 'luxury' | 'adult' | 'commercial'
 export type GeofenceStatus = 'pending' | 'verified' | 'outside' | 'exempt'
 export type RiskDomain = 'life_safety' | 'appearance' | 'asset_protection'
 export type RiskFlag = { domain: RiskDomain; label: string; rate: number }
+export type RecurringItem = { itemName: string; domain: RiskDomain; count: number }
 
 export type PayoutMatrixRates = {
   tier_1: number
@@ -188,18 +189,21 @@ export interface Database {
           name: string
           created_at: string
           tenant_id: string | null
+          enable_predictive_scoring: boolean
         }
         Insert: {
           id?: string
           name: string
           created_at?: string
           tenant_id?: string | null
+          enable_predictive_scoring?: boolean
         }
         Update: {
           id?: string
           name?: string
           created_at?: string
           tenant_id?: string | null
+          enable_predictive_scoring?: boolean
         }
         Relationships: [
           {
@@ -277,6 +281,7 @@ export interface Database {
           building_category: BuildingCategory | null
           checklist_always_available: boolean
           timezone: string
+          enable_predictive_scoring: boolean
         }
         Insert: {
           id?: string
@@ -305,6 +310,7 @@ export interface Database {
           building_category?: BuildingCategory | null
           checklist_always_available?: boolean
           timezone?: string
+          enable_predictive_scoring?: boolean
         }
         Update: {
           id?: string
@@ -333,6 +339,7 @@ export interface Database {
           building_category?: BuildingCategory | null
           checklist_always_available?: boolean
           timezone?: string
+          enable_predictive_scoring?: boolean
         }
         Relationships: [
           {
@@ -523,6 +530,7 @@ export interface Database {
           predicted_flags: RiskFlag[] | null
           predicted_summary: string | null
           predicted_local_date: string | null
+          predicted_recurring_items: RecurringItem[] | null
         }
         Insert: {
           id?: string
@@ -548,6 +556,7 @@ export interface Database {
           predicted_flags?: RiskFlag[] | null
           predicted_summary?: string | null
           predicted_local_date?: string | null
+          predicted_recurring_items?: RecurringItem[] | null
         }
         Update: {
           id?: string
@@ -573,6 +582,7 @@ export interface Database {
           predicted_flags?: RiskFlag[] | null
           predicted_summary?: string | null
           predicted_local_date?: string | null
+          predicted_recurring_items?: RecurringItem[] | null
         }
         Relationships: [
           {
@@ -676,6 +686,7 @@ export interface Database {
           local_date: string
           score: number
           flags: RiskFlag[]
+          recurring_items: RecurringItem[]
           summary: string
           weather: string | null
           calculated_at: string
@@ -686,6 +697,7 @@ export interface Database {
           local_date: string
           score: number
           flags?: RiskFlag[]
+          recurring_items?: RecurringItem[]
           summary?: string
           weather?: string | null
           calculated_at?: string
@@ -696,6 +708,7 @@ export interface Database {
           local_date?: string
           score?: number
           flags?: RiskFlag[]
+          recurring_items?: RecurringItem[]
           summary?: string
           weather?: string | null
           calculated_at?: string

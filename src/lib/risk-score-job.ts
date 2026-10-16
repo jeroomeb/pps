@@ -1,7 +1,13 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-import { parseRiskFlags, scorePropertyRisk, type RiskFlag } from '@/lib/risk-score'
+import {
+  parseRecurringItems,
+  parseRiskFlags,
+  scorePropertyRisk,
+  type RecurringItem,
+  type RiskFlag,
+} from '@/lib/risk-score'
 import { createAdminClient } from '@/lib/supabase/server'
 import { isHolidayWeekend } from '@/lib/us-holidays'
 import { eveningRainForecast } from '@/lib/weather'
@@ -20,7 +26,7 @@ export async function refreshDueRiskScores(now: Date = new Date()): Promise<{
   const admin = createAdminClient()
   const { data: properties, error } = await admin
     .from('properties')
-    .select('id, timezone, latitude, longitude, is_active')
+    .select('id, timezone, latitude, longitude, is_active, enable_predictive_scoring')
     .eq('is_active', true)
 
   if (error || !properties) {
@@ -31,6 +37,12 @@ export async function refreshDueRiskScores(now: Date = new Date()): Promise<{
   let scored = 0
   let skipped = 0
   for (const property of properties) {
+    // Point 3: Respect per-property predictive scoring toggle
+    if (property.enable_predictive_scoring === false) {
+      skipped += 1
+      continue
+    }
+
     const timezone = propertyTimezoneOrDefault(property.timezone)
     if (localHour(now, timezone) < 16) {
       skipped += 1
@@ -74,19 +86,27 @@ async function writeScoreForProperty(
 ): Promise<boolean> {
   const { data: inspections, error } = await admin
     .from('inspections')
-    .select('id, completed_at')
+    .select('id, completed_at, checklist_templates(enable_predictive_scoring)')
     .eq('property_id', input.propertyId)
     .eq('status', 'completed')
     .not('completed_at', 'is', null)
 
   if (error || !inspections?.length) return false
 
+  // Point 7: Exclude checklist templates where enable_predictive_scoring === false
+  const validInspections = inspections.filter((row) => {
+    const template = row.checklist_templates as unknown as { enable_predictive_scoring?: boolean } | null
+    return template?.enable_predictive_scoring !== false
+  })
+
+  if (!validInspections.length) return false
+
   const completedAt = new Map(
-    inspections.flatMap((row) => (row.completed_at ? [[row.id, row.completed_at] as const] : []))
+    validInspections.flatMap((row) => (row.completed_at ? [[row.id, row.completed_at] as const] : []))
   )
   const { data: items } = await admin
     .from('inspection_items')
-    .select('inspection_id, risk_domain, status')
+    .select('inspection_id, risk_domain, status, item_name')
     .in('inspection_id', [...completedAt.keys()])
 
   const raining = (await eveningRainForecast(input.latitude, input.longitude, input.localDate)) === true
@@ -103,6 +123,7 @@ async function writeScoreForProperty(
           riskDomain: item.risk_domain,
           status: item.status,
           completedAt: completed,
+          itemName: item.item_name,
         },
       ]
     }),
@@ -114,6 +135,7 @@ async function writeScoreForProperty(
     local_date: input.localDate,
     score: result.score,
     flags: result.flags,
+    recurring_items: result.recurringItems,
     summary: result.summary,
     weather: raining ? 'rain' : input.latitude == null ? 'unavailable' : 'dry',
   })
@@ -127,6 +149,7 @@ async function writeScoreForProperty(
 export type FrozenPrediction = {
   score: number
   flags: RiskFlag[]
+  recurringItems: RecurringItem[]
   summary: string
 }
 
@@ -143,6 +166,7 @@ export async function freezeEveningScore(
     timezone: string | null
     predictedScore: number | null
     predictedFlags: unknown
+    predictedRecurringItems?: unknown
     predictedSummary: string | null
   }
 ): Promise<FrozenPrediction | null> {
@@ -150,6 +174,7 @@ export async function freezeEveningScore(
     return {
       score: inspection.predictedScore,
       flags: parseRiskFlags(inspection.predictedFlags),
+      recurringItems: parseRecurringItems(inspection.predictedRecurringItems),
       summary: inspection.predictedSummary,
     }
   }
@@ -159,18 +184,21 @@ export async function freezeEveningScore(
   const localDate = localDateString(new Date(), timezone)
   const { data: score } = await supabase
     .from('property_risk_scores')
-    .select('score, flags, summary')
+    .select('score, flags, recurring_items, summary')
     .eq('property_id', inspection.propertyId)
     .eq('local_date', localDate)
     .maybeSingle()
 
   if (!score) return null
 
+  const recurringItems = parseRecurringItems(score.recurring_items)
+
   await supabase
     .from('inspections')
     .update({
       predicted_score: score.score,
       predicted_flags: score.flags,
+      predicted_recurring_items: recurringItems,
       predicted_summary: score.summary,
       predicted_local_date: localDate,
     })
@@ -180,6 +208,7 @@ export async function freezeEveningScore(
   return {
     score: score.score,
     flags: parseRiskFlags(score.flags),
+    recurringItems,
     summary: score.summary,
   }
 }

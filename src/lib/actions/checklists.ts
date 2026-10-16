@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { requireRole } from '@/lib/auth/dal'
+import { requireGlobalAdmin } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
 import { inferRiskDomain, isRiskDomain, type RiskDomain } from '@/lib/risk-domain'
 
@@ -30,7 +30,7 @@ export async function createTemplate(
   _prevState: TemplateFormState,
   formData: FormData
 ): Promise<TemplateFormState> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
 
   let items: unknown
   try {
@@ -48,11 +48,18 @@ export async function createTemplate(
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   }
 
+  const enablePredictiveScoring =
+    formData.get('enable_predictive_scoring') !== 'false' &&
+    formData.get('enable_predictive_scoring') !== null
+
   const supabase = await createClient()
 
   const { data: template, error: templateError } = await supabase
     .from('checklist_templates')
-    .insert({ name: parsed.data.name })
+    .insert({
+      name: parsed.data.name,
+      enable_predictive_scoring: enablePredictiveScoring,
+    })
     .select('id')
     .single()
 
@@ -91,7 +98,7 @@ export async function addTemplateItem(
   _prevState: TemplateFormState,
   formData: FormData
 ): Promise<TemplateFormState> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
 
   const parsed = itemSchema.safeParse({
     service_category: formData.get('service_category'),
@@ -143,7 +150,7 @@ export async function deleteTemplateItem(
   itemId: string,
   templateId: string
 ): Promise<{ error?: string } | void> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const supabase = await createClient()
   const { error } = await supabase.from('checklist_template_items').delete().eq('id', itemId)
   if (error) {
@@ -163,7 +170,7 @@ export async function renameTemplate(
   _prevState: TemplateFormState,
   formData: FormData
 ): Promise<TemplateFormState> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
 
   const name = String(formData.get('name') ?? '').trim()
   if (!name) {
@@ -196,7 +203,7 @@ export async function reorderTemplateItems(
   templateId: string,
   orderedIds: string[]
 ): Promise<{ error?: string } | void> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const supabase = await createClient()
 
   const { data: existing, error: fetchError } = await supabase
@@ -246,7 +253,7 @@ export async function setTemplateItemRiskDomain(
   templateId: string,
   domain: RiskDomain | ''
 ): Promise<{ error?: string } | void> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const supabase = await createClient()
   const { error } = await supabase
     .from('checklist_template_items')
@@ -258,7 +265,7 @@ export async function setTemplateItemRiskDomain(
 }
 
 export async function deleteTemplate(templateId: string): Promise<{ error?: string } | void> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const supabase = await createClient()
 
   const { error } = await supabase.from('checklist_templates').delete().eq('id', templateId)
@@ -273,4 +280,104 @@ export async function deleteTemplate(templateId: string): Promise<{ error?: stri
   }
 
   revalidatePath('/admin/checklists')
+}
+
+export async function updateTemplatePredictiveScoring(
+  templateId: string,
+  enablePredictiveScoring: boolean
+): Promise<{ error?: string; success?: boolean }> {
+  await requireGlobalAdmin()
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('checklist_templates')
+    .update({ enable_predictive_scoring: enablePredictiveScoring })
+    .eq('id', templateId)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/checklists')
+  revalidatePath(`/admin/checklists/${templateId}`)
+  return { success: true }
+}
+
+export async function cloneTemplate(
+  templateId: string,
+  customName?: string
+): Promise<{ error?: string; success?: boolean; newId?: string }> {
+  await requireGlobalAdmin()
+  const supabase = await createClient()
+
+  // 1. Fetch source template
+  const { data: source, error: sourceError } = await supabase
+    .from('checklist_templates')
+    .select('id, name, enable_predictive_scoring')
+    .eq('id', templateId)
+    .single()
+
+  if (sourceError || !source) {
+    return { error: 'Source checklist template not found.' }
+  }
+
+  // 2. Fetch all items
+  const { data: items, error: itemsError } = await supabase
+    .from('checklist_template_items')
+    .select('service_category, item_name, description, sort_order, risk_domain')
+    .eq('template_id', templateId)
+    .order('sort_order')
+
+  if (itemsError) {
+    return { error: `Failed to load source items: ${itemsError.message}` }
+  }
+
+  // 3. Name calculation
+  const newName =
+    customName && customName.trim()
+      ? customName.trim()
+      : `${source.name} (Copy)`
+
+  // 4. Insert cloned template
+  const { data: newTemplate, error: insertError } = await supabase
+    .from('checklist_templates')
+    .insert({
+      name: newName,
+      enable_predictive_scoring: source.enable_predictive_scoring ?? true,
+    })
+    .select('id')
+    .single()
+
+  if (insertError) {
+    if (insertError.code === '23505') {
+      return {
+        error: `A checklist named "${newName}" already exists. Please choose a different name.`,
+      }
+    }
+    return { error: insertError.message }
+  }
+
+  // 5. Insert cloned items
+  if (items && items.length > 0) {
+    const clonedItems = items.map((item) => ({
+      template_id: newTemplate.id,
+      service_category: item.service_category,
+      item_name: item.item_name,
+      description: item.description,
+      sort_order: item.sort_order,
+      risk_domain: item.risk_domain,
+    }))
+
+    const { error: cloneItemsError } = await supabase
+      .from('checklist_template_items')
+      .insert(clonedItems)
+
+    if (cloneItemsError) {
+      await supabase.from('checklist_templates').delete().eq('id', newTemplate.id)
+      return { error: cloneItemsError.message }
+    }
+  }
+
+  revalidatePath('/admin/checklists')
+  return { success: true, newId: newTemplate.id }
 }

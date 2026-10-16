@@ -19,7 +19,7 @@ export default async function EditPropertyPage({
     supabase
       .from('properties')
       .select(
-        'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule, require_id_photo, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, payout_tier, custom_payout_rate, tenant_id, building_category, checklist_always_available, timezone'
+        'name, street, city, state, zip, county, email, phone, notes, human_id, required_schedule, require_id_photo, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, payout_tier, custom_payout_rate, tenant_id, building_category, checklist_always_available, timezone, enable_predictive_scoring'
       )
       .eq('id', id)
       .single(),
@@ -70,6 +70,7 @@ export default async function EditPropertyPage({
           checklistAlwaysAvailable: property.checklist_always_available ?? false,
           timezone: property.timezone,
           enabledTemplateIds: (propertyAccess ?? []).map((row) => row.template_id),
+          enablePredictiveScoring: property.enable_predictive_scoring !== false,
         }}
         templates={
           profile.is_global_admin && !scope.isViewingTenant

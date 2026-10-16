@@ -162,6 +162,7 @@ export default async function PropertiesPage({
                 <th className="px-4 py-3 font-semibold">Staff Roster</th>
                 <th className="px-4 py-3 font-semibold">Address</th>
                 <th className="px-4 py-3 font-semibold">County</th>
+                <th className="px-4 py-3 font-semibold">State</th>
                 <th className="px-4 py-3 font-semibold">Phone</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="w-10 px-4 py-3" />
@@ -220,6 +221,17 @@ export default async function PropertiesPage({
                     <td className="p-0 text-on-surface-variant">
                       <Link href={href} prefetch={false} className={cell}>{property.county ?? '—'}</Link>
                     </td>
+                    <td className="p-0 text-on-surface-variant font-medium">
+                      <Link href={href} prefetch={false} className={cell}>
+                        {property.state ? (
+                          <span className="inline-flex rounded bg-surface-container px-1.5 py-0.5 text-xs font-semibold text-on-surface">
+                            {property.state}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </Link>
+                    </td>
                     <td className="p-0 text-on-surface-variant">
                       <Link href={href} prefetch={false} className={cell}>{property.phone ?? '—'}</Link>
                     </td>
@@ -270,6 +282,7 @@ export default async function PropertiesPage({
                     <p className="font-mono text-xs text-on-surface-variant">
                       {property.human_id ?? ''}
                       {property.county ? ` · ${property.county}` : ''}
+                      {property.state ? ` · ${property.state}` : ''}
                     </p>
                   </div>
                   <ChevronRight size={18} className="shrink-0 text-on-surface-variant" />

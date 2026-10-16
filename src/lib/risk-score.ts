@@ -18,16 +18,102 @@ export type RiskFlag = {
   rate: number
 }
 
+export type RecurringItem = {
+  itemName: string
+  domain: RiskDomain
+  count: number
+}
+
+export type RiskTierId = 1 | 2 | 3 | 4
+
+export type RiskTierInfo = {
+  tier: RiskTierId
+  name: string
+  label: string
+  range: [number, number]
+  colorHex: string
+  textColorHex: string
+  bgClass: string
+  textClass: string
+  borderClass: string
+  meaning: string
+}
+
+export const RISK_TIERS: Record<RiskTierId, RiskTierInfo> = {
+  1: {
+    tier: 1,
+    name: 'Low Risk',
+    label: 'Standard Operations',
+    range: [0, 25],
+    colorHex: '#10b981',
+    textColorHex: '#065f46',
+    bgClass: 'bg-emerald-500',
+    textClass: 'text-emerald-700 dark:text-emerald-300',
+    borderClass: 'border-emerald-500/30',
+    meaning:
+      'The property has clean compliance logs, great weather conditions, minimal recent asset anomalies, and low occupancy stress.',
+  },
+  2: {
+    tier: 2,
+    name: 'Moderate Risk',
+    label: 'Elevated Monitoring',
+    range: [26, 50],
+    colorHex: '#f59e0b',
+    textColorHex: '#92400e',
+    bgClass: 'bg-amber-500',
+    textClass: 'text-amber-700 dark:text-amber-300',
+    borderClass: 'border-amber-500/30',
+    meaning:
+      'Minor predictive anomalies detected. This is typically triggered by a combination of early-stage asset friction.',
+  },
+  3: {
+    tier: 3,
+    name: 'High Risk',
+    label: 'Targeted Pre-Shift Mitigation',
+    range: [51, 75],
+    colorHex: '#f97316',
+    textColorHex: '#9a3412',
+    bgClass: 'bg-orange-500',
+    textClass: 'text-orange-700 dark:text-orange-300',
+    borderClass: 'border-orange-500/30',
+    meaning:
+      'The model identifies a high probability of an asset failure or municipal citation. Driven by compounding historical signals.',
+  },
+  4: {
+    tier: 4,
+    name: 'Critical Risk',
+    label: 'Immediate Intervention Required',
+    range: [76, 100],
+    colorHex: '#ef4444',
+    textColorHex: '#991b1b',
+    bgClass: 'bg-red-500',
+    textClass: 'text-red-700 dark:text-red-300',
+    borderClass: 'border-red-500/30',
+    meaning:
+      'A severe operational, safety, or legal liability breakdown is highly imminent during the graveyard shift.',
+  },
+}
+
+export function getRiskTier(score: number): RiskTierInfo {
+  if (score <= 25) return RISK_TIERS[1]
+  if (score <= 50) return RISK_TIERS[2]
+  if (score <= 75) return RISK_TIERS[3]
+  return RISK_TIERS[4]
+}
+
 export type ScoreResult = {
   score: number
   flags: RiskFlag[]
   summary: string
+  tier: RiskTierInfo
+  recurringItems: RecurringItem[]
 }
 
 export type ScoreHistoryItem = {
   riskDomain: RiskDomain | null
   status: 'pass' | 'fail' | 'na' | null
   completedAt: string
+  itemName?: string | null
 }
 
 const MIN_SPAN_DAYS = 30
@@ -53,6 +139,7 @@ export function scorePropertyRisk(input: {
         status: item.status,
         completedOn,
         weekday: weekdayIndex(completedOn),
+        itemName: item.itemName?.trim() || null,
       },
     ]
   })
@@ -117,10 +204,31 @@ export function scorePropertyRisk(input: {
       rate: Math.round(rate * 100) / 100,
     }))
 
+  // Point 2: Track recurring failing items by item title
+  const failItemCounts = new Map<string, { domain: RiskDomain; count: number }>()
+  for (const row of rows) {
+    if (row.status === 'fail' && row.itemName) {
+      const current = failItemCounts.get(row.itemName) ?? { domain: row.riskDomain, count: 0 }
+      current.count += 1
+      failItemCounts.set(row.itemName, current)
+    }
+  }
+
+  const recurringItems: RecurringItem[] = [...failItemCounts.entries()]
+    .map(([itemName, data]) => ({
+      itemName,
+      domain: data.domain,
+      count: data.count,
+    }))
+    .sort((a, b) => b.count - a.count || a.itemName.localeCompare(b.itemName))
+    .slice(0, 5)
+
   return {
     score,
     flags,
     summary: summaryFor(flags, input.localDate, input.raining),
+    tier: getRiskTier(score),
+    recurringItems,
   }
 }
 
@@ -141,6 +249,30 @@ export function parseRiskFlags(value: unknown): RiskFlag[] {
         domain: flag.domain,
         label: typeof flag.label === 'string' ? flag.label : RISK_DOMAIN_LABELS[flag.domain],
         rate: typeof flag.rate === 'number' ? flag.rate : 0,
+      },
+    ]
+  })
+}
+
+export function parseRecurringItems(value: unknown): RecurringItem[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') return []
+    const item = entry as { itemName?: unknown; domain?: unknown; count?: unknown }
+    if (
+      typeof item.itemName !== 'string' ||
+      !item.itemName.trim() ||
+      (item.domain !== 'life_safety' &&
+        item.domain !== 'appearance' &&
+        item.domain !== 'asset_protection')
+    ) {
+      return []
+    }
+    return [
+      {
+        itemName: item.itemName.trim(),
+        domain: item.domain,
+        count: typeof item.count === 'number' ? item.count : 1,
       },
     ]
   })
