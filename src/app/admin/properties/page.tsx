@@ -30,21 +30,23 @@ export default async function PropertiesPage({
 }) {
   const { q, state, county, zip, tenant } = await searchParams
   const supabase = await createClient()
-  const scope = await getAdminScope()
-  const hasFilter = Boolean(q || state || county || zip || (tenant && tenant !== 'hq'))
+  const [profile, scope] = await Promise.all([getProfile(), getAdminScope()])
+  const isHQ = profile.is_global_admin && !scope.isViewingTenant && !scope.tenantId
+  const effectiveTenantId = isHQ ? null : (scope.tenantId ?? profile.tenant_id)
+
+  const hasFilter = Boolean(q || state || county || zip || (isHQ && tenant && tenant !== 'hq'))
 
   let filteredQuery = supabase
     .from('properties')
     .select('id, name, address, city, state, zip, county, email, phone, human_id, tenant_id, tenants(id, name)')
     .order('name')
 
-  // Tenant isolation: if in a tenant scope, filter to that tenant.
-  // If in HQ scope: default to HQ only (tenant_id is null) so provisional tenant properties
-  // do not inflate the HQ count, unless explicitly choosing "all" or a specific tenant.
-  if (scope.tenantId) {
-    filteredQuery = filteredQuery.eq('tenant_id', scope.tenantId)
+  // Tenant isolation: if under a provisional tenant, strictly isolate to that tenant.
+  // If in HQ scope: default to HQ only (tenant_id is null) unless explicitly choosing "all" or a specific tenant.
+  if (effectiveTenantId) {
+    filteredQuery = filteredQuery.eq('tenant_id', effectiveTenantId)
   } else if (tenant === 'all') {
-    // Show all organizations
+    // Show all organizations (HQ only)
   } else if (tenant && tenant !== 'hq') {
     filteredQuery = filteredQuery.eq('tenant_id', tenant)
   } else {
@@ -64,20 +66,26 @@ export default async function PropertiesPage({
     propertiesResult,
     { data: allLocationProps },
     { data: rosterAssignments },
-    profile,
     { data: allTenants },
   ] = await Promise.all([
     filteredQuery,
     hasFilter
       ? (() => {
           let locationQuery = supabase.from('properties').select('state, county, zip')
-          if (scope.tenantId) locationQuery = locationQuery.eq('tenant_id', scope.tenantId)
+          if (effectiveTenantId) {
+            locationQuery = locationQuery.eq('tenant_id', effectiveTenantId)
+          } else if (tenant && tenant !== 'all' && tenant !== 'hq') {
+            locationQuery = locationQuery.eq('tenant_id', tenant)
+          } else if (!tenant || tenant === 'hq') {
+            locationQuery = locationQuery.is('tenant_id', null)
+          }
           return locationQuery
         })()
       : Promise.resolve({ data: null }),
     supabase.from('property_specialist_assignments').select('property_id, role'),
-    getProfile(),
-    supabase.from('tenants').select('id, name').order('name'),
+    isHQ
+      ? supabase.from('tenants').select('id, name').order('name')
+      : Promise.resolve({ data: null }),
   ])
 
   const properties = (propertiesResult.data ?? []) as PropertyRow[]
@@ -148,7 +156,7 @@ export default async function PropertiesPage({
         states={distinctValues(locationDataSource, 'state')}
         counties={distinctValues(locationDataSource, 'county')}
         zips={distinctValues(locationDataSource, 'zip')}
-        organizations={profile.is_global_admin ? (allTenants ?? []).map((t) => ({ id: t.id, name: t.name })) : undefined}
+        organizations={isHQ ? (allTenants ?? []).map((t) => ({ id: t.id, name: t.name })) : undefined}
         searchPlaceholder="Search by name, address, or ID…"
       />
 

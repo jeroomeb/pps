@@ -1,7 +1,7 @@
 import 'server-only'
-import { z } from 'zod'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
+import { UUID_REGEX } from '@/lib/ids'
 
 type Client = SupabaseClient<Database>
 
@@ -10,7 +10,7 @@ export function templateIdsFromForm(formData: FormData): string[] {
   for (const raw of formData.getAll('template_ids')) {
     if (typeof raw !== 'string') continue
     const value = raw.trim()
-    if (z.string().uuid().safeParse(value).success) ids.add(value)
+    if (UUID_REGEX.test(value)) ids.add(value)
   }
   return [...ids]
 }

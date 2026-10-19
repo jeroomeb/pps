@@ -26,6 +26,7 @@ export function PropertyForm({
   tenants,
   templates = [],
   accessByTenant,
+  isSuperAdmin = false,
 }: {
   action: (state: PropertyFormState, formData: FormData) => Promise<PropertyFormState>
   defaultValues?: AddressParts & {
@@ -52,6 +53,7 @@ export function PropertyForm({
   tenants?: { id: string; name: string }[]
   templates?: { id: string; name: string }[]
   accessByTenant?: Record<string, string[]>
+  isSuperAdmin?: boolean
 }) {
   const [state, formAction] = useActionState<PropertyFormState, FormData>(action, undefined)
 
@@ -437,25 +439,43 @@ export function PropertyForm({
           </label>
         </div>
 
-        {/* Point 3: Predictive Risk Modeling Toggle */}
-        <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              name="enable_predictive_scoring"
-              defaultChecked={defaultValues?.enablePredictiveScoring ?? true}
-              className="mt-1 h-4 w-4 accent-[#ee8a4b]"
-            />
-            <div>
-              <p className="text-sm font-semibold text-on-surface">
-                Enable Predictive Risk Scoring & Analytics
-              </p>
-              <p className="text-xs text-on-surface-variant">
-                When enabled, the automated engine computes nightly 1–100 risk ratings, flags recurring anomalies, and warns overnight teams based on 30+ days of audit history.
-              </p>
+        {/* Point 3: Predictive Risk Modeling Toggle (Super Admin Only) */}
+        {isSuperAdmin ? (
+          <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                name="enable_predictive_scoring"
+                defaultChecked={defaultValues?.enablePredictiveScoring ?? true}
+                className="mt-1 h-4 w-4 accent-[#ee8a4b]"
+              />
+              <div>
+                <p className="text-sm font-semibold text-on-surface">
+                  Enable Predictive Risk Scoring & Analytics
+                </p>
+                <p className="text-xs text-on-surface-variant">
+                  When enabled, the automated engine computes nightly 1–100 risk ratings, flags recurring anomalies, and warns overnight teams based on 30+ days of audit history.
+                </p>
+              </div>
+            </label>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 rounded bg-surface-container-high px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
+                {defaultValues?.enablePredictiveScoring !== false ? 'Scoring: Enabled' : 'Scoring: Disabled'}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-on-surface">
+                  Predictive Risk Scoring & Analytics
+                </p>
+                <p className="text-xs text-on-surface-variant">
+                  Controlled exclusively by Platform Owner / Super Admin.
+                </p>
+              </div>
             </div>
-          </label>
-        </div>
+          </div>
+        )}
 
         <div className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
           <label className="flex cursor-pointer items-start gap-3">

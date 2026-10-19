@@ -39,6 +39,8 @@ export type TenantItem = {
   max_property_licenses: number
   status: TenantStatus
   parent_organization_id?: string | null
+  allow_checklist_management?: boolean
+  enable_predictive_scoring?: boolean
   created_at: string
   propertyCount: number
   staffCount: number
@@ -134,6 +136,26 @@ export function TenantLicenseCard({
               {parentOrgName && (
                 <span className="inline-flex items-center gap-1 rounded bg-secondary-container/60 px-1.5 py-0.2 text-[10px] font-sans font-medium text-on-surface-variant">
                   <GitFork size={10} /> {parentOrgName}
+                </span>
+              )}
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {tenant.allow_checklist_management ? (
+                <span className="rounded bg-secondary-container/60 px-1.5 py-0.5 text-[10px] font-sans font-medium text-on-surface">
+                  Checklists: Full Access
+                </span>
+              ) : (
+                <span className="rounded bg-surface-container px-1.5 py-0.5 text-[10px] font-sans text-on-surface-variant">
+                  Checklists: HQ Managed
+                </span>
+              )}
+              {tenant.enable_predictive_scoring !== false ? (
+                <span className="rounded bg-secondary-container/60 px-1.5 py-0.5 text-[10px] font-sans font-medium text-on-surface">
+                  Scoring: On
+                </span>
+              ) : (
+                <span className="rounded bg-surface-container px-1.5 py-0.5 text-[10px] font-sans text-on-surface-variant">
+                  Scoring: Off
                 </span>
               )}
             </div>
@@ -299,6 +321,33 @@ export function TenantLicenseCard({
               ) : (
                 <p className="text-[11px] text-on-surface-variant">No checklist types exist yet.</p>
               )}
+            </div>
+
+            {/* Super Admin Feature Controls */}
+            <div className="rounded-lg border border-outline-variant bg-surface-container-low/60 p-2.5 flex flex-col gap-2">
+              <p className="text-xs font-semibold text-on-surface">Super Admin Feature Controls</p>
+              <label className="flex items-center gap-2 text-xs text-on-surface cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="allow_checklist_management"
+                  defaultChecked={tenant.allow_checklist_management ?? false}
+                  className="h-3.5 w-3.5 accent-[#ee8a4b]"
+                />
+                <span>
+                  <strong>Allow Checklist Management</strong> (Permit this tenant to create, edit, clone, and delete checklists)
+                </span>
+              </label>
+              <label className="flex items-center gap-2 text-xs text-on-surface cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="enable_predictive_scoring"
+                  defaultChecked={tenant.enable_predictive_scoring !== false}
+                  className="h-3.5 w-3.5 accent-[#ee8a4b]"
+                />
+                <span>
+                  <strong>Enable Predictive Risk Scoring & Analytics</strong> (Nightly calculations for this tenant&apos;s properties)
+                </span>
+              </label>
             </div>
 
             {/* Specialist & Staff Assignment Section */}

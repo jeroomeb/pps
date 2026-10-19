@@ -10,11 +10,12 @@ import { sendAssignmentEmail } from '@/lib/email/sendAssignmentEmail'
 import { sendCancellationEmail } from '@/lib/email/sendCancellationEmail'
 import { parseZonedDateTimeLocal } from '@/lib/timezone'
 import { isSafeObjectPath } from '@/lib/storage-paths'
+import { uuidSchema } from '@/lib/ids'
 
 const newInspectionSchema = z.object({
-  property_id: z.string().uuid(),
-  template_id: z.string().uuid(),
-  inspector_id: z.string().uuid(),
+  property_id: uuidSchema,
+  template_id: uuidSchema,
+  inspector_id: uuidSchema,
   // datetime-local string ("2026-08-01T09:00") or empty.
   scheduled_for: z.string().trim().optional(),
 })
@@ -146,7 +147,7 @@ export async function createInspection(
 }
 
 const updateInspectionSchema = z.object({
-  inspector_id: z.string().uuid(),
+  inspector_id: uuidSchema,
   scheduled_for: z.string().trim().optional(),
 })
 

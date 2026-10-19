@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { requireGlobalAdmin } from '@/lib/auth/dal'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { genSpecialistId } from '@/lib/ids'
+import { genSpecialistId, uuidSchema } from '@/lib/ids'
 import { generateSecureTemporaryPassword } from '@/lib/security'
 import { sendWelcomeCredentialsEmail } from '@/lib/email/sendWelcomeCredentialsEmail'
 import type { LicenseTier, TenantStatus } from '@/lib/database.types'
@@ -21,8 +21,10 @@ const tenantSchema = z.object({
   license_tier: z.enum(['starter', 'standard', 'pro', 'enterprise']),
   max_property_licenses: z.coerce.number().int().min(1, 'Minimum 1 property license required'),
   status: z.enum(['active', 'suspended', 'trial']).default('active'),
-  parent_organization_id: z.string().uuid().optional().nullable(),
-  primary_specialist_id: z.string().uuid().optional().nullable(),
+  allow_checklist_management: z.coerce.boolean().default(false),
+  enable_predictive_scoring: z.coerce.boolean().default(true),
+  parent_organization_id: uuidSchema.optional().nullable(),
+  primary_specialist_id: uuidSchema.optional().nullable(),
   admin_name: z.string().trim().optional(),
   admin_email: z.string().trim().email('Enter a valid admin email').optional().or(z.literal('')),
   admin_password: z.string().min(8, 'Admin password must be at least 8 characters').optional().or(z.literal('')),
@@ -56,6 +58,14 @@ export async function createTenant(
     license_tier: formData.get('license_tier'),
     max_property_licenses: formData.get('max_property_licenses'),
     status: formData.get('status') || 'active',
+    allow_checklist_management:
+      formData.get('allow_checklist_management') === 'on' ||
+      formData.get('allow_checklist_management') === 'true',
+    enable_predictive_scoring:
+      formData.has('enable_predictive_scoring')
+        ? formData.get('enable_predictive_scoring') === 'on' ||
+          formData.get('enable_predictive_scoring') === 'true'
+        : true,
     parent_organization_id: parentOrgId,
     primary_specialist_id: primarySpecialistId,
     admin_name: typeof adminName === 'string' && adminName.trim() ? adminName.trim() : undefined,
@@ -89,6 +99,8 @@ export async function createTenant(
       max_property_licenses: parsed.data.max_property_licenses,
       status: parsed.data.status as TenantStatus,
       parent_organization_id: parsed.data.parent_organization_id,
+      allow_checklist_management: parsed.data.allow_checklist_management,
+      enable_predictive_scoring: parsed.data.enable_predictive_scoring,
     })
     .select('id, name')
     .single()
@@ -184,7 +196,7 @@ export async function createTenant(
 }
 
 const updateLicenseSchema = z.object({
-  tenant_id: z.string().uuid(),
+  tenant_id: uuidSchema,
   name: z.string().trim().min(1, 'Company name is required'),
   slug: z
     .string()
@@ -195,7 +207,9 @@ const updateLicenseSchema = z.object({
   license_tier: z.enum(['starter', 'standard', 'pro', 'enterprise']),
   max_property_licenses: z.coerce.number().int().min(1, 'Minimum 1 property license required'),
   status: z.enum(['active', 'suspended', 'trial']),
-  parent_organization_id: z.string().uuid().optional().nullable(),
+  allow_checklist_management: z.coerce.boolean().default(false),
+  enable_predictive_scoring: z.coerce.boolean().default(true),
+  parent_organization_id: uuidSchema.optional().nullable(),
 })
 
 export async function updateTenantLicense(
@@ -217,6 +231,14 @@ export async function updateTenantLicense(
     license_tier: formData.get('license_tier'),
     max_property_licenses: formData.get('max_property_licenses'),
     status: formData.get('status'),
+    allow_checklist_management:
+      formData.get('allow_checklist_management') === 'on' ||
+      formData.get('allow_checklist_management') === 'true',
+    enable_predictive_scoring:
+      formData.has('enable_predictive_scoring')
+        ? formData.get('enable_predictive_scoring') === 'on' ||
+          formData.get('enable_predictive_scoring') === 'true'
+        : true,
     parent_organization_id: parentOrgId,
   })
 
@@ -238,6 +260,8 @@ export async function updateTenantLicense(
       max_property_licenses: parsed.data.max_property_licenses,
       status: parsed.data.status as TenantStatus,
       parent_organization_id: parsed.data.parent_organization_id,
+      allow_checklist_management: parsed.data.allow_checklist_management,
+      enable_predictive_scoring: parsed.data.enable_predictive_scoring,
       slug: parsed.data.slug ?? undefined,
       updated_at: new Date().toISOString(),
     })

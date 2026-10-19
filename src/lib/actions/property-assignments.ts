@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/dal'
 import { createClient } from '@/lib/supabase/server'
+import { uuidSchema } from '@/lib/ids'
 import type { SpecialistAssignmentRole } from '@/lib/database.types'
 import { sendPropertyAssignmentEmail } from '@/lib/email/sendPropertyAssignmentEmail'
 import {
@@ -12,8 +13,8 @@ import {
 } from '@/lib/standing-inspections'
 
 const assignSchema = z.object({
-  property_id: z.string().uuid(),
-  specialist_id: z.string().uuid(),
+  property_id: uuidSchema,
+  specialist_id: uuidSchema,
   role: z.enum(['primary', 'backup', 'staff']).default('primary'),
 })
 

@@ -49,3 +49,6 @@ next-env.d.ts
 CLIENT_REPLY_RECOMMENDATIONS.md
 
 leads-and-outreach.md
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat

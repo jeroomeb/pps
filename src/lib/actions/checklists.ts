@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { requireGlobalAdmin } from '@/lib/auth/dal'
+import { requireChecklistManagementPermission } from '@/lib/auth/checklist-permissions'
 import { createClient } from '@/lib/supabase/server'
 import { inferRiskDomain, isRiskDomain, type RiskDomain } from '@/lib/risk-domain'
 
@@ -30,7 +31,7 @@ export async function createTemplate(
   _prevState: TemplateFormState,
   formData: FormData
 ): Promise<TemplateFormState> {
-  await requireGlobalAdmin()
+  const { isSuperAdmin, tenantId } = await requireChecklistManagementPermission()
 
   let items: unknown
   try {
@@ -89,6 +90,14 @@ export async function createTemplate(
     return { error: itemsError.message }
   }
 
+  // If created by a provisional tenant, auto-grant checklist access to that tenant
+  if (!isSuperAdmin && tenantId) {
+    await supabase.from('tenant_checklist_access').insert({
+      tenant_id: tenantId,
+      template_id: template.id,
+    })
+  }
+
   revalidatePath('/admin/checklists')
   redirect(`/admin/checklists/${template.id}`)
 }
@@ -98,7 +107,7 @@ export async function addTemplateItem(
   _prevState: TemplateFormState,
   formData: FormData
 ): Promise<TemplateFormState> {
-  await requireGlobalAdmin()
+  await requireChecklistManagementPermission()
 
   const parsed = itemSchema.safeParse({
     service_category: formData.get('service_category'),
@@ -150,7 +159,7 @@ export async function deleteTemplateItem(
   itemId: string,
   templateId: string
 ): Promise<{ error?: string } | void> {
-  await requireGlobalAdmin()
+  await requireChecklistManagementPermission()
   const supabase = await createClient()
   const { error } = await supabase.from('checklist_template_items').delete().eq('id', itemId)
   if (error) {
@@ -170,7 +179,7 @@ export async function renameTemplate(
   _prevState: TemplateFormState,
   formData: FormData
 ): Promise<TemplateFormState> {
-  await requireGlobalAdmin()
+  await requireChecklistManagementPermission()
 
   const name = String(formData.get('name') ?? '').trim()
   if (!name) {
@@ -203,7 +212,7 @@ export async function reorderTemplateItems(
   templateId: string,
   orderedIds: string[]
 ): Promise<{ error?: string } | void> {
-  await requireGlobalAdmin()
+  await requireChecklistManagementPermission()
   const supabase = await createClient()
 
   const { data: existing, error: fetchError } = await supabase
@@ -253,7 +262,7 @@ export async function setTemplateItemRiskDomain(
   templateId: string,
   domain: RiskDomain | ''
 ): Promise<{ error?: string } | void> {
-  await requireGlobalAdmin()
+  await requireChecklistManagementPermission()
   const supabase = await createClient()
   const { error } = await supabase
     .from('checklist_template_items')
@@ -265,7 +274,7 @@ export async function setTemplateItemRiskDomain(
 }
 
 export async function deleteTemplate(templateId: string): Promise<{ error?: string } | void> {
-  await requireGlobalAdmin()
+  await requireChecklistManagementPermission()
   const supabase = await createClient()
 
   const { error } = await supabase.from('checklist_templates').delete().eq('id', templateId)
@@ -307,7 +316,7 @@ export async function cloneTemplate(
   templateId: string,
   customName?: string
 ): Promise<{ error?: string; success?: boolean; newId?: string }> {
-  await requireGlobalAdmin()
+  const { isSuperAdmin, tenantId } = await requireChecklistManagementPermission()
   const supabase = await createClient()
 
   // 1. Fetch source template
@@ -376,6 +385,14 @@ export async function cloneTemplate(
       await supabase.from('checklist_templates').delete().eq('id', newTemplate.id)
       return { error: cloneItemsError.message }
     }
+  }
+
+  // If cloned by a provisional tenant, auto-grant checklist access to that tenant
+  if (!isSuperAdmin && tenantId) {
+    await supabase.from('tenant_checklist_access').insert({
+      tenant_id: tenantId,
+      template_id: newTemplate.id,
+    })
   }
 
   revalidatePath('/admin/checklists')

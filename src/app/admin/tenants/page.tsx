@@ -13,7 +13,7 @@ export default async function TenantsPage() {
   const [{ data: tenants }, { data: properties }, { data: profiles }, { data: rawSpecialists }, { data: templates }, { data: checklistAccess }] = await Promise.all([
     supabase
       .from('tenants')
-      .select('id, name, slug, license_tier, max_property_licenses, status, parent_organization_id, created_at')
+      .select('id, name, slug, license_tier, max_property_licenses, status, parent_organization_id, allow_checklist_management, enable_predictive_scoring, created_at')
       .order('created_at', { ascending: false }),
     supabase.from('properties').select('id, tenant_id'),
     supabase.from('profiles').select('id, tenant_id'),
@@ -66,6 +66,8 @@ export default async function TenantsPage() {
     max_property_licenses: t.max_property_licenses,
     status: t.status,
     parent_organization_id: t.parent_organization_id,
+    allow_checklist_management: t.allow_checklist_management ?? false,
+    enable_predictive_scoring: t.enable_predictive_scoring !== false,
     created_at: t.created_at,
     propertyCount: propertyCounts.get(t.id) ?? 0,
     staffCount: staffCounts.get(t.id) ?? 0,

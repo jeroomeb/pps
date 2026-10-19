@@ -4,27 +4,28 @@ import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/dal'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { uuidSchema } from '@/lib/ids'
 import type { PayoutStatus } from '@/lib/database.types'
 
 const toggleSchema = z.object({
-  tenant_id: z.string().uuid(),
+  tenant_id: uuidSchema,
   enable_payouts: z.coerce.boolean(),
 })
 
 const rateSchema = z.object({
-  tenant_id: z.string().uuid(),
+  tenant_id: uuidSchema,
   default_rate: z.coerce.number().min(0, 'Rate must be 0 or greater'),
 })
 
 const tierRatesSchema = z.object({
-  tenant_id: z.string().uuid(),
+  tenant_id: uuidSchema,
   tier_1_rate: z.coerce.number().min(0, 'Tier 1 rate must be 0 or greater'),
   tier_2_rate: z.coerce.number().min(0, 'Tier 2 rate must be 0 or greater'),
   tier_3_rate: z.coerce.number().min(0, 'Tier 3 rate must be 0 or greater'),
 })
 
 const matrixRatesSchema = z.object({
-  tenant_id: z.string().uuid(),
+  tenant_id: uuidSchema,
   // Luxury Condominium
   luxury_tier_1: z.coerce.number().min(0, 'Rate must be 0 or greater'),
   luxury_tier_2: z.coerce.number().min(0, 'Rate must be 0 or greater'),

@@ -26,7 +26,7 @@ export async function refreshDueRiskScores(now: Date = new Date()): Promise<{
   const admin = createAdminClient()
   const { data: properties, error } = await admin
     .from('properties')
-    .select('id, timezone, latitude, longitude, is_active, enable_predictive_scoring')
+    .select('id, timezone, latitude, longitude, is_active, enable_predictive_scoring, tenant_id, tenants(enable_predictive_scoring)')
     .eq('is_active', true)
 
   if (error || !properties) {
@@ -37,8 +37,10 @@ export async function refreshDueRiskScores(now: Date = new Date()): Promise<{
   let scored = 0
   let skipped = 0
   for (const property of properties) {
-    // Point 3: Respect per-property predictive scoring toggle
-    if (property.enable_predictive_scoring === false) {
+    // Respect per-property and per-tenant predictive scoring toggle
+    const tenantScoringEnabled =
+      (property.tenants as unknown as { enable_predictive_scoring?: boolean } | null)?.enable_predictive_scoring !== false
+    if (property.enable_predictive_scoring === false || !tenantScoringEnabled) {
       skipped += 1
       continue
     }

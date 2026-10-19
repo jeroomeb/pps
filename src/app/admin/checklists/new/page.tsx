@@ -1,9 +1,9 @@
 import { ChecklistTemplateForm } from '@/components/ChecklistTemplateForm'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { requireGlobalAdmin } from '@/lib/auth/dal'
+import { requireChecklistManagementPermission } from '@/lib/auth/checklist-permissions'
 
 export default async function NewChecklistPage() {
-  await requireGlobalAdmin()
+  const { isSuperAdmin } = await requireChecklistManagementPermission()
 
   return (
     <div className="max-w-3xl">
@@ -13,7 +13,7 @@ export default async function NewChecklistPage() {
         backHref="/admin/checklists"
         backLabel="Checklists"
       />
-      <ChecklistTemplateForm />
+      <ChecklistTemplateForm isSuperAdmin={isSuperAdmin} />
     </div>
   )
 }

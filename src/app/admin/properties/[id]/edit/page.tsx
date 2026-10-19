@@ -93,6 +93,7 @@ export default async function EditPropertyPage({
               )
             : undefined
         }
+        isSuperAdmin={profile.is_global_admin && !scope.isViewingTenant}
       />
     </div>
   )

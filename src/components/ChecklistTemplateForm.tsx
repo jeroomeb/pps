@@ -8,7 +8,7 @@ type ItemDraft = { service_category: string; item_name: string; description: str
 
 const EMPTY_ITEM: ItemDraft = { service_category: '', item_name: '', description: '' }
 
-export function ChecklistTemplateForm() {
+export function ChecklistTemplateForm({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
   const [state, formAction] = useActionState<TemplateFormState, FormData>(
     createTemplate,
     undefined
@@ -41,26 +41,40 @@ export function ChecklistTemplateForm() {
           className="min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none"
         />
 
-        <div className="mt-3 flex items-start gap-2.5 rounded-md border border-outline-variant/60 bg-surface-container-low/50 p-3">
-          <input
-            type="checkbox"
-            id="enable_predictive_scoring"
-            name="enable_predictive_scoring"
-            defaultChecked
-            className="mt-0.5 h-4 w-4 rounded border-outline-variant text-[#ee8a4b] focus:ring-[#ee8a4b]"
-          />
-          <div className="flex flex-col">
-            <label
-              htmlFor="enable_predictive_scoring"
-              className="text-xs font-semibold text-on-surface cursor-pointer"
-            >
-              Enable Predictive Risk Scoring for this Checklist
-            </label>
-            <p className="text-[11px] text-on-surface-variant">
-              When enabled, inspections using this checklist participate in pre-shift risk score calculations and recurring failure trends.
-            </p>
+        {isSuperAdmin ? (
+          <div className="mt-3 flex items-start gap-2.5 rounded-md border border-outline-variant/60 bg-surface-container-low/50 p-3">
+            <input
+              type="checkbox"
+              id="enable_predictive_scoring"
+              name="enable_predictive_scoring"
+              defaultChecked
+              className="mt-0.5 h-4 w-4 rounded border-outline-variant text-[#ee8a4b] focus:ring-[#ee8a4b]"
+            />
+            <div className="flex flex-col">
+              <label
+                htmlFor="enable_predictive_scoring"
+                className="text-xs font-semibold text-on-surface cursor-pointer"
+              >
+                Enable Predictive Risk Scoring for this Checklist
+              </label>
+              <p className="text-[11px] text-on-surface-variant">
+                When enabled, inspections using this checklist participate in pre-shift risk score calculations and recurring failure trends.
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-3 flex items-start gap-2.5 rounded-md border border-outline-variant/60 bg-surface-container-low/50 p-3">
+            <input type="hidden" name="enable_predictive_scoring" value="true" />
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-on-surface">
+                Predictive Risk Scoring: Enabled
+              </span>
+              <p className="text-[11px] text-on-surface-variant">
+                Checklist predictive risk analytics settings are managed by Platform Owner / Super Admin.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-3">

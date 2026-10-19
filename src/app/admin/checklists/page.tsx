@@ -5,11 +5,15 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { getAdminScope } from '@/lib/auth/tenant-view'
+import { canManageChecklists } from '@/lib/auth/checklist-permissions'
 import { CloneChecklistButton } from '@/components/CloneChecklistButton'
 
 export default async function ChecklistsPage() {
   const supabase = await createClient()
-  const scope = await getAdminScope()
+  const [scope, { allowed: canManage }] = await Promise.all([
+    getAdminScope(),
+    canManageChecklists(),
+  ])
 
   let templatesQuery = supabase
     .from('checklist_templates')
@@ -35,7 +39,7 @@ export default async function ChecklistsPage() {
         eyebrow="Checklist Types"
         title="Checklists"
         action={
-          scope.isGlobalAdmin ? (
+          canManage ? (
             <Link
               href="/admin/checklists/new"
               className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary-container px-4 font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95"
@@ -45,7 +49,7 @@ export default async function ChecklistsPage() {
             </Link>
           ) : (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant bg-surface-container px-2.5 py-1.5 rounded-md">
-              <Shield size={13} /> Managed by Super Admin
+              <Shield size={13} /> Managed by Super Admin (Read-Only)
             </span>
           )
         }
@@ -84,7 +88,7 @@ export default async function ChecklistsPage() {
                     </div>
                   </div>
 
-                  {scope.isGlobalAdmin && (
+                  {canManage && (
                     <div className="mt-3 border-t border-outline-variant/50 pt-2 flex justify-end">
                       <CloneChecklistButton
                         templateId={template.id}

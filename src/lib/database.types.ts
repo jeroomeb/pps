@@ -45,6 +45,8 @@ export interface Database {
           payout_tier_3_rate: number
           payout_matrix: PayoutMatrix
           parent_organization_id: string | null
+          allow_checklist_management: boolean
+          enable_predictive_scoring: boolean
           created_at: string
           updated_at: string
         }
@@ -63,6 +65,8 @@ export interface Database {
           payout_tier_3_rate?: number
           payout_matrix?: PayoutMatrix
           parent_organization_id?: string | null
+          allow_checklist_management?: boolean
+          enable_predictive_scoring?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -81,6 +85,8 @@ export interface Database {
           payout_tier_3_rate?: number
           payout_matrix?: PayoutMatrix
           parent_organization_id?: string | null
+          allow_checklist_management?: boolean
+          enable_predictive_scoring?: boolean
           created_at?: string
           updated_at?: string
         }

@@ -7,7 +7,7 @@ import { requireRole } from '@/lib/auth/dal'
 import { getAdminScope } from '@/lib/auth/tenant-view'
 import { createClient } from '@/lib/supabase/server'
 import { cleanupInspectionStorage } from '@/lib/supabase/storage-cleanup'
-import { genPropertyId } from '@/lib/ids'
+import { genPropertyId, uuidSchema } from '@/lib/ids'
 import type { ScheduleEntry } from '@/lib/schedule'
 import { composeAddress, normalizeAddressParts } from '@/lib/address'
 import type { Database } from '@/lib/database.types'
@@ -40,7 +40,7 @@ const propertySchema = z.object({
   building_category: z.enum(BUILDING_CATEGORIES),
   checklist_always_available: z.coerce.boolean().default(false),
   timezone: z.enum(PROPERTY_TIMEZONES).default('America/New_York'),
-  tenant_id: z.string().uuid().optional().nullable(),
+  tenant_id: uuidSchema.optional().nullable(),
   enable_predictive_scoring: z.coerce.boolean().default(true),
 })
 
@@ -118,16 +118,20 @@ export async function createProperty(
       ? parsed.data.tenant_id
       : profile.tenant_id ?? null
 
+  const isSuperAdmin = profile.is_global_admin && !scope.isViewingTenant
+
   // Enforce Tenant Property License SKU limits (Shared DB, Shared Schema Isolation)
   // Amenity Op's Master HQ has uncapped/unlimited licenses (Point 6)
+  let tenantScoringDefault = true
   if (targetTenantId) {
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id, name, slug, max_property_licenses, status')
+      .select('id, name, slug, max_property_licenses, status, enable_predictive_scoring')
       .eq('id', targetTenantId)
       .single()
 
     if (tenant) {
+      tenantScoringDefault = tenant.enable_predictive_scoring !== false
       if (tenant.status === 'suspended') {
         return { error: 'Your organization account is suspended. Please contact support.' }
       }
@@ -166,7 +170,9 @@ export async function createProperty(
     building_category: parsed.data.building_category,
     checklist_always_available: parsed.data.checklist_always_available,
     timezone: parsed.data.timezone,
-    enable_predictive_scoring: parsed.data.enable_predictive_scoring,
+    enable_predictive_scoring: isSuperAdmin
+      ? parsed.data.enable_predictive_scoring
+      : tenantScoringDefault,
   }
 
   // Retry once on the (astronomically unlikely) human_id collision.
@@ -235,10 +241,14 @@ export async function updateProperty(
     building_category: parsed.data.building_category,
     checklist_always_available: parsed.data.checklist_always_available,
     timezone: parsed.data.timezone,
-    enable_predictive_scoring: parsed.data.enable_predictive_scoring,
   }
 
-  if (profile.is_global_admin && !scope.isViewingTenant && parsed.data.tenant_id !== undefined) {
+  const isSuperAdmin = profile.is_global_admin && !scope.isViewingTenant
+  if (isSuperAdmin) {
+    updateFields.enable_predictive_scoring = parsed.data.enable_predictive_scoring
+  }
+
+  if (isSuperAdmin && parsed.data.tenant_id !== undefined) {
     updateFields.tenant_id = parsed.data.tenant_id
   }
 

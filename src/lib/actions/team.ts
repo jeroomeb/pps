@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { requireRole, getProfile } from '@/lib/auth/dal'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
-import { genSpecialistId } from '@/lib/ids'
+import { genSpecialistId, uuidSchema } from '@/lib/ids'
 import { composeAddress, normalizeAddressParts } from '@/lib/address'
 import { isSafeObjectPath } from '@/lib/storage-paths'
 import { generateSecureTemporaryPassword } from '@/lib/security'
@@ -16,7 +16,7 @@ const teamMemberSchema = z.object({
   email: z.string().trim().email('Enter a valid email'),
   password: z.string().optional().nullable(),
   role: z.enum(['admin', 'inspector']),
-  tenant_id: z.string().uuid().optional().nullable(),
+  tenant_id: uuidSchema.optional().nullable(),
 })
 
 export type TeamMemberFormState = { error?: string; success?: boolean; generatedPassword?: string } | undefined

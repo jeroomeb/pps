@@ -232,6 +232,45 @@ export function CreateTenantForm({
           )}
         </div>
 
+        {/* Super Admin Feature Controls */}
+        <div className="rounded-xl border border-outline-variant bg-surface-container-low p-4 flex flex-col gap-2.5">
+          <h3 className="font-headline text-xs font-bold uppercase tracking-wider text-on-surface">
+            Super Admin Feature Controls
+          </h3>
+          <p className="text-xs text-on-surface-variant">
+            Configure permissions and automated analytics specifically for this provisional tenant.
+          </p>
+          <div className="mt-1 flex flex-col gap-2">
+            <label className="flex items-start gap-2.5 text-xs text-on-surface cursor-pointer">
+              <input
+                type="checkbox"
+                name="allow_checklist_management"
+                className="mt-0.5 h-4 w-4 accent-[#ee8a4b]"
+              />
+              <div>
+                <p className="font-semibold">Allow Checklist Management</p>
+                <p className="text-on-surface-variant text-[11px]">
+                  When checked, tenant admins can create, modify, clone, and delete checklist templates. Default is unchecked (read-only, managed exclusively by Super Admin).
+                </p>
+              </div>
+            </label>
+            <label className="flex items-start gap-2.5 text-xs text-on-surface cursor-pointer">
+              <input
+                type="checkbox"
+                name="enable_predictive_scoring"
+                defaultChecked={true}
+                className="mt-0.5 h-4 w-4 accent-[#ee8a4b]"
+              />
+              <div>
+                <p className="font-semibold">Enable Predictive Risk Scoring & Analytics</p>
+                <p className="text-on-surface-variant text-[11px]">
+                  When enabled, the automated nightly engine computes risk ratings and highlights recurring issues for properties under this tenant.
+                </p>
+              </div>
+            </label>
+          </div>
+        </div>
+
         {/* Primary Tenant Administrator Account Setup */}
         <div className="rounded-xl border border-outline-variant bg-surface-container-low p-4">
           <div className="mb-2 flex items-center gap-2">

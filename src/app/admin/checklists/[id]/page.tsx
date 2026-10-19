@@ -10,6 +10,7 @@ import { CloneChecklistButton } from '@/components/CloneChecklistButton'
 import { ChecklistScoringToggle } from '@/components/ChecklistScoringToggle'
 import { deleteTemplate } from '@/lib/actions/checklists'
 import { getAdminScope } from '@/lib/auth/tenant-view'
+import { canManageChecklists } from '@/lib/auth/checklist-permissions'
 
 export default async function ChecklistDetailPage({
   params,
@@ -19,19 +20,21 @@ export default async function ChecklistDetailPage({
   const { id } = await params
   const supabase = await createClient()
 
-  const [{ data: template }, { data: items }, scope] = await Promise.all([
-    supabase
-      .from('checklist_templates')
-      .select('id, name, enable_predictive_scoring')
-      .eq('id', id)
-      .single(),
-    supabase
-      .from('checklist_template_items')
-      .select('id, service_category, item_name, description, risk_domain')
-      .eq('template_id', id)
-      .order('sort_order'),
-    getAdminScope(),
-  ])
+  const [{ data: template }, { data: items }, scope, { allowed: canManage, isSuperAdmin }] =
+    await Promise.all([
+      supabase
+        .from('checklist_templates')
+        .select('id, name, enable_predictive_scoring')
+        .eq('id', id)
+        .single(),
+      supabase
+        .from('checklist_template_items')
+        .select('id, service_category, item_name, description, risk_domain')
+        .eq('template_id', id)
+        .order('sort_order'),
+      getAdminScope(),
+      canManageChecklists(),
+    ])
 
   if (!template) {
     notFound()
@@ -61,7 +64,7 @@ export default async function ChecklistDetailPage({
         backHref="/admin/checklists"
         backLabel="Checklists"
         action={
-          scope.isGlobalAdmin ? (
+          canManage ? (
             <div className="flex flex-wrap items-center gap-2">
               <CloneChecklistButton templateId={id} templateName={template.name} />
               <RenameTemplateForm templateId={id} currentName={template.name} />
@@ -79,16 +82,16 @@ export default async function ChecklistDetailPage({
         }
       />
 
-      {/* Predictive Scoring Toggle Banner */}
+      {/* Predictive Scoring Toggle Banner (Super Admin Only) */}
       <div className="mb-6">
         <ChecklistScoringToggle
           templateId={id}
           initialEnabled={template.enable_predictive_scoring !== false}
-          disabled={!scope.isGlobalAdmin}
+          disabled={!isSuperAdmin}
         />
       </div>
 
-      {scope.isGlobalAdmin && (
+      {canManage && (
         <section className="mb-8">
           <h2 className="mb-3 font-headline text-lg font-semibold">Add Item</h2>
           <AddChecklistItemForm templateId={id} existingCategories={existingCategories} />
@@ -103,7 +106,7 @@ export default async function ChecklistDetailPage({
           key={itemsKey}
           templateId={id}
           items={items ?? []}
-          readOnly={!scope.isGlobalAdmin}
+          readOnly={!canManage}
         />
       </section>
     </div>

@@ -81,6 +81,7 @@ export default async function NewPropertyPage() {
         tenants={tenants ?? undefined}
         templates={profile.is_global_admin && !scope.isViewingTenant ? (templates ?? []) : templateOptions}
         accessByTenant={profile.is_global_admin && !scope.isViewingTenant ? accessByTenant : undefined}
+        isSuperAdmin={profile.is_global_admin && !scope.isViewingTenant}
       />
     </div>
   )

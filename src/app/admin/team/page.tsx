@@ -11,6 +11,8 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { DeactivateMemberModal } from '@/components/DeactivateMemberModal'
 import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
 
+import { US_STATES } from '@/lib/constants/states'
+
 export default async function TeamPage({
   searchParams,
 }: {
@@ -21,14 +23,28 @@ export default async function TeamPage({
   const scope = await getAdminScope()
   const supabase = await createClient()
 
+  const isHQ = currentProfile.is_global_admin && !scope.isViewingTenant && !scope.tenantId
+  const effectiveTenantId = isHQ ? null : (scope.tenantId ?? currentProfile.tenant_id)
+
+  let memberLocQuery = supabase.from('profiles').select('state, county')
+  if (effectiveTenantId) {
+    memberLocQuery = memberLocQuery.eq('tenant_id', effectiveTenantId)
+  } else if (tenant === 'all') {
+    // Show all organizations (HQ only)
+  } else if (tenant && tenant !== 'hq') {
+    memberLocQuery = memberLocQuery.eq('tenant_id', tenant)
+  } else {
+    memberLocQuery = memberLocQuery.is('tenant_id', null)
+  }
+
   // Unfiltered set drives the dropdown options and active inspections counts
   const [{ data: allMembers }, { data: openInspections }, { data: allTenants }] = await Promise.all([
-    supabase.from('profiles').select('state, county'),
+    memberLocQuery,
     supabase
       .from('inspections')
       .select('inspector_id')
       .in('status', ['pending', 'in_progress']),
-    currentProfile.is_global_admin
+    isHQ
       ? supabase.from('tenants').select('id, name').order('name')
       : Promise.resolve({ data: null }),
   ])
@@ -43,13 +59,12 @@ export default async function TeamPage({
     .select('id, full_name, role, human_id, email, phone, city, state, county, status, must_reset_password, tenant_id, tenants(id, name)')
     .order('full_name')
 
-  // Tenant isolation: if in a tenant scope, filter to that tenant.
-  // If in HQ scope: default to HQ only (tenant_id is null) so provisional tenant staff
-  // do not inflate the HQ count, unless explicitly choosing "all" or a specific tenant.
-  if (scope.tenantId) {
-    query = query.eq('tenant_id', scope.tenantId)
+  // Tenant isolation: if in a tenant scope, strictly filter to that tenant.
+  // If in HQ scope: default to HQ only (tenant_id is null) unless explicitly choosing "all" or a specific tenant.
+  if (effectiveTenantId) {
+    query = query.eq('tenant_id', effectiveTenantId)
   } else if (tenant === 'all') {
-    // Show all organizations
+    // Show all organizations (HQ only)
   } else if (tenant && tenant !== 'hq') {
     query = query.eq('tenant_id', tenant)
   } else {
@@ -75,10 +90,13 @@ export default async function TeamPage({
     human_id: m.human_id,
   }))
 
-  const activeTenantId = scope.tenantId ?? currentProfile.tenant_id
+  const activeTenantId = effectiveTenantId
   const activeTenantName = activeTenantId
     ? (allTenants ?? []).find((t) => t.id === activeTenantId)?.name ?? currentProfile.tenant?.name ?? null
     : null
+
+  const memberStates = distinctValues(allMembers ?? [], 'state')
+  const teamStates = memberStates.length > 0 ? memberStates : [...US_STATES]
 
   return (
     <div>
@@ -87,9 +105,9 @@ export default async function TeamPage({
       <AddressFilterBar
         action="/admin/team"
         values={{ q, state, county, tenant }}
-        states={distinctValues(allMembers ?? [], 'state')}
+        states={teamStates}
         counties={distinctValues(allMembers ?? [], 'county')}
-        organizations={currentProfile.is_global_admin ? (allTenants ?? []).map((t) => ({ id: t.id, name: t.name })) : undefined}
+        organizations={isHQ ? (allTenants ?? []).map((t) => ({ id: t.id, name: t.name })) : undefined}
         searchPlaceholder="Search team by name, email, or ID…"
       />
 
