@@ -41,11 +41,11 @@ export function CreateTenantForm({
     setTimeout(() => setCopied(false), 3000)
   }
 
-  if (!isOpen) {
-    return (
+  return (
+    <>
       <div className="flex flex-col items-end gap-3">
         {issuedPassword && (
-          <div className="w-full max-w-md rounded border border-primary/30 bg-primary-container/20 p-3 text-sm">
+          <div className="w-full max-w-md rounded-lg border border-primary/30 bg-primary-container/20 p-3 text-sm shadow-sm">
             <p className="font-semibold text-primary">Temporary admin password</p>
             <p className="mt-1 text-xs text-on-surface-variant">
               Save this now. The new administrator must change it on first sign-in.
@@ -74,32 +74,37 @@ export function CreateTenantForm({
             setIssuedPassword(null)
             setIsOpen(true)
           }}
-          className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary-container px-4 font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95"
+          className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary-container px-4 font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95 transition shadow-sm"
         >
           <Plus size={16} />
           Provision Tenant
         </button>
       </div>
-    )
-  }
 
-  return (
-    <Card className="mb-8 border-primary-container bg-surface-container-low/40">
-      <div className="mb-4 flex items-center justify-between border-b border-outline-variant pb-3">
-        <div className="flex items-center gap-2">
-          <Building size={18} className="text-primary" />
-          <h2 className="font-headline text-base font-bold">Provision New Corporate Tenant</h2>
-        </div>
-        <button
-          type="button"
-          onClick={() => setIsOpen(false)}
-          className="rounded p-1 text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 sm:p-6 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsOpen(false)
+          }}
         >
-          <X size={18} />
-        </button>
-      </div>
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-outline-variant bg-surface p-5 sm:p-6 shadow-2xl my-auto">
+            <div className="mb-4 flex items-center justify-between border-b border-outline-variant pb-3">
+              <div className="flex items-center gap-2">
+                <Building size={20} className="text-primary" />
+                <h2 className="font-headline text-lg font-bold text-on-surface">Provision New Corporate Tenant</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition"
+                title="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-      <form action={formAction} className="flex flex-col gap-4">
+            <form action={formAction} className="flex flex-col gap-4">
         {parentTenants && parentTenants.length > 0 && (
           <div className="flex flex-col gap-1">
             <label htmlFor="parent_organization_id" className="text-xs font-semibold uppercase tracking-wide">
@@ -341,7 +346,10 @@ export function CreateTenantForm({
           </button>
           <SubmitButton>Create Tenant</SubmitButton>
         </div>
-      </form>
-    </Card>
+          </form>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

@@ -123,80 +123,88 @@ export function TenantLicenseCard({
   return (
     <Card className="flex flex-col justify-between transition-shadow hover:shadow-sm">
       <div>
-        <div className="flex items-start justify-between gap-3 border-b border-outline-variant pb-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Building size={16} className="text-primary shrink-0" />
-              <h3 className="truncate font-headline font-bold text-base text-on-surface">
-                {tenant.name}
-              </h3>
+        <div className="border-b border-outline-variant pb-3">
+          {/* Top Row: Full Tenant Title + Status Badge + Edit Action */}
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex items-start gap-2 min-w-0 flex-1">
+              <Building size={18} className="text-primary shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <h3 className="font-headline font-bold text-base text-on-surface leading-snug break-words">
+                  {tenant.name}
+                </h3>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant font-mono">
+                  <span>slug: {tenant.slug ?? tenant.id.slice(0, 8)}</span>
+                  {parentOrgName && (
+                    <span className="inline-flex items-center gap-1 rounded bg-secondary-container/60 px-1.5 py-0.2 text-[10px] font-sans font-medium text-on-surface-variant">
+                      <GitFork size={10} /> {parentOrgName}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant font-mono">
-              <span>slug: {tenant.slug ?? tenant.id.slice(0, 8)}</span>
-              {parentOrgName && (
-                <span className="inline-flex items-center gap-1 rounded bg-secondary-container/60 px-1.5 py-0.2 text-[10px] font-sans font-medium text-on-surface-variant">
-                  <GitFork size={10} /> {parentOrgName}
-                </span>
-              )}
+
+            <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+              <span
+                className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                  tenant.status === 'active'
+                    ? 'bg-success-container text-on-success-container'
+                    : tenant.status === 'trial'
+                      ? 'bg-primary-container text-on-primary-container'
+                      : 'bg-error-container text-on-error-container'
+                }`}
+              >
+                {tenant.status}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing(!isEditing)
+                  setIsDeleting(false)
+                  setSelectedSpecialistIds(
+                    specialists.filter((s) => s.currentTenantId === tenant.id).map((s) => s.id)
+                  )
+                }}
+                className="rounded p-1 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition"
+                title="Edit Tenant"
+              >
+                {isEditing ? <X size={15} /> : <Pencil size={15} />}
+              </button>
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          </div>
+
+          {/* Sub-bar: Feature Badges & Dedicated Open Dashboard Action */}
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/40">
+            <div className="flex flex-wrap items-center gap-1.5">
               {tenant.allow_checklist_management ? (
-                <span className="rounded bg-secondary-container/60 px-1.5 py-0.5 text-[10px] font-sans font-medium text-on-surface">
+                <span className="rounded bg-secondary-container/60 px-2 py-0.5 text-[10px] font-sans font-medium text-on-surface">
                   Checklists: Full Access
                 </span>
               ) : (
-                <span className="rounded bg-surface-container px-1.5 py-0.5 text-[10px] font-sans text-on-surface-variant">
+                <span className="rounded bg-surface-container px-2 py-0.5 text-[10px] font-sans text-on-surface-variant">
                   Checklists: HQ Managed
                 </span>
               )}
               {tenant.enable_predictive_scoring !== false ? (
-                <span className="rounded bg-secondary-container/60 px-1.5 py-0.5 text-[10px] font-sans font-medium text-on-surface">
+                <span className="rounded bg-secondary-container/60 px-2 py-0.5 text-[10px] font-sans font-medium text-on-surface">
                   Scoring: On
                 </span>
               ) : (
-                <span className="rounded bg-surface-container px-1.5 py-0.5 text-[10px] font-sans text-on-surface-variant">
+                <span className="rounded bg-surface-container px-2 py-0.5 text-[10px] font-sans text-on-surface-variant">
                   Scoring: Off
                 </span>
               )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span
-              className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                tenant.status === 'active'
-                  ? 'bg-success-container text-on-success-container'
-                  : tenant.status === 'trial'
-                    ? 'bg-primary-container text-on-primary-container'
-                    : 'bg-error-container text-on-error-container'
-              }`}
-            >
-              {tenant.status}
-            </span>
 
             <a
               href={`/admin/tenants/${tenant.id}/open`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded border border-outline-variant px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-on-surface hover:bg-surface-container"
+              className="inline-flex items-center gap-1.5 rounded border border-outline-variant bg-surface px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-on-surface hover:bg-surface-container hover:border-primary/40 transition shrink-0"
             >
-              <ExternalLink size={12} />
+              <ExternalLink size={12} className="text-primary" />
               Open dashboard
             </a>
-            <button
-              type="button"
-              onClick={() => {
-                setIsEditing(!isEditing)
-                setIsDeleting(false)
-                setSelectedSpecialistIds(
-                  specialists.filter((s) => s.currentTenantId === tenant.id).map((s) => s.id)
-                )
-              }}
-              className="rounded p-1 text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
-              title="Edit Tenant"
-            >
-              {isEditing ? <X size={15} /> : <Pencil size={15} />}
-            </button>
           </div>
         </div>
 
