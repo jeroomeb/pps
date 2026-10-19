@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node api.js && next dev",
-    "build": "node api.js && next build",
-    "start": "node api.js && next start",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint",
     "test:risk": "node --experimental-strip-types --import ./scripts/register-ts-extension.mjs --test src/lib/risk-score.test.ts",
     "seed": "node scripts/seed-checklists.mjs",
