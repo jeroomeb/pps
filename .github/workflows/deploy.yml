@@ -34,12 +34,14 @@ jobs:
             # Ensure correct directory
             cd /var/www/amenityops || exit 1
 
-            # Discard any local untracked/modified changes to prevent merge conflicts
-            git reset --hard HEAD
-            
-            # Pull latest changes from GitHub main branch
-            echo "📥 Pulling latest commits from GitHub..."
-            git pull origin main
+            # Fetch latest commits from GitHub main branch
+            echo "📥 Fetching latest commits from GitHub..."
+            git fetch origin main
+
+            # Force sync VPS working tree directly to origin/main (resolves any divergent branches cleanly)
+            echo "🔄 Synchronizing VPS working tree to origin/main..."
+            git reset --hard origin/main
+            git clean -fd
 
             # Stop Nginx from forcing Connection: upgrade on every request.
             # That header makes Next.js drop some connections and Nginx returns 502.
