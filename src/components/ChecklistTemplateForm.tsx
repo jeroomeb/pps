@@ -3,12 +3,29 @@
 import { useActionState, useState } from 'react'
 import { SubmitButton } from '@/components/SubmitButton'
 import { createTemplate, type TemplateFormState } from '@/lib/actions/checklists'
+import { RISK_DOMAINS, RISK_DOMAIN_LABELS } from '@/lib/risk-domain'
 
-type ItemDraft = { service_category: string; item_name: string; description: string }
+type ItemDraft = {
+  service_category: string
+  item_name: string
+  description: string
+  risk_domain: string
+}
 
-const EMPTY_ITEM: ItemDraft = { service_category: '', item_name: '', description: '' }
+const EMPTY_ITEM: ItemDraft = {
+  service_category: '',
+  item_name: '',
+  description: '',
+  risk_domain: '',
+}
 
-export function ChecklistTemplateForm({ isSuperAdmin = false }: { isSuperAdmin?: boolean }) {
+export function ChecklistTemplateForm({
+  isSuperAdmin = false,
+  existingCategories = [],
+}: {
+  isSuperAdmin?: boolean
+  existingCategories?: string[]
+}) {
   const [state, formAction] = useActionState<TemplateFormState, FormData>(
     createTemplate,
     undefined
@@ -26,6 +43,13 @@ export function ChecklistTemplateForm({ isSuperAdmin = false }: { isSuperAdmin?:
   function removeItem(index: number) {
     setItems((prev) => prev.filter((_, i) => i !== index))
   }
+
+  const categorySuggestions = Array.from(
+    new Set([
+      ...existingCategories,
+      ...items.map((it) => it.service_category.trim()).filter(Boolean),
+    ])
+  )
 
   return (
     <form action={formAction} className="flex flex-col gap-6">
@@ -97,30 +121,91 @@ export function ChecklistTemplateForm({ isSuperAdmin = false }: { isSuperAdmin?:
                 </button>
               )}
             </div>
-            <input
-              placeholder="Service Category (e.g. Common Area Fire & Life Safety)"
-              value={item.service_category}
-              onChange={(e) => updateItem(index, { service_category: e.target.value })}
-              required
-              className="min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none"
-            />
-            <input
-              placeholder="Item Name (e.g. Path Obstructions)"
-              value={item.item_name}
-              onChange={(e) => updateItem(index, { item_name: e.target.value })}
-              required
-              className="min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none"
-            />
-            <textarea
-              placeholder="Description / hover note (optional)"
-              value={item.description}
-              onChange={(e) => updateItem(index, { description: e.target.value })}
-              rows={2}
-              className="rounded border border-outline-variant px-3 py-2 focus:border-primary-container focus:outline-none"
-            />
+
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor={`item_cat_${index}`}
+                className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+              >
+                Service Category
+              </label>
+              <input
+                id={`item_cat_${index}`}
+                list="category-suggestions"
+                placeholder="Service Category (e.g. Common Area Fire & Life Safety)"
+                value={item.service_category}
+                onChange={(e) => updateItem(index, { service_category: e.target.value })}
+                required
+                className="min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor={`item_name_${index}`}
+                className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+              >
+                Item Name
+              </label>
+              <input
+                id={`item_name_${index}`}
+                placeholder="Item Name (e.g. Path Obstructions)"
+                value={item.item_name}
+                onChange={(e) => updateItem(index, { item_name: e.target.value })}
+                required
+                className="min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor={`item_desc_${index}`}
+                className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+              >
+                Description (Optional)
+              </label>
+              <textarea
+                id={`item_desc_${index}`}
+                placeholder="Description / hover note (optional)"
+                value={item.description}
+                onChange={(e) => updateItem(index, { description: e.target.value })}
+                rows={2}
+                className="rounded border border-outline-variant px-3 py-2 focus:border-primary-container focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor={`item_risk_${index}`}
+                className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+              >
+                Risk Area
+              </label>
+              <select
+                id={`item_risk_${index}`}
+                value={item.risk_domain}
+                onChange={(e) => updateItem(index, { risk_domain: e.target.value })}
+                className="min-h-12 rounded border border-outline-variant bg-surface px-3 focus:border-primary-container focus:outline-none"
+              >
+                <option value="">Choose an area</option>
+                {RISK_DOMAINS.map((domain) => (
+                  <option key={domain} value={domain}>
+                    {RISK_DOMAIN_LABELS[domain]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         ))}
       </div>
+
+      {categorySuggestions.length > 0 && (
+        <datalist id="category-suggestions">
+          {categorySuggestions.map((cat) => (
+            <option key={cat} value={cat} />
+          ))}
+        </datalist>
+      )}
 
       <button
         type="button"

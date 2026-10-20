@@ -73,14 +73,19 @@ export async function createTemplate(
   const { error: itemsError } = await supabase
     .from('checklist_template_items')
     .insert(
-      parsed.data.items.map((item, index) => ({
-        template_id: template.id,
-        service_category: item.service_category,
-        item_name: item.item_name,
-        description: item.description || null,
-        sort_order: index,
-        risk_domain: inferRiskDomain(item.service_category, item.item_name, item.description),
-      }))
+      parsed.data.items.map((item, index) => {
+        const chosen = isRiskDomain(item.risk_domain) ? item.risk_domain : null
+        return {
+          template_id: template.id,
+          service_category: item.service_category,
+          item_name: item.item_name,
+          description: item.description || null,
+          sort_order: index,
+          risk_domain:
+            chosen ??
+            inferRiskDomain(item.service_category, item.item_name, item.description),
+        }
+      })
     )
 
   if (itemsError) {
