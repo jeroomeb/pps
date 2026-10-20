@@ -22,6 +22,7 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
 
 # debug
@@ -43,12 +44,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# client notes & dev documentation
-#/dev docs/
-#dev docs/
-CLIENT_REPLY_RECOMMENDATIONS.md
-
-leads-and-outreach.md
+# local temporary scripts and working files
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+
+# client notes & private outreach
+CLIENT_REPLY_RECOMMENDATIONS.md
+leads-and-outreach.md
