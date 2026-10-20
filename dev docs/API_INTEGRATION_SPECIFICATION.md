@@ -1,73 +1,146 @@
-# AmenityOps REST API Specification: Inspector Portal & Tenant Dashboard
+# AmenityOps REST API Reference & Integration Guide
 
-**Document Version:** 1.0.0  
-**Target Audience:** Client Engineering Team & Integration Partners  
-**Base URL:** `https://<domain>/api/v1` (Production) / `http://localhost:3000/api/v1` (Development)  
-**Authentication Scheme:** Bearer Token (`Authorization: Bearer <JWT_ACCESS_TOKEN>`)  
-
----
-
-## 1. Executive Summary & Client Request Breakdown
-
-The client has requested dedicated REST API endpoints to power two external/portal integrations:
-1. **Inspector Portal Integration**: Managing field specialists, viewing and updating inspector profiles, fetching assigned inspection jobs, reviewing inspector applications, cancelling/deleting jobs, and accessing inspection report data and PDFs.
-2. **Tenant Dashboard Integration**: Listing tenant organizations and retrieving organization-specific licensing, limits, and configurations.
-
-This document provides a technical specification for all 9 requested endpoints, aligning client terminology with the AmenityOps core database architecture and security model.
-
-### Terminology & Entity Mapping
-
-| Client Term | AmenityOps Database Entity | Primary Table | Description |
-| :--- | :--- | :--- | :--- |
-| **Inspector** | Specialist Profile | `public.profiles` (`role = 'inspector'`) | Field specialist performing on-site amenity audits. |
-| **Job** | Inspection Visit | `public.inspections` | Scheduled, in-progress, or completed property audit. |
-| **Job Report** | Inspection Report & PDF | `public.inspections` + `public.inspection_items` | Outcome audit log, photos, compliance checklist, and risk metrics. |
-| **Inspector Application** | Specialist Candidate | `public.profiles` (`is_contractor = true` / `status = 'inactive'`) | Registered applicant awaiting operational review or onboarding. |
-| **Tenant** | Client Organization | `public.tenants` | Provisioned property management firm or master account. |
+**Platform Version:** 1.0.0  
+**Production Base URL:** `https://amenityops.app/api/v1`  
+**Staging Base URL:** `https://staging.amenityops.app/api/v1`  
+**Protocol:** HTTPS  
+**Data Format:** JSON (`application/json`)  
+**Authentication:** Bearer JWT Token  
 
 ---
 
-## 2. Authentication, Authorization & Security Architecture
+## Table of Contents
+
+1. [Architecture & Overview](#1-architecture--overview)
+2. [Authentication & Authorization](#2-authentication--authorization)
+   - [2.1 Authentication Headers](#21-authentication-headers)
+   - [2.2 Role-Based Access Control (RBAC)](#22-role-based-access-control-rbac)
+   - [2.3 Multi-Tenant Isolation](#23-multi-tenant-isolation)
+3. [Standard Response & Error Conventions](#3-standard-response--error-conventions)
+4. [Inspector Portal APIs](#4-inspector-portal-apis)
+   - [4.1 List All Inspectors (`GET /inspectors`)](#41-list-all-inspectors-get-inspectors)
+   - [4.2 Retrieve Inspector Details (`GET /inspectors/:id`)](#42-retrieve-inspector-details-get-inspectorsid)
+   - [4.3 Update Inspector Information (`PUT /inspectors/:id`)](#43-update-inspector-information-put-inspectorsid)
+   - [4.4 Retrieve Inspector Jobs (`GET /inspectors/:id/jobs`)](#44-retrieve-inspector-jobs-get-inspectorsidjobs)
+   - [4.5 Retrieve Inspector Applications (`GET /inspector-applications`)](#45-retrieve-inspector-applications-get-inspector-applications)
+   - [4.6 Delete or Cancel Job (`DELETE /jobs/:id`)](#46-delete-or-cancel-job-delete-jobsid)
+   - [4.7 Retrieve Job Inspection Report (`GET /jobs/:id/report`)](#47-retrieve-job-inspection-report-get-jobsidreport)
+5. [Tenant Dashboard APIs](#5-tenant-dashboard-apis)
+   - [5.1 List All Tenants (`GET /tenants`)](#51-list-all-tenants-get-tenants)
+   - [5.2 Retrieve Tenant Details (`GET /tenants/:id`)](#52-retrieve-tenant-details-get-tenantsid)
+6. [Rate Limits & Security Best Practices](#6-rate-limits--security-best-practices)
+
+---
+
+## 1. Architecture & Overview
+
+AmenityOps provides a centralized REST API engine powering property compliance audits, field operations, and multi-tenant management. External systems, mobile inspection applications, and third-party dashboards interact with the core engine through standardized RESTful endpoints under the `/api/v1` namespace.
+
+### Core Data Models
+
+* **Inspectors (`profiles`)**: Operational field specialists responsible for performing physical on-site amenity audits and submitting photo verification data.
+* **Jobs (`inspections`)**: Scheduled, in-progress, or finalized property visits associated with a compliance checklist template and assigned inspector.
+* **Reports (`inspection_items` + PDF)**: Audited shift data, GPS/timestamp-stamped photos, pass/fail compliance status, and predictive risk scores.
+* **Tenants (`tenants`)**: Property management organizations, regional operators, or master enterprise accounts with isolated licensing and user rosters.
+
+---
+
+## 2. Authentication & Authorization
+
+All private endpoints require transport-layer encryption (HTTPS) and an active Bearer JWT token issued by the AmenityOps authentication service.
 
 ### 2.1 Authentication Headers
-All protected API endpoints require an active session Bearer token in the HTTP `Authorization` header:
+
+Every API request must include the following headers:
 
 ```http
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Authorization: Bearer <ACCESS_TOKEN>
 Content-Type: application/json
+Accept: application/json
 ```
 
-Tokens are issued via standard Supabase authentication (`/auth/v1/token?grant_type=password` or refresh token exchange).
+Tokens are obtained via user credentials or API client authentication against the platform's auth endpoints.
 
-### 2.2 Role-Based Access Control (RBAC) & Tenant Scoping
-AmenityOps enforces a 3-tier authorization model:
-1. **Platform Owner / Super Admin** (`is_global_admin = true`):
-   - Has unrestricted access across all tenants, inspectors, properties, and inspections.
-2. **Tenant Admin** (`role = 'admin'` with `tenant_id`):
-   - Strictly isolated to resources belonging to their `tenant_id`.
-   - Cannot view or manipulate inspectors, jobs, or settings outside their organization.
-3. **Inspector / Specialist** (`role = 'inspector'`):
-   - Restricted to reading/updating their own profile (`profiles.id = user.id`).
-   - Restricted to viewing jobs assigned directly to them (`inspections.inspector_id = user.id`).
+### 2.2 Role-Based Access Control (RBAC)
+
+Access permissions are enforced based on the caller's verified role:
+
+| Role | Scope | Capabilities |
+| :--- | :--- | :--- |
+| **Super Admin** (`is_global_admin = true`) | Platform-Wide | Full administrative read/write access across all tenants, inspectors, properties, and jobs. |
+| **Tenant Admin** (`role = 'admin'`) | Tenant-Scoped | Management of inspectors, properties, and scheduled jobs within their specific organization (`tenant_id`). |
+| **Inspector** (`role = 'inspector'`) | Self-Scoped | Access to own profile, assigned job queue, and checklist execution workflows. |
+
+### 2.3 Multi-Tenant Isolation
+
+For Tenant Admins and Inspectors, all queries are automatically scoped by `tenant_id` at the database level. Attempting to query or mutate a resource belonging to another organization returns an immediate `403 Forbidden` or `404 Not Found` response.
 
 ---
 
-## 3. Detailed Endpoint Specifications
+## 3. Standard Response & Error Conventions
+
+### Success Response Format
+Successful API responses return HTTP `200 OK` (or `201 Created` for resource creation) with a unified envelope:
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "pagination": { ... } // Included on collection endpoints
+}
+```
+
+### Error Response Format
+When a request fails, the API returns the appropriate 4xx or 5xx status code with an actionable JSON error object:
+
+```json
+{
+  "success": false,
+  "error": "Descriptive error message",
+  "code": "RESOURCE_NOT_FOUND",
+  "details": null
+}
+```
+
+#### HTTP Status Codes
+
+| Code | Status | Meaning |
+| :--- | :--- | :--- |
+| **200** | `OK` | Request succeeded; body contains requested data. |
+| **201** | `Created` | New resource created successfully. |
+| **204** | `No Content` | Action succeeded with no body returned. |
+| **400** | `Bad Request` | Validation failure or malformed payload. |
+| **401** | `Unauthorized` | Missing or expired Bearer token. |
+| **403** | `Forbidden` | Insufficient permissions or cross-tenant boundary violation. |
+| **404** | `Not Found` | Requested resource does not exist. |
+| **422** | `Unprocessable Entity` | Schema validation error on provided fields. |
+| **500** | `Internal Server Error` | Unexpected server failure. |
 
 ---
 
-### 3.1 Inspector Portal APIs
+## 4. Inspector Portal APIs
 
-#### Endpoint 1: `GET /api/v1/inspectors`
-* **Summary**: Retrieve a paginated list of all inspectors (specialists).
-* **Authorization**: Super Admin (all organizations) or Tenant Admin (scoped to active tenant).
-* **Query Parameters**:
-  - `page` (optional, integer, default: `1`): Page number.
-  - `limit` (optional, integer, default: `20`, max: `100`): Results per page.
-  - `status` (optional, string): Filter by status (`active`, `inactive`, `suspended`).
-  - `state` (optional, string): Filter by US state (e.g., `FL`, `TX`).
-  - `search` (optional, string): Search query matching `full_name`, `email`, or `human_id`.
-* **Success Response (200 OK)**:
+---
+
+### 4.1 List All Inspectors (`GET /inspectors`)
+
+Retrieve a paginated list of field inspectors.
+
+* **Method:** `GET`
+* **Path:** `/api/v1/inspectors`
+* **Access Level:** Super Admin, Tenant Admin (scoped to active tenant)
+* **Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `page` | `integer` | No | `1` | Page number for pagination. |
+| `limit` | `integer` | No | `20` | Results per page (max: `100`). |
+| `status` | `string` | No | `all` | Filter by status: `active`, `inactive`, `suspended`. |
+| `state` | `string` | No | — | Filter by 2-letter US state code (e.g., `FL`, `GA`, `TX`). |
+| `search` | `string` | No | — | Text search matching `full_name`, `email`, or `human_id`. |
+
+#### Response (`200 OK`)
+
 ```json
 {
   "success": true,
@@ -82,12 +155,11 @@ AmenityOps enforces a 3-tier authorization model:
       "status": "active",
       "is_contractor": true,
       "tenant_id": "00000000-0000-0000-0000-000000000001",
-      "address": {
-        "street": "100 Ocean Blvd",
+      "coverage_area": {
         "city": "Boca Raton",
         "state": "FL",
-        "zip": "33432",
-        "county": "Palm Beach"
+        "county": "Palm Beach",
+        "zip": "33432"
       },
       "ach_enabled": true,
       "created_at": "2026-08-15T14:30:00Z"
@@ -104,12 +176,21 @@ AmenityOps enforces a 3-tier authorization model:
 
 ---
 
-#### Endpoint 2: `GET /api/v1/inspectors/:id`
-* **Summary**: Retrieve full details of a specific inspector.
-* **Authorization**: Super Admin, Tenant Admin (same tenant), or the Inspector themselves.
-* **URL Parameters**:
-  - `id` (required, UUID): The inspector's unique identifier.
-* **Success Response (200 OK)**:
+### 4.2 Retrieve Inspector Details (`GET /inspectors/:id`)
+
+Retrieve comprehensive profile and operational telemetry for a single inspector.
+
+* **Method:** `GET`
+* **Path:** `/api/v1/inspectors/:id`
+* **Access Level:** Super Admin, Tenant Admin (same organization), or the Inspector themselves (`:id == user.id`)
+* **Path Parameters:**
+
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | Yes | The inspector's unique account ID. |
+
+#### Response (`200 OK`)
+
 ```json
 {
   "success": true,
@@ -138,34 +219,36 @@ AmenityOps enforces a 3-tier authorization model:
     "banking": {
       "ach_enabled": true,
       "bank_name": "Chase Bank",
-      "account_number_last4": "4892",
-      "routing_number_last4": "0120"
+      "account_number_masked": "••••4892",
+      "routing_number_masked": "••••0120"
     },
-    "statistics": {
-      "completed_inspections": 128,
-      "pending_inspections": 3,
-      "on_time_rate_pct": 98.4
+    "metrics": {
+      "completed_jobs": 128,
+      "pending_jobs": 3,
+      "geofence_compliance_rate_pct": 99.2
     },
     "created_at": "2026-08-15T14:30:00Z"
   }
 }
 ```
-* **Error Response (404 Not Found)**:
-```json
-{
-  "success": false,
-  "error": "Inspector not found."
-}
-```
 
 ---
 
-#### Endpoint 3: `PUT /api/v1/inspectors/:id`
-* **Summary**: Update an inspector's contact details, coverage address, or status.
-* **Authorization**: Super Admin, Tenant Admin, or Inspector (self-service profile edits).
-* **URL Parameters**:
-  - `id` (required, UUID): The inspector's ID.
-* **Request Body**:
+### 4.3 Update Inspector Information (`PUT /inspectors/:id`)
+
+Update contact info, coverage address, or status for an inspector.
+
+* **Method:** `PUT`
+* **Path:** `/api/v1/inspectors/:id`
+* **Access Level:** Super Admin, Tenant Admin, or Inspector (self-service fields)
+* **Path Parameters:**
+
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | Yes | The inspector's unique account ID. |
+
+#### Request Body
+
 ```json
 {
   "full_name": "Marcus Vance",
@@ -182,7 +265,9 @@ AmenityOps enforces a 3-tier authorization model:
   "bank_routing_number": "021000021"
 }
 ```
-* **Success Response (200 OK)**:
+
+#### Response (`200 OK`)
+
 ```json
 {
   "success": true,
@@ -199,40 +284,48 @@ AmenityOps enforces a 3-tier authorization model:
 
 ---
 
-#### Endpoint 4: `GET /api/v1/inspectors/:id/jobs`
-* **Summary**: Retrieve scheduled, active, or completed jobs (inspections) assigned to a specific inspector.
-* **Authorization**: Super Admin, Tenant Admin, or the Inspector themselves (`id === user.id`).
-* **URL Parameters**:
-  - `id` (required, UUID): The inspector's ID.
-* **Query Parameters**:
-  - `status` (optional, string): Filter by job status (`pending`, `in_progress`, `completed`, `cancelled`).
-  - `from_date` (optional, ISO8601 Date): Filter jobs scheduled on or after this date.
-  - `to_date` (optional, ISO8601 Date): Filter jobs scheduled on or before this date.
-* **Success Response (200 OK)**:
+### 4.4 Retrieve Inspector Jobs (`GET /inspectors/:id/jobs`)
+
+Retrieve inspection assignments for a specific inspector.
+
+* **Method:** `GET`
+* **Path:** `/api/v1/inspectors/:id/jobs`
+* **Access Level:** Super Admin, Tenant Admin, or the assigned Inspector
+* **Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `status` | `string` | No | — | Filter by job status: `pending`, `in_progress`, `completed`, `cancelled`. |
+| `from_date` | `ISO8601 Date` | No | — | Scheduled date lower bound (e.g., `2026-10-01`). |
+| `to_date` | `ISO8601 Date` | No | — | Scheduled date upper bound (e.g., `2026-10-31`). |
+
+#### Response (`200 OK`)
+
 ```json
 {
   "success": true,
   "data": [
     {
       "id": "7f8b91a2-3c4d-5e6f-7a8b-9c0d1e2f3a4b",
-      "property_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
-      "property_name": "Waterfront Luxury Residences",
-      "property_address": "450 Bayshore Dr, Miami, FL 33133",
-      "property_coordinates": {
+      "status": "pending",
+      "scheduled_for": "2026-10-22T08:00:00Z",
+      "property": {
+        "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+        "name": "Waterfront Luxury Residences",
+        "address": "450 Bayshore Dr, Miami, FL 33133",
         "latitude": 25.7289,
         "longitude": -80.2374,
         "geofence_radius_meters": 150
       },
-      "template_id": "c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f",
-      "checklist_name": "55+ Active Adult Community Operational Audit",
-      "status": "pending",
-      "scheduled_for": "2026-10-22T08:00:00Z",
+      "checklist": {
+        "template_id": "c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f",
+        "name": "55+ Active Adult Community Operational Audit",
+        "item_count": 45
+      },
       "predictive_risk": {
         "score": 38,
         "tier": "moderate",
-        "flags": [
-          { "domain": "life_safety", "label": "Pool Emergency Gate Latch", "rate": 0.42 }
-        ]
+        "summary": "Moderate risk of life-safety violations during Thursday morning operational shift."
       },
       "created_at": "2026-10-20T18:00:00Z"
     }
@@ -242,13 +335,22 @@ AmenityOps enforces a 3-tier authorization model:
 
 ---
 
-#### Endpoint 5: `GET /api/v1/inspector-applications`
-* **Summary**: Retrieve applicant/candidate specialists who have applied to become inspectors.
-* **Authorization**: Super Admin or authorized Tenant Admin.
-* **Query Parameters**:
-  - `status` (optional, default: `pending`): Application status (`pending`, `approved`, `rejected`).
-  - `state` (optional, string): Filter by applicant's geographic location.
-* **Success Response (200 OK)**:
+### 4.5 Retrieve Inspector Applications (`GET /inspector-applications`)
+
+Retrieve specialist candidate applications awaiting review or onboarding.
+
+* **Method:** `GET`
+* **Path:** `/api/v1/inspector-applications`
+* **Access Level:** Super Admin, Tenant Admin
+* **Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `status` | `string` | No | `pending` | Filter by application status (`pending`, `approved`, `rejected`). |
+| `state` | `string` | No | — | Filter by applicant state (e.g., `FL`). |
+
+#### Response (`200 OK`)
+
 ```json
 {
   "success": true,
@@ -264,7 +366,7 @@ AmenityOps enforces a 3-tier authorization model:
         "county": "Hillsborough"
       },
       "is_contractor": true,
-      "id_documents_submitted": true,
+      "id_documents_uploaded": true,
       "application_date": "2026-10-18T11:20:00Z",
       "status": "pending"
     }
@@ -274,18 +376,22 @@ AmenityOps enforces a 3-tier authorization model:
 
 ---
 
-#### Endpoint 6: `DELETE /api/v1/jobs/:id`
-* **Summary**: Delete or cancel a scheduled inspection job.
-* **Business Rule**:
-  - If the job is `pending`, this cancels or permanently deletes the inspection visit.
-  - Completed inspections are frozen audit records and cannot be deleted.
-* **Authorization**: Super Admin or Tenant Admin.
-* **URL Parameters**:
-  - `id` (required, UUID): The inspection ID.
-* **Query Parameters**:
-  - `permanent` (optional, boolean, default: `false`): When `false`, soft-cancels the job with audit reason. When `true`, purges the row.
-  - `reason` (optional, string): Reason for cancellation (e.g., `Resident request`, `Weather postponement`).
-* **Success Response (200 OK)**:
+### 4.6 Delete or Cancel Job (`DELETE /jobs/:id`)
+
+Cancel or permanently delete an inspection visit.
+
+* **Method:** `DELETE`
+* **Path:** `/api/v1/jobs/:id`
+* **Access Level:** Super Admin, Tenant Admin
+* **Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `permanent` | `boolean` | No | `false` | When `false`, soft-cancels the visit with audit history. When `true`, purges the row. |
+| `reason` | `string` | No | — | Reason for cancellation (e.g., `Weather cancellation`, `Property closure`). |
+
+#### Response (`200 OK`)
+
 ```json
 {
   "success": true,
@@ -293,7 +399,7 @@ AmenityOps enforces a 3-tier authorization model:
   "data": {
     "id": "7f8b91a2-3c4d-5e6f-7a8b-9c0d1e2f3a4b",
     "status": "cancelled",
-    "cancellation_reason": "Weather postponement",
+    "cancellation_reason": "Weather cancellation",
     "cancelled_at": "2026-10-21T04:46:00Z"
   }
 }
@@ -301,14 +407,21 @@ AmenityOps enforces a 3-tier authorization model:
 
 ---
 
-#### Endpoint 7: `GET /api/v1/jobs/:id/report`
-* **Summary**: Retrieve the complete inspection report data, checklist item responses, photos, and PDF download URL.
-* **Authorization**: Super Admin, Tenant Admin (same tenant), or assigned Inspector.
-* **URL Parameters**:
-  - `id` (required, UUID): The inspection ID.
-* **Query Parameters**:
-  - `format` (optional, string, `json` | `pdf`, default: `json`): When `pdf`, returns the binary PDF report directly.
-* **Success Response (200 OK - JSON Format)**:
+### 4.7 Retrieve Job Inspection Report (`GET /jobs/:id/report`)
+
+Retrieve complete audit data, question results, watermarked photos, and PDF report link.
+
+* **Method:** `GET`
+* **Path:** `/api/v1/jobs/:id/report`
+* **Access Level:** Super Admin, Tenant Admin, or assigned Inspector
+* **Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `format` | `string` | No | `json` | Return structured JSON (`json`) or stream the generated PDF (`pdf`). |
+
+#### Response (`200 OK - JSON Format`)
+
 ```json
 {
   "success": true,
@@ -332,16 +445,14 @@ AmenityOps enforces a 3-tier authorization model:
     },
     "geofence": {
       "status": "verified",
-      "verified_within_meters": 42
+      "distance_meters": 42
     },
-    "risk_analysis": {
-      "predicted_score": 42,
-      "predicted_summary": "Elevated failure risk detected in Life-safety domain based on 30-day historical window.",
-      "flags": [
-        { "domain": "life_safety", "label": "Pool Emergency Gate Latch", "rate": 0.50 }
-      ]
+    "predictive_risk": {
+      "score": 42,
+      "tier": "moderate",
+      "summary": "Elevated failure risk detected in Life-safety domain based on 30-day historical window."
     },
-    "summary_metrics": {
+    "checklist_summary": {
       "total_items": 45,
       "passed": 42,
       "failed": 2,
@@ -364,26 +475,37 @@ AmenityOps enforces a 3-tier authorization model:
         "risk_domain": "life_safety",
         "status": "fail",
         "comment": "Gate latch mechanism sticky; failed to latch automatically from 4 inches.",
-        "photo_url": "https://<storage-cdn>/photos/7f8b91a2/pool_gate.jpg"
+        "photo_url": "https://amenityops.app/api/photos/7f8b91a2/pool_gate.jpg"
       }
     ],
-    "pdf_report_url": "/api/inspections/7f8b91a2-3c4d-5e6f-7a8b-9c0d1e2f3a4b/pdf"
+    "pdf_report_url": "https://amenityops.app/api/inspections/7f8b91a2-3c4d-5e6f-7a8b-9c0d1e2f3a4b/pdf"
   }
 }
 ```
 
 ---
 
-### 3.2 Tenant Dashboard APIs
+## 5. Tenant Dashboard APIs
 
-#### Endpoint 8: `GET /api/v1/tenants`
-* **Summary**: Retrieve the list of all tenant organizations.
-* **Authorization**: Platform Owner / Super Admin only.
-* **Query Parameters**:
-  - `status` (optional, string): Filter by status (`active`, `suspended`, `trial`).
-  - `tier` (optional, string): Filter by tier (`starter`, `standard`, `pro`, `enterprise`).
-  - `search` (optional, string): Search query matching tenant name or slug.
-* **Success Response (200 OK)**:
+---
+
+### 5.1 List All Tenants (`GET /tenants`)
+
+Retrieve all provisioned tenant organizations and licensing allocations.
+
+* **Method:** `GET`
+* **Path:** `/api/v1/tenants`
+* **Access Level:** Super Admin (Platform Owner)
+* **Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `status` | `string` | No | `all` | Filter by status: `active`, `suspended`, `trial`. |
+| `tier` | `string` | No | — | Filter by license tier: `starter`, `standard`, `pro`, `enterprise`. |
+| `search` | `string` | No | — | Search query matching tenant name or slug. |
+
+#### Response (`200 OK`)
+
 ```json
 {
   "success": true,
@@ -397,7 +519,7 @@ AmenityOps enforces a 3-tier authorization model:
       "status": "active",
       "allow_checklist_management": true,
       "enable_predictive_scoring": true,
-      "active_properties_count": 84,
+      "allocated_properties": 84,
       "created_at": "2026-01-01T00:00:00Z"
     },
     {
@@ -409,7 +531,7 @@ AmenityOps enforces a 3-tier authorization model:
       "status": "active",
       "allow_checklist_management": false,
       "enable_predictive_scoring": true,
-      "active_properties_count": 4,
+      "allocated_properties": 4,
       "created_at": "2026-09-15T10:00:00Z"
     }
   ]
@@ -418,12 +540,21 @@ AmenityOps enforces a 3-tier authorization model:
 
 ---
 
-#### Endpoint 9: `GET /api/v1/tenants/:id`
-* **Summary**: Retrieve detailed configuration, licensing status, and resource usage of a specific tenant.
-* **Authorization**: Super Admin or Tenant Admin belonging to that tenant.
-* **URL Parameters**:
-  - `id` (required, UUID): The tenant organization ID.
-* **Success Response (200 OK)**:
+### 5.2 Retrieve Tenant Details (`GET /tenants/:id`)
+
+Retrieve configuration, property license allocation, and active feature flags for a single tenant.
+
+* **Method:** `GET`
+* **Path:** `/api/v1/tenants/:id`
+* **Access Level:** Super Admin or Tenant Admin belonging to that tenant
+* **Path Parameters:**
+
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `UUID` | Yes | The tenant organization ID. |
+
+#### Response (`200 OK`)
+
 ```json
 {
   "success": true,
@@ -442,11 +573,11 @@ AmenityOps enforces a 3-tier authorization model:
       "enable_payouts": true,
       "require_id_photo": true
     },
-    "payout_configuration": {
+    "payout_matrix": {
       "default_payout_rate": 45.0,
-      "payout_tier_1_rate": 40.0,
-      "payout_tier_2_rate": 50.0,
-      "payout_tier_3_rate": 65.0
+      "tier_1_rate": 40.0,
+      "tier_2_rate": 50.0,
+      "tier_3_rate": 65.0
     },
     "parent_organization_id": null,
     "created_at": "2026-09-15T10:00:00Z",
@@ -457,24 +588,9 @@ AmenityOps enforces a 3-tier authorization model:
 
 ---
 
-## 4. Current Codebase Implementation & Availability Matrix
+## 6. Rate Limits & Security Best Practices
 
-| Requested Endpoint | Method | Existing AmenityOps Source | Status |
-| :--- | :--- | :--- | :--- |
-| `/inspectors` | `GET` | `/src/lib/actions/team.ts`, `/src/app/admin/team/page.tsx` | **Logic Ready** (Mount to `/src/app/api/inspectors/route.ts`) |
-| `/inspectors/:id` | `GET` | `/src/app/admin/team/[id]/page.tsx` | **Logic Ready** (Mount to `/src/app/api/inspectors/[id]/route.ts`) |
-| `/inspectors/:id` | `PUT` | `/src/lib/actions/team.ts` (`updateOwnProfile`, `updateTeamMemberAddress`) | **Logic Ready** (Mount to `/src/app/api/inspectors/[id]/route.ts`) |
-| `/inspectors/:id/jobs` | `GET` | `/src/app/inspector/page.tsx`, `inspections` table | **Logic Ready** (Mount to `/src/app/api/inspectors/[id]/jobs/route.ts`) |
-| `/inspector-applications` | `GET` | `/src/lib/actions/team.ts`, `profiles.is_contractor` | **Logic Ready** (Mount to `/src/app/api/inspector-applications/route.ts`) |
-| `/jobs/:id` | `DELETE` | `/src/lib/actions/inspections.ts` (`deleteInspection`, `cancelInspection`) | **Logic Ready** (Mount to `/src/app/api/jobs/[id]/route.ts`) |
-| `/jobs/:id/report` | `GET` | `/src/app/api/inspections/[id]/pdf/route.ts`, `/src/lib/pdf/generate.ts` | **PDF Route Live**; JSON summary endpoint ready to mount |
-| `/tenants` | `GET` | `/src/lib/actions/tenants.ts`, `/src/app/admin/tenants/page.tsx` | **Logic Ready** (Mount to `/src/app/api/tenants/route.ts`) |
-| `/tenants/:id` | `GET` | `/src/lib/actions/tenants.ts`, `tenants` table | **Logic Ready** (Mount to `/src/app/api/tenants/[id]/route.ts`) |
-
----
-
-## 5. Implementation Roadmap
-
-1. **Route Handler Scaffolding**: Create the Next.js App Router handlers under `/src/app/api/v1/...` wrapping the verified DAL functions.
-2. **Standard API Token Verification Middleware**: Centralize Supabase JWT verification and tenant scoping in a reusable helper (`/src/lib/auth/api-auth.ts`).
-3. **Automated Testing Suite**: Create integration tests ensuring 401 unauthorized, 403 forbidden cross-tenant rejection, and 200 OK payload schemas match this document.
+1. **Rate Limiting**: Protected endpoints enforce a standard threshold of **120 requests/minute per API token**. Requests exceeding this quota receive a `429 Too Many Requests` status code.
+2. **Payload Size**: `PUT` request bodies are limited to a maximum of **1 MB**.
+3. **Idempotency**: Use UUID identifiers for resources to ensure mutation retries do not create duplicate records.
+4. **Token Expiration**: Access tokens expire after 60 minutes. Integrations should refresh tokens using their standard OAuth/Supabase refresh credentials before expiration.
