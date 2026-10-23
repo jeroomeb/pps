@@ -8,7 +8,7 @@ export type ProfileStatus = 'active' | 'inactive' | 'suspended'
 export type SpecialistAssignmentRole = 'primary' | 'backup' | 'staff'
 export type PayoutStatus = 'pending' | 'approved' | 'paid' | 'cancelled'
 export type PayoutTier = 'tier_1' | 'tier_2' | 'tier_3' | 'custom'
-export type BuildingCategory = 'luxury' | 'adult' | 'commercial'
+export type BuildingCategory = string
 export type GeofenceStatus = 'pending' | 'verified' | 'outside' | 'exempt'
 export type RiskDomain = 'life_safety' | 'appearance' | 'asset_protection'
 export type RiskFlag = { domain: RiskDomain; label: string; rate: number }
@@ -29,6 +29,42 @@ export type PayoutMatrix = {
 export interface Database {
   public: {
     Tables: {
+      property_types: {
+        Row: {
+          id: string
+          key: string
+          label: string
+          description: string | null
+          payout_matrix_key: string
+          is_active: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          label: string
+          description?: string | null
+          payout_matrix_key?: string
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          label?: string
+          description?: string | null
+          payout_matrix_key?: string
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tenants: {
         Row: {
           id: string

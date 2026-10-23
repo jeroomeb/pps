@@ -6,14 +6,16 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { getTenantLicenseSummary, getProfile } from '@/lib/auth/dal'
 import { getAdminScope } from '@/lib/auth/tenant-view'
 import { createClient } from '@/lib/supabase/server'
+import { getActivePropertyTypes } from '@/lib/property-types'
 import { Card } from '@/components/ui/Card'
 
 export default async function NewPropertyPage() {
-  const [licenseSummary, profile, supabase, scope] = await Promise.all([
+  const [licenseSummary, profile, supabase, scope, propertyTypes] = await Promise.all([
     getTenantLicenseSummary(),
     getProfile(),
     createClient(),
     getAdminScope(),
+    getActivePropertyTypes(),
   ])
 
   const [{ data: tenants }, { data: templates }, { data: checklistAccess }] = await Promise.all([
@@ -82,6 +84,7 @@ export default async function NewPropertyPage() {
         templates={profile.is_global_admin && !scope.isViewingTenant ? (templates ?? []) : templateOptions}
         accessByTenant={profile.is_global_admin && !scope.isViewingTenant ? accessByTenant : undefined}
         isSuperAdmin={profile.is_global_admin && !scope.isViewingTenant}
+        propertyTypes={propertyTypes}
       />
     </div>
   )

@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import Link from 'next/link'
 import { MapPin, Navigation, Crosshair, ShieldCheck, CircleDollarSign, Building } from 'lucide-react'
 import { SubmitButton } from '@/components/SubmitButton'
 import { AddressFields } from '@/components/AddressFields'
@@ -10,6 +11,7 @@ import { WEEKDAY_LABELS, WEEKDAY_ORDER, type ScheduleEntry } from '@/lib/schedul
 import type { AddressParts } from '@/lib/address'
 import type { PayoutTier } from '@/lib/database.types'
 import { BUILDING_CATEGORY_LABELS, type BuildingCategory } from '@/lib/building-category'
+import type { PropertyTypeRecord } from '@/lib/property-types'
 import {
   PROPERTY_TIMEZONES,
   PROPERTY_TIMEZONE_LABELS,
@@ -27,6 +29,7 @@ export function PropertyForm({
   templates = [],
   accessByTenant,
   isSuperAdmin = false,
+  propertyTypes = [],
 }: {
   action: (state: PropertyFormState, formData: FormData) => Promise<PropertyFormState>
   defaultValues?: AddressParts & {
@@ -54,6 +57,7 @@ export function PropertyForm({
   templates?: { id: string; name: string }[]
   accessByTenant?: Record<string, string[]>
   isSuperAdmin?: boolean
+  propertyTypes?: PropertyTypeRecord[]
 }) {
   const [state, formAction] = useActionState<PropertyFormState, FormData>(action, undefined)
 
@@ -300,24 +304,61 @@ export function PropertyForm({
           </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="building_category" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-                Property type
-              </label>
-              <select
-                id="building_category"
-                name="building_category"
-                value={buildingCategory}
-                onChange={(e) => setBuildingCategory(e.target.value as BuildingCategory)}
-                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
-              >
-                {(Object.entries(BUILDING_CATEGORY_LABELS) as [BuildingCategory, string][]).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {isSuperAdmin ? (
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="building_category" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                    Property type
+                  </label>
+                  <Link
+                    href="/admin/property-types"
+                    target="_blank"
+                    className="text-[11px] font-semibold text-primary hover:underline"
+                  >
+                    Manage Types ↗
+                  </Link>
+                </div>
+                <select
+                  id="building_category"
+                  name="building_category"
+                  value={buildingCategory}
+                  onChange={(e) => setBuildingCategory(e.target.value as BuildingCategory)}
+                  className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+                >
+                  {(propertyTypes.length > 0
+                    ? propertyTypes
+                    : (Object.entries(BUILDING_CATEGORY_LABELS) as [string, string][]).map(([key, label]) => ({
+                        key,
+                        label,
+                      }))
+                  ).map((pt) => (
+                    <option key={pt.key} value={pt.key}>
+                      {pt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                  Property type
+                </label>
+                <input type="hidden" name="building_category" value={buildingCategory} />
+                <div className="flex min-h-10 items-center justify-between rounded border border-outline-variant/60 bg-surface-container-low px-3 text-sm text-on-surface">
+                  <span className="font-medium">
+                    {propertyTypes.find((pt) => pt.key === buildingCategory)?.label ??
+                      BUILDING_CATEGORY_LABELS[buildingCategory] ??
+                      buildingCategory}
+                  </span>
+                  <span className="rounded bg-surface-container-high px-2 py-0.5 text-[11px] font-medium text-on-surface-variant">
+                    Locked by Super Admin
+                  </span>
+                </div>
+                <p className="text-[11px] text-on-surface-variant">
+                  Property classification is managed by the Platform Owner / Super Admin.
+                </p>
+              </div>
+            )}
             <div className="flex flex-col gap-1">
               <label htmlFor="timezone" className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                 Property timezone

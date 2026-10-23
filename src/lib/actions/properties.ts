@@ -37,7 +37,7 @@ const propertySchema = z.object({
   geofence_radius_meters: z.coerce.number().min(10, 'Geofence radius must be at least 10 meters').default(100),
   payout_tier: z.enum(['tier_1', 'tier_2', 'tier_3', 'custom']).default('tier_2'),
   custom_payout_rate: z.preprocess((val) => (val === '' || val === null || val === undefined ? null : Number(val)), z.number().min(0).nullable().optional()),
-  building_category: z.enum(BUILDING_CATEGORIES),
+  building_category: z.string().trim().min(1, 'Property type is required'),
   checklist_always_available: z.coerce.boolean().default(false),
   timezone: z.enum(PROPERTY_TIMEZONES).default('America/New_York'),
   tenant_id: uuidSchema.optional().nullable(),
@@ -238,13 +238,13 @@ export async function updateProperty(
     geofence_radius_meters: parsed.data.geofence_radius_meters,
     payout_tier: parsed.data.payout_tier,
     custom_payout_rate: parsed.data.payout_tier === 'custom' ? (parsed.data.custom_payout_rate ?? null) : null,
-    building_category: parsed.data.building_category,
     checklist_always_available: parsed.data.checklist_always_available,
     timezone: parsed.data.timezone,
   }
 
   const isSuperAdmin = profile.is_global_admin && !scope.isViewingTenant
   if (isSuperAdmin) {
+    updateFields.building_category = parsed.data.building_category
     updateFields.enable_predictive_scoring = parsed.data.enable_predictive_scoring
   }
 

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Building2, ChevronRight, Plus, KeyRound, Users, Building, ShieldCheck } from 'lucide-react'
+import { Building2, ChevronRight, Plus, KeyRound, Users, Building, ShieldCheck, Layers } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile, getTenantLicenseSummary } from '@/lib/auth/dal'
 import { getAdminScope } from '@/lib/auth/tenant-view'
@@ -116,13 +116,24 @@ export default async function PropertiesPage({
         eyebrow="Portfolio"
         title="Properties"
         action={
-          <Link
-            href="/admin/properties/new"
-            className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary-container px-4 font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95"
-          >
-            <Plus size={16} />
-            New Property
-          </Link>
+          <div className="flex items-center gap-2">
+            {isHQ && (
+              <Link
+                href="/admin/property-types"
+                className="flex min-h-11 items-center gap-1.5 rounded-lg border border-outline-variant bg-surface-container-low px-4 font-headline text-sm font-semibold uppercase tracking-wide text-on-surface hover:bg-surface-container-high transition-colors"
+              >
+                <Layers size={16} />
+                Property Types
+              </Link>
+            )}
+            <Link
+              href="/admin/properties/new"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary-container px-4 font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95"
+            >
+              <Plus size={16} />
+              New Property
+            </Link>
+          </div>
         }
       />
 

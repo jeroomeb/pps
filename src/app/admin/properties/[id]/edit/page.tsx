@@ -5,6 +5,7 @@ import { updateProperty } from '@/lib/actions/properties'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { getProfile } from '@/lib/auth/dal'
 import { getAdminScope } from '@/lib/auth/tenant-view'
+import { getActivePropertyTypes } from '@/lib/property-types'
 import type { BuildingCategory, PayoutTier } from '@/lib/database.types'
 
 export default async function EditPropertyPage({
@@ -13,7 +14,12 @@ export default async function EditPropertyPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [supabase, profile, scope] = await Promise.all([createClient(), getProfile(), getAdminScope()])
+  const [supabase, profile, scope, propertyTypes] = await Promise.all([
+    createClient(),
+    getProfile(),
+    getAdminScope(),
+    getActivePropertyTypes(),
+  ])
 
   const [{ data: property }, { data: tenants }, { data: templates }, { data: checklistAccess }, { data: propertyAccess }] = await Promise.all([
     supabase
@@ -94,6 +100,7 @@ export default async function EditPropertyPage({
             : undefined
         }
         isSuperAdmin={profile.is_global_admin && !scope.isViewingTenant}
+        propertyTypes={propertyTypes}
       />
     </div>
   )
