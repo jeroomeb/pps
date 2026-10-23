@@ -196,11 +196,10 @@ export function PropertyTypesManager({
                       type="button"
                       disabled={isPending && pendingId === item.id}
                       onClick={() => handleToggleActive(item.id, item.is_active)}
-                      className={`inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-                        item.is_active
+                      className={`inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors ${item.is_active
                           ? 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-high'
                           : 'bg-primary text-on-primary hover:bg-primary/90'
-                      }`}
+                        }`}
                     >
                       {isPending && pendingId === item.id ? (
                         <Loader2 size={12} className="animate-spin" />
