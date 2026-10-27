@@ -203,11 +203,7 @@ export function ActiveInspectionChecklist({
     // Submitted — the server has everything, so the local copy is now noise.
     clearDraft(inspectionId)
 
-    if (data.warning) {
-      showToast('error', data.warning)
-    } else {
-      showToast('success', 'Inspection submitted and report generated.')
-    }
+    showToast('success', data.warning ?? 'Inspection submitted and report generated.')
 
     router.push('/inspector')
     router.refresh()
