@@ -76,27 +76,30 @@ export async function photoDataUri(
   // would otherwise let it read any object in any bucket. Reject anything
   // that isn't `<inspectionId>/<safe-filename>` before ever touching storage.
   if (!isSafeInspectionPhotoPath(photoPath)) return null
-  const { data, error } = await admin.storage.from('photos').download(photoPath)
-  if (error || !data) return null
-  const buffer = Buffer.from(await data.arrayBuffer())
 
   try {
-    // The PDF only ever displays these at 240×180pt (photo) or 180×135pt
-    // (photoSmall) — 900px is already several times that resolution at print
-    // DPI. The old 1600px/q78 setting was producing 15-25MB PDFs on a
-    // 40-photo checklist, close to or over Gmail's attachment limit and
-    // risking the serverless function's time/memory budget.
-    const jpeg = await sharp(buffer)
-      .rotate() // honor EXIF orientation so phone photos aren't sideways
-      .resize({ width: 900, withoutEnlargement: true })
-      .jpeg({ quality: 72 })
-      .toBuffer()
-    return `data:image/jpeg;base64,${jpeg.toString('base64')}`
-  } catch {
-    const ext = photoPath.split('.').pop()?.toLowerCase() ?? ''
-    const mime = MIME_BY_EXT[ext]
-    if (!mime) return null
-    return `data:${mime};base64,${buffer.toString('base64')}`
+    const { data, error } = await admin.storage.from('photos').download(photoPath)
+    if (error || !data) return null
+    const buffer = Buffer.from(await data.arrayBuffer())
+
+    try {
+      // The PDF only ever displays these at 240×180pt (photo) or 180×135pt (photoSmall).
+      // 640px is over 2.6x print DPI while keeping memory footprint low.
+      const jpeg = await sharp(buffer)
+        .rotate() // honor EXIF orientation so phone photos aren't sideways
+        .resize({ width: 640, withoutEnlargement: true })
+        .jpeg({ quality: 65 })
+        .toBuffer()
+      return `data:image/jpeg;base64,${jpeg.toString('base64')}`
+    } catch {
+      const ext = photoPath.split('.').pop()?.toLowerCase() ?? ''
+      const mime = MIME_BY_EXT[ext]
+      if (!mime) return null
+      return `data:${mime};base64,${buffer.toString('base64')}`
+    }
+  } catch (err) {
+    console.error(`photoDataUri failed for ${photoPath}:`, err)
+    return null
   }
 }
 

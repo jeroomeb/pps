@@ -93,10 +93,10 @@ export async function stampPhotoWithAuditTrail(
   try {
     const img = await loadImage(file)
 
-    // Bound maximum canvas dimension to 1920px to optimize mobile upload speed
+    // Bound maximum canvas dimension to 1280px to optimize mobile upload speed and memory
     let targetWidth = img.naturalWidth || img.width
     let targetHeight = img.naturalHeight || img.height
-    const maxDim = 1920
+    const maxDim = 1280
 
     if (targetWidth > maxDim || targetHeight > maxDim) {
       if (targetWidth > targetHeight) {
@@ -225,7 +225,7 @@ export async function stampPhotoWithAuditTrail(
           resolve(stampedFile)
         },
         'image/jpeg',
-        0.88
+        0.78
       )
     })
   } catch (err) {

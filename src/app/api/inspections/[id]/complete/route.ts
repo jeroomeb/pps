@@ -18,7 +18,8 @@ export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: inspectionId } = await params
+  try {
+    const { id: inspectionId } = await params
   const profile = await getProfile()
   const supabase = await createClient()
 
@@ -80,63 +81,8 @@ export async function POST(
   }
 
   const admin = createAdminClient()
-
-  const itemsWithPhotoUrls = await mapWithConcurrency(items, 4, async (item) => ({
-    ...item,
-    photoUrl: await photoDataUri(admin, item.photo_path),
-  }))
-
-  const property = inspection.properties as unknown as {
-    name: string
-    address: string
-    email: string
-  }
-  const template = inspection.checklist_templates as unknown as { name: string }
-  const inspectorProfile = inspection.profiles as unknown as { full_name: string }
-
   const completedAt = new Date()
   const completedAtLabel = formatDateTime(completedAt)
-
-  const predictedFlags = parseRiskFlags(inspection.predicted_flags)
-  const recurringItems = parseRecurringItems(inspection.predicted_recurring_items)
-  const prediction =
-    inspection.predicted_score == null || !inspection.predicted_summary
-      ? null
-      : {
-          score: inspection.predicted_score,
-          summary: inspection.predicted_summary,
-          recurringItems,
-          areas: predictedFlags.map((flag) => ({
-            label: flag.label,
-            ...outcomeCounts(
-              items.map((item) => ({
-                riskDomain: item.risk_domain as RiskDomain | null,
-                status: item.status,
-              })),
-              flag.domain
-            ),
-          })),
-        }
-
-  const pdfBuffer = await renderInspectionPdf({
-    reportId: inspectionId.slice(0, 8).toUpperCase(),
-    propertyName: property.name,
-    propertyAddress: property.address,
-    checklistName: template.name,
-    inspectorName: inspectorProfile.full_name,
-    completedAt: completedAtLabel,
-    items: itemsWithPhotoUrls,
-    prediction,
-  })
-
-  const pdfPath = `${inspectionId}.pdf`
-  const { error: uploadError } = await admin.storage
-    .from('reports')
-    .upload(pdfPath, pdfBuffer, { contentType: 'application/pdf', upsert: true })
-
-  if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 500 })
-  }
 
   let dwellTimeSeconds: number | null = null
   if (inspection.arrived_at) {
@@ -146,17 +92,13 @@ export async function POST(
     )
   }
 
-  // Compare-and-set: if a concurrent submit already completed it, bail before
-  // sending a duplicate email. Scoped to the two OPEN statuses rather than
-  // `.neq('completed')` so an admin cancelling between the status check above
-  // and this write also loses the race — this client is the service role, so
-  // RLS is bypassed and this is the only thing standing in the way.
+  // Compare-and-set: mark as completed immediately so the specialist's work is
+  // securely recorded and finalized before long-running PDF/email tasks run.
   const { data: updatedRows, error: updateError } = await admin
     .from('inspections')
     .update({
       status: 'completed',
       completed_at: completedAt.toISOString(),
-      pdf_path: pdfPath,
       departed_at: completedAt.toISOString(),
       dwell_time_seconds: dwellTimeSeconds,
     })
@@ -191,6 +133,17 @@ export async function POST(
     inspection.template_id
   )
 
+  const property = inspection.properties as unknown as {
+    name: string
+    address: string
+    email: string
+    custom_payout_rate?: number | null
+    payout_tier?: string | null
+    building_category?: string | null
+  }
+  const template = inspection.checklist_templates as unknown as { name: string }
+  const inspectorProfile = inspection.profiles as unknown as { full_name: string }
+
   // Automatic Payout Ledger Entry (Task 5 & Question 4 3-Tier Compensation Matrix):
   // If the tenant organization has enabled the payouts module, log an earnings record
   if (inspection.tenant_id) {
@@ -202,28 +155,22 @@ export async function POST(
         .single()
 
       if (tenant?.enable_payouts) {
-        const prop = inspection.properties as unknown as {
-          custom_payout_rate?: number | null
-          payout_tier?: string | null
-          building_category?: string | null
-        } | null
-
         let payoutAmount: number
-        if (typeof prop?.custom_payout_rate === 'number' && prop.custom_payout_rate > 0) {
-          payoutAmount = prop.custom_payout_rate
+        if (typeof property?.custom_payout_rate === 'number' && property.custom_payout_rate > 0) {
+          payoutAmount = property.custom_payout_rate
         } else {
           const tName = (template.name || '').toLowerCase()
           let category: 'luxury_condo' | 'adult_community' | 'commercial_multi' = 'luxury_condo'
-          if (isBuildingCategory(prop?.building_category)) {
-            category = payoutMatrixKey(prop.building_category)
+          if (isBuildingCategory(property?.building_category)) {
+            category = payoutMatrixKey(property.building_category)
           } else if (tName.includes('55+') || tName.includes('adult')) {
             category = 'adult_community'
           } else if (tName.includes('commercial')) {
             category = 'commercial_multi'
           }
 
-          const tier = (prop?.payout_tier && ['tier_1', 'tier_2', 'tier_3'].includes(prop.payout_tier))
-            ? (prop.payout_tier as 'tier_1' | 'tier_2' | 'tier_3')
+          const tier = (property?.payout_tier && ['tier_1', 'tier_2', 'tier_3'].includes(property.payout_tier))
+            ? (property.payout_tier as 'tier_1' | 'tier_2' | 'tier_3')
             : 'tier_2'
 
           const matrix = tenant.payout_matrix as unknown as Record<string, Record<string, number>> | null
@@ -259,34 +206,113 @@ export async function POST(
     }
   }
 
+  // Generate PDF and dispatch report email safely
+  let reportWarning: string | null = null
   try {
-    await sendReportEmail({
-      to: property.email,
+    const itemsWithPhotoUrls = await mapWithConcurrency(items, 6, async (item) => ({
+      ...item,
+      photoUrl: await photoDataUri(admin, item.photo_path),
+    }))
+
+    const predictedFlags = parseRiskFlags(inspection.predicted_flags)
+    const recurringItems = parseRecurringItems(inspection.predicted_recurring_items)
+    const prediction =
+      inspection.predicted_score == null || !inspection.predicted_summary
+        ? null
+        : {
+            score: inspection.predicted_score,
+            summary: inspection.predicted_summary,
+            recurringItems,
+            areas: predictedFlags.map((flag) => ({
+              label: flag.label,
+              ...outcomeCounts(
+                items.map((item) => ({
+                  riskDomain: item.risk_domain as RiskDomain | null,
+                  status: item.status,
+                })),
+                flag.domain
+              ),
+            })),
+          }
+
+    const pdfBuffer = await renderInspectionPdf({
+      reportId: inspectionId.slice(0, 8).toUpperCase(),
       propertyName: property.name,
+      propertyAddress: property.address,
       checklistName: template.name,
       inspectorName: inspectorProfile.full_name,
       completedAt: completedAtLabel,
-      pdfBuffer,
-      pdfFilename: `${property.name.replace(/[^a-z0-9]+/gi, '-')}-inspection.pdf`,
+      items: itemsWithPhotoUrls,
+      prediction,
     })
-  } catch (emailError) {
-    console.error('Failed to send report email:', emailError)
-    const message = emailError instanceof Error ? emailError.message : 'Unknown error'
+
+    const pdfPath = `${inspectionId}.pdf`
+    const { error: uploadError } = await admin.storage
+      .from('reports')
+      .upload(pdfPath, pdfBuffer, { contentType: 'application/pdf', upsert: true })
+
+    if (uploadError) {
+      console.error('Failed to upload PDF report to storage:', uploadError)
+    } else {
+      await admin.from('inspections').update({ pdf_path: pdfPath }).eq('id', inspectionId)
+    }
+
+    if (property?.email) {
+      try {
+        await sendReportEmail({
+          to: property.email,
+          propertyName: property.name,
+          checklistName: template.name,
+          inspectorName: inspectorProfile.full_name,
+          completedAt: completedAtLabel,
+          pdfBuffer,
+          pdfFilename: `${property.name.replace(/[^a-z0-9]+/gi, '-')}-inspection.pdf`,
+        })
+
+        await admin
+          .from('inspections')
+          .update({ email_status: 'sent', email_error: null })
+          .eq('id', inspectionId)
+      } catch (emailError) {
+        console.error('Failed to send report email:', emailError)
+        const message = emailError instanceof Error ? emailError.message : 'Unknown email error'
+        await admin
+          .from('inspections')
+          .update({ email_status: 'failed', email_error: message })
+          .eq('id', inspectionId)
+        reportWarning = 'Inspection completed, but the report email failed to send.'
+      }
+    } else {
+      await admin
+        .from('inspections')
+        .update({ email_status: 'failed', email_error: 'Property has no email configured.' })
+        .eq('id', inspectionId)
+    }
+  } catch (reportError) {
+    console.error('Failed to generate PDF report during submission:', reportError)
+    const message = reportError instanceof Error ? reportError.message : 'Unknown report generation error'
     await admin
       .from('inspections')
       .update({ email_status: 'failed', email_error: message })
       .eq('id', inspectionId)
-    revalidatePath('/admin/reports')
-    return NextResponse.json({
-      success: true,
-      warning: 'Inspection completed, but the report email failed to send.',
-    })
+    reportWarning = 'Inspection submitted successfully. PDF report generation is queued and can be viewed or downloaded from Reports.'
   }
 
-  await admin
-    .from('inspections')
-    .update({ email_status: 'sent', email_error: null })
-    .eq('id', inspectionId)
+  if (reportWarning) {
+    return NextResponse.json({ success: true, warning: reportWarning })
+  }
 
-  return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true })
+  } catch (fatalErr) {
+    console.error('Fatal unhandled error in POST /api/inspections/[id]/complete:', fatalErr)
+    return NextResponse.json(
+      {
+        error:
+          fatalErr instanceof Error
+            ? fatalErr.message
+            : 'An unexpected server error occurred while processing the inspection submission.',
+      },
+      { status: 500 }
+    )
+  }
 }
