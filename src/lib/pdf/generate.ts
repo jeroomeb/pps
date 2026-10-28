@@ -156,7 +156,7 @@ export async function regenerateInspectionPdf(
     .eq('inspection_id', inspectionId)
     .order('sort_order')
 
-  const itemsWithPhotoUrls = await mapWithConcurrency(items ?? [], 4, async (item) => ({
+  const itemsWithPhotoUrls = await mapWithConcurrency(items ?? [], 6, async (item) => ({
     ...item,
     photoUrl: await photoDataUri(admin, item.photo_path),
   }))

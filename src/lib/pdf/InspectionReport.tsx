@@ -25,8 +25,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logo: { width: 42, height: 42 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center' },
+  logo: { width: 42, height: 42, marginRight: 10 },
   company: { fontSize: 14, fontFamily: 'Helvetica-Bold' },
   reportKicker: { fontSize: 9, color: MUTED, letterSpacing: 1.5, textTransform: 'uppercase' },
   reportId: { fontSize: 9, color: MUTED, textAlign: 'right' },
@@ -111,7 +111,9 @@ const styles = StyleSheet.create({
   categoryGroup: {
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 4,
+    // Note: borderRadius is intentionally omitted here because this container
+    // wraps across multiple pages. In @react-pdf, borderRadius on a multi-page
+    // wrapping element triggers an invalid coordinate overflow (-9e21) in PDFKit.
     paddingHorizontal: 10,
     paddingBottom: 2,
     marginBottom: 4,
@@ -154,11 +156,13 @@ const styles = StyleSheet.create({
     bottom: 24,
     left: 48,
     right: 48,
+    height: 20,
     borderTopWidth: 1,
     borderTopColor: BORDER,
-    paddingTop: 8,
+    paddingTop: 6,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     fontSize: 8,
     color: MUTED,
   },
