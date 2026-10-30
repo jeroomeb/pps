@@ -376,7 +376,7 @@ Ensure the 'Open Tenant Admin Panel' switches the session context properly to th
 > Polishing UI badge alignment, multi-tenancy license unit stacking, and action button rows across viewports.
 
 ### `RESP-03`: Property License and SKU Unit Fields Are Displayed Inline Instead of on Separate Lines
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/components/PropertyForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/PropertyForm.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/properties/page.tsx & src/app/admin/properties/new/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/mwkw8)
 
 #### Reproduction & QA Observation
@@ -384,12 +384,12 @@ Ensure the 'Open Tenant Admin Panel' switches the session context properly to th
 - **Expected Result:** Display Property License and SKU Unit vertically, with each field on its own line. Ensure proper alignment, spacing, and readability while maintaining a consistent layout across supported screen sizes.
 
 #### Engineering Fix Plan
-Display Property License and SKU Unit fields on separate vertical lines (`flex flex-col gap-3`) rather than inline on desktop and mobile.
+Display Property License and SKU Unit fields on separate vertical lines (`flex flex-col gap-1`) rather than inline on desktop and mobile.
 
 ---
 
 ### `RESP-09`: Misaligned Tenant and Staff Tags on Mobile Property Lists
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/properties/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/properties/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/aKvM5)
 
 #### Reproduction & QA Observation
@@ -397,12 +397,12 @@ Display Property License and SKU Unit fields on separate vertical lines (`flex f
 - **Expected Result:** Place the Tenant and Staff tags below the property name in each property list item on mobile viewports. Ensure proper spacing, alignment, and responsiveness without affecting the desktop layout.
 
 #### Engineering Fix Plan
-Stack the Tenant and Staff badges below the property name in mobile viewports (`flex-col sm:flex-row items-start sm:items-center gap-1.5`) to prevent badge text wrapping.
+Stack the Tenant and Staff badges below the property name in mobile viewports (`flex flex-col items-start gap-1`) to prevent badge text wrapping.
 
 ---
 
 ### `RESP-10`: Inconsistent Placement of Tenant and Current Inspections Tags in Team Members List
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/Q8T1G)
 
 #### Reproduction & QA Observation
@@ -415,7 +415,7 @@ Place Tenant and Current Inspections tags consistently below each team member's 
 ---
 
 ### `RESP-11`: Inconsistent Alignment of Team Member Action Buttons
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/7KyyS)
 
 #### Reproduction & QA Observation
@@ -428,7 +428,7 @@ Align all team member secondary action buttons (Make Specialist/Admin, Activate/
 ---
 
 ### `RESP-16`: Inconsistent Alignment of Tenant Name and Open Inspection Tags on Tablet View
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/rybQL) [Visual Evidence](https://take.ms/R6ack)
 
 #### Reproduction & QA Observation

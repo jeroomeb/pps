@@ -134,9 +134,13 @@ export default async function TeamPage({
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                           <Link href={`/admin/team/${member.id}`} className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-semibold hover:underline">{member.full_name}</p>
-                              {/* Organization / Tenant container badge */}
+                            {/* Line 1: Member Name */}
+                            <p className="font-semibold text-base text-on-surface hover:underline">
+                              {member.full_name}
+                            </p>
+
+                            {/* Line 2: Badges consistently positioned below name across desktop, tablet, and mobile (RESP-10, RESP-16) */}
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
                               {tenantName ? (
                                 <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-2 py-0.5 text-[10px] font-semibold text-primary">
                                   <Building size={11} className="shrink-0" />
@@ -159,7 +163,8 @@ export default async function TeamPage({
                                 </span>
                               )}
                             </div>
-                            <p className="label-tracked flex flex-wrap items-center gap-x-2 text-on-surface-variant mt-0.5">
+
+                            <p className="label-tracked flex flex-wrap items-center gap-x-2 text-on-surface-variant mt-1.5">
                               <span className="font-semibold text-on-surface">
                                 {member.role === 'admin'
                                   ? (tenantName ? `${tenantName} Administrator` : 'HQ Administrator')
@@ -191,61 +196,67 @@ export default async function TeamPage({
                           )}
                         </div>
 
-                        {/* Dedicated action button container below summary (TEAM-01) */}
-                        <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant/30 pt-3">
+                        {/* Dedicated action button container below summary (TEAM-01, RESP-11) */}
+                        <div className="flex flex-col gap-2 border-t border-outline-variant/30 pt-3">
                           {member.id !== currentProfile.id ? (
                             <>
-                              {/* Open Specialist Panel for specialists */}
-                              {member.role !== 'admin' && (
-                                <a
-                                  href={`/admin/impersonate/${member.id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition shadow-xs"
-                                  title={`Open full specialist panel for ${member.full_name} in a new tab`}
-                                >
-                                  <ExternalLink size={13} className="text-primary" />
-                                  <span>Open Specialist Panel</span>
-                                </a>
-                              )}
+                              {/* Primary panel button */}
+                              <div className="flex items-center">
+                                {member.role !== 'admin' && (
+                                  <a
+                                    href={`/admin/impersonate/${member.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition shadow-xs"
+                                    title={`Open full specialist panel for ${member.full_name} in a new tab`}
+                                  >
+                                    <ExternalLink size={13} className="text-primary" />
+                                    <span>Open Specialist Panel</span>
+                                  </a>
+                                )}
 
-                              {/* Only Super Admins can open another tenant admin dashboard (TEAM-05) */}
-                              {member.role === 'admin' && currentProfile.is_global_admin && member.tenant_id && (
-                                <a
-                                  href={`/admin/impersonate/${member.id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition shadow-xs"
-                                  title={tenantName ? `Open ${tenantName} Admin Dashboard` : 'Open Tenant Admin'}
-                                >
-                                  <ExternalLink size={13} className="text-primary" />
-                                  <span>Open Tenant Admin</span>
-                                </a>
-                              )}
+                                {member.role === 'admin' && currentProfile.is_global_admin && member.tenant_id && (
+                                  <a
+                                    href={`/admin/impersonate/${member.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition shadow-xs"
+                                    title={tenantName ? `Open ${tenantName} Admin Dashboard` : 'Open Tenant Admin'}
+                                  >
+                                    <ExternalLink size={13} className="text-primary" />
+                                    <span>Open Tenant Admin</span>
+                                  </a>
+                                )}
+                              </div>
 
-                              <RoleToggleButton
-                                profileId={member.id}
-                                role={member.role}
-                                canDemoteAdmin={Boolean(currentProfile.is_global_admin)}
-                              />
-                              <DeactivateMemberModal
-                                memberId={member.id}
-                                memberName={member.full_name}
-                                memberStatus={member.status ?? 'active'}
-                                openInspectionsCount={openCounts.get(member.id) ?? 0}
-                                availableInspectors={availableInspectors.filter((ins) => ins.id !== member.id)}
-                              />
+                              {/* Secondary actions in a single neat horizontal row below (RESP-11) */}
+                              <div className="flex flex-wrap items-center gap-2">
+                                <RoleToggleButton
+                                  profileId={member.id}
+                                  role={member.role}
+                                  canDemoteAdmin={Boolean(currentProfile.is_global_admin)}
+                                />
+                                <DeactivateMemberModal
+                                  memberId={member.id}
+                                  memberName={member.full_name}
+                                  memberStatus={member.status ?? 'active'}
+                                  openInspectionsCount={openCounts.get(member.id) ?? 0}
+                                  availableInspectors={availableInspectors.filter((ins) => ins.id !== member.id)}
+                                />
+                              </div>
                             </>
                           ) : (
-                            <a
-                              href={member.role === 'admin' ? '/admin' : '/inspector'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high hover:border-outline transition shadow-xs"
-                            >
-                              <ExternalLink size={13} className="text-primary" />
-                              <span>My Dashboard</span>
-                            </a>
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={member.role === 'admin' ? '/admin' : '/inspector'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/60 bg-surface px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high hover:border-outline transition shadow-xs"
+                              >
+                                <ExternalLink size={13} className="text-primary" />
+                                <span>My Dashboard</span>
+                              </a>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -283,10 +294,10 @@ export default async function TeamPage({
                         className="flex flex-col gap-3 p-4 opacity-75 hover:opacity-100 transition"
                       >
                         <Link href={`/admin/team/${member.id}`} className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-medium text-on-surface line-through hover:underline">
-                              {member.full_name}
-                            </p>
+                          <p className="font-medium text-base text-on-surface line-through hover:underline">
+                            {member.full_name}
+                          </p>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
                             {tenantName ? (
                               <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-2 py-0.5 text-[10px] font-semibold text-primary">
                                 <Building size={11} className="shrink-0" />
@@ -302,7 +313,7 @@ export default async function TeamPage({
                               Deactivated
                             </span>
                           </div>
-                          <p className="label-tracked flex flex-wrap items-center gap-x-2 text-on-surface-variant mt-0.5">
+                          <p className="label-tracked flex flex-wrap items-center gap-x-2 text-on-surface-variant mt-1.5">
                             <span>
                               {member.role === 'admin'
                                 ? (tenantName ? `${tenantName} Administrator` : 'HQ Administrator')

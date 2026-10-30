@@ -516,28 +516,76 @@
 
 ## Module 7: Task 1 & 3 — Multi-Tenancy Tags & Action Alignment
 
-### 27. `RESP-03`: Property License & SKU Unit Vertical Stacking
+### 27. `RESP-03`: Property License and SKU Unit Fields Are Displayed Inline Instead of on Separate Lines
 * **Priority:** `Medium` | **Severity:** `Low`
-* **Target Files:** `src/components/PropertyForm.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/app/admin/properties/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx)
+  * [`src/app/admin/properties/new/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/new/page.tsx)
+* **Reported Issue:**
+  The Property License heading and SKU Unit allocation fields were displayed inline next to each other on a single row, creating a cramped layout that wrapped irregularly on narrower desktop and tablet viewports.
+* **Engineering Resolution:**
+  1. In [`src/app/admin/properties/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx), converted the Property License SKU Usage Indicator to a dedicated stacked structure (`flex flex-col gap-1`):
+     * **Line 1:** Icon and Title (`Property Licenses:`) with `KeyRound` icon.
+     * **Line 2:** Indented SKU allocation details (`{used} of {max} SKU units allocated ({tier} Tier)`) directly below.
+     * Placed available license badge / capacity status neatly aligned to the right or bottom on mobile (`sm:items-center sm:justify-between`).
+  2. In [`src/app/admin/properties/new/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/new/page.tsx), applied the identical vertical rhythm:
+     * **Line 1:** `Property Licenses` with icon.
+     * **Line 2:** `SKU Units: {used} of {max} used` on its own distinct line.
+* **Verification Status:** `RESOLVED` (Vertical stacking of Property License and SKU units verified).
 
-### 28. `RESP-09`: Property List Tags Mobile Stacking
-* **Priority:** `Medium` | **Severity:** `Low`
-* **Target Files:** `src/app/admin/properties/page.tsx`
-* **Status:** `PENDING`
+---
 
-### 29. `RESP-10`: Team List Tags Alignment
+### 28. `RESP-09`: Misaligned Tenant and Staff Tags on Mobile Property Lists
 * **Priority:** `Medium` | **Severity:** `Low`
-* **Target Files:** `src/app/admin/team/page.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/app/admin/properties/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx)
+* **Reported Issue:**
+  On mobile viewports, property items forced tenant badges and staff roster tags inline with the property title, causing the badges to collide, wrap unpredictably, and truncate building names.
+* **Engineering Resolution:**
+  1. In the mobile property card list (`lg:hidden`), separated property titles and badges into a clean two-level block (`flex flex-col items-start gap-1`):
+     * **Level 1:** Unobstructed property name (`font-headline font-semibold text-base text-on-surface`).
+     * **Level 2:** Tenant badge (`Building` icon + Tenant Name) and staff count badge (`{total} Staff`) rendered in a clean horizontal strip directly below the property title.
+  2. Preserved full desktop table layout with aligned columns for wide screens.
+* **Verification Status:** `RESOLVED` (Mobile vertical stacking of property badges verified).
 
-### 30. `RESP-11`: Team Member Action Buttons Horizontal Row Alignment
-* **Priority:** `Medium` | **Severity:** `Low`
-* **Target Files:** `src/app/admin/team/page.tsx`
-* **Status:** `PENDING`
+---
 
-### 31. `RESP-16`: Tablet Viewport Alignment for Tenant & Inspection Tags
+### 29. `RESP-10`: Inconsistent Placement of Tenant and Current Inspections Tags in Team Members List
 * **Priority:** `Medium` | **Severity:** `Low`
-* **Target Files:** `src/app/admin/team/page.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+* **Reported Issue:**
+  In the Team Members list, Tenant and Current Inspections badges appeared inline with the member's name for shorter names, but wrapped below for longer names, producing an irregular, staggered presentation across rows.
+* **Engineering Resolution:**
+  1. Standardized the active and deactivated member cards in [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx) so that metadata badges are **consistently positioned on their own dedicated line directly below the member's full name**, regardless of name length.
+  2. Enforced uniform spacing (`mt-1 flex flex-wrap items-center gap-1.5`) across all entries, establishing consistent vertical rhythm throughout the roster.
+* **Verification Status:** `RESOLVED` (Consistent placement of tags below member names verified).
+
+---
+
+### 30. `RESP-11`: Inconsistent Alignment of Team Member Action Buttons
+* **Priority:** `Medium` | **Severity:** `Low`
+* **Target Files:**
+  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+* **Reported Issue:**
+  Action buttons on the team page were inconsistently placed; some secondary actions wrapped next to the primary panel launch button while others broke below it, causing jagged alignment.
+* **Engineering Resolution:**
+  1. Structured member action controls into a dedicated two-row layout:
+     * **Row 1:** Primary panel action button (`Open Specialist Panel` or `Open Tenant Admin`).
+     * **Row 2:** Secondary management buttons (`RoleToggleButton` / Make Specialist or Admin, `DeactivateMemberModal` / Deactivate) aligned in a single, neat horizontal flex row (`flex flex-wrap items-center gap-2`).
+  2. Ensured uniform button dimensions, border styling, and responsive padding across desktop, tablet, and mobile viewports.
+* **Verification Status:** `RESOLVED` (Single horizontal flex row below primary panel button verified).
+
+---
+
+### 31. `RESP-16`: Inconsistent Alignment of Tenant Name and Open Inspection Tags on Tablet View
+* **Priority:** `Medium` | **Severity:** `Low`
+* **Target Files:**
+  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+* **Reported Issue:**
+  On tablet viewports (768px-1024px), tenant and open inspection badges occasionally wrapped or clipped against right-aligned action elements depending on viewport width.
+* **Engineering Resolution:**
+  1. Separated the member summary header from the action controls completely with a dedicated divider (`border-t border-outline-variant/30 pt-3`).
+  2. Allocated 100% of the horizontal row width to the member name and its badge strip (`mt-1 flex flex-wrap items-center gap-1.5`), preventing any text truncation, badge overlapping, or clipping across all tablet viewports.
+* **Verification Status:** `RESOLVED` (Clean tablet alignment with 100% horizontal width verified).
 

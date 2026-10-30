@@ -65,12 +65,18 @@ export default async function NewPropertyPage() {
               </div>
             </Card>
           ) : (
-            <div className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 text-xs text-on-surface-variant">
-              <span className="flex items-center gap-1.5 font-medium">
-                <KeyRound size={14} className="text-primary" />
-                Property License SKU: {licenseSummary.usedProperties} of {licenseSummary.maxProperties} used
-              </span>
-              <span className="font-semibold text-primary">
+            /* RESP-03: Vertical separation of Property License and SKU units */
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 text-xs text-on-surface-variant">
+              <div className="flex flex-col gap-1">
+                <span className="flex items-center gap-1.5 font-medium text-on-surface">
+                  <KeyRound size={14} className="text-primary shrink-0" />
+                  Property Licenses
+                </span>
+                <span className="pl-5 text-on-surface-variant">
+                  SKU Units: <strong>{licenseSummary.usedProperties}</strong> of <strong>{licenseSummary.maxProperties}</strong> used
+                </span>
+              </div>
+              <span className="font-semibold text-primary pl-5 sm:pl-0">
                 {licenseSummary.remainingLicenses} license{licenseSummary.remainingLicenses === 1 ? '' : 's'} remaining
               </span>
             </div>

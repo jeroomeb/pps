@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Building2, ChevronRight, Plus, KeyRound, Users, Building, ShieldCheck, Layers } from 'lucide-react'
+import { Building2, ChevronRight, Plus, KeyRound, Building, ShieldCheck, Layers } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getProfile, getTenantLicenseSummary } from '@/lib/auth/dal'
 import { getAdminScope } from '@/lib/auth/tenant-view'
@@ -51,7 +51,7 @@ export default async function PropertiesPage({
     filteredQuery = filteredQuery.eq('tenant_id', tenant)
   } else {
     // Default for HQ: isolate provisional tenants from HQ count
-    filteredQuery = filteredQuery.is('tenant_id', null)
+    query: filteredQuery = filteredQuery.is('tenant_id', null)
   }
 
   if (q) {
@@ -137,27 +137,31 @@ export default async function PropertiesPage({
         }
       />
 
-      {/* Property License SKU Usage Indicator */}
+      {/* Property License SKU Usage Indicator (RESP-03: Vertical field separation) */}
       {licenseSummary && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3">
-          <div className="flex items-center gap-2">
-            <KeyRound size={16} className="text-primary" />
-            <span className="text-sm font-semibold text-on-surface">Property Licenses:</span>
-            <span className="text-sm text-on-surface-variant">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <KeyRound size={16} className="text-primary shrink-0" />
+              <span className="text-sm font-semibold text-on-surface">Property Licenses:</span>
+            </div>
+            <span className="text-xs text-on-surface-variant pl-5">
               <span className="font-bold text-on-surface">{licenseSummary.usedProperties}</span> of{' '}
               <span className="font-bold text-on-surface">{licenseSummary.maxProperties}</span> SKU units allocated (
               <span className="capitalize">{licenseSummary.licenseTier}</span> Tier)
             </span>
           </div>
-          {licenseSummary.isAtCapacity ? (
-            <span className="rounded bg-error-container px-2.5 py-1 text-xs font-bold text-on-error-container">
-              Capacity Reached
-            </span>
-          ) : (
-            <span className="text-xs font-semibold text-primary">
-              {licenseSummary.remainingLicenses} license{licenseSummary.remainingLicenses === 1 ? '' : 's'} available
-            </span>
-          )}
+          <div className="pl-5 sm:pl-0">
+            {licenseSummary.isAtCapacity ? (
+              <span className="rounded bg-error-container px-2.5 py-1 text-xs font-bold text-on-error-container">
+                Capacity Reached
+              </span>
+            ) : (
+              <span className="text-xs font-semibold text-primary">
+                {licenseSummary.remainingLicenses} license{licenseSummary.remainingLicenses === 1 ? '' : 's'} available
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -222,15 +226,14 @@ export default async function PropertiesPage({
                     <td className="p-0">
                       <Link href={href} prefetch={false} className={cell}>
                         {roster && roster.total > 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded bg-primary-container/30 px-2 py-0.5 text-xs font-semibold text-primary">
-                            <Users size={12} />
-                            {roster.total} Specialist{roster.total > 1 ? 's' : ''}
-                            {roster.hasPrimary ? ' (Primary set)' : ''}
-                          </span>
+                          <div className="inline-flex items-center gap-1 rounded-full bg-primary-container/40 px-2 py-0.5 text-xs font-semibold text-on-primary-container">
+                            <span>{roster.total} Staff</span>
+                            {roster.hasPrimary && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-primary" title="Primary Assigned" />
+                            )}
+                          </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded bg-surface-container-highest px-2 py-0.5 text-xs text-on-surface-variant">
-                            Unassigned
-                          </span>
+                          <span className="text-xs text-on-surface-variant italic">Unassigned</span>
                         )}
                       </Link>
                     </td>
@@ -240,16 +243,8 @@ export default async function PropertiesPage({
                     <td className="p-0 text-on-surface-variant">
                       <Link href={href} prefetch={false} className={cell}>{property.county ?? '—'}</Link>
                     </td>
-                    <td className="p-0 text-on-surface-variant font-medium">
-                      <Link href={href} prefetch={false} className={cell}>
-                        {property.state ? (
-                          <span className="inline-flex rounded bg-surface-container px-1.5 py-0.5 text-xs font-semibold text-on-surface">
-                            {property.state}
-                          </span>
-                        ) : (
-                          '—'
-                        )}
-                      </Link>
+                    <td className="p-0 text-on-surface-variant">
+                      <Link href={href} prefetch={false} className={cell}>{property.state ?? '—'}</Link>
                     </td>
                     <td className="p-0 text-on-surface-variant">
                       <Link href={href} prefetch={false} className={cell}>{property.phone ?? '—'}</Link>
@@ -268,6 +263,7 @@ export default async function PropertiesPage({
             </tbody>
           </table>
 
+          {/* Mobile property list (RESP-09: stack badges below property name) */}
           <div className="flex flex-col divide-y divide-outline-variant lg:hidden">
             {properties.map((property) => {
               const roster = rosterCountMap.get(property.id)
@@ -276,29 +272,31 @@ export default async function PropertiesPage({
                 <Link
                   key={property.id}
                   href={`/admin/properties/${property.id}`}
-                  className="flex items-center justify-between gap-3 p-4"
+                  className="flex items-center justify-between gap-3 p-4 hover:bg-surface-container-low transition"
                 >
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-headline font-semibold">{property.name}</p>
-                      {tenantName ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                          <Building size={10} className="shrink-0" />
-                          {tenantName}
-                        </span>
-                      ) : null}
-                      {roster && roster.total > 0 && (
-                        <span className="rounded bg-primary-container/30 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                          {roster.total} Staff
-                        </span>
-                      )}
+                    <div className="flex flex-col items-start gap-1">
+                      <p className="font-headline font-semibold text-base text-on-surface">{property.name}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {tenantName ? (
+                          <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                            <Building size={10} className="shrink-0" />
+                            {tenantName}
+                          </span>
+                        ) : null}
+                        {roster && roster.total > 0 && (
+                          <span className="rounded bg-primary-container/30 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                            {roster.total} Staff
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-sm text-on-surface-variant">{property.address}</p>
+                    <p className="text-sm text-on-surface-variant mt-1">{property.address}</p>
                     {property.phone && (
                       <p className="text-sm text-on-surface-variant">{property.phone}</p>
                     )}
                     <p className="truncate text-sm text-on-surface-variant">{property.email}</p>
-                    <p className="font-mono text-xs text-on-surface-variant">
+                    <p className="font-mono text-xs text-on-surface-variant mt-0.5">
                       {property.human_id ?? ''}
                       {property.county ? ` · ${property.county}` : ''}
                       {property.state ? ` · ${property.state}` : ''}
