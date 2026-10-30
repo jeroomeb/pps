@@ -5,6 +5,7 @@ import { KeyRound, Mail, Sparkles, Check, Building } from 'lucide-react'
 import { SubmitButton } from '@/components/SubmitButton'
 import { Card } from '@/components/ui/Card'
 import { createTeamMember, type TeamMemberFormState } from '@/lib/actions/team'
+import { checkPasswordRequirements, isPasswordValid } from '@/lib/password'
 
 const INPUT_CLASSES =
   'min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none'
@@ -25,11 +26,17 @@ export function InspectorForm({
   )
   const formRef = useRef<HTMLFormElement>(null)
   const [copied, setCopied] = useState(false)
+  const [typedPassword, setTypedPassword] = useState('')
+  const passwordReqs = checkPasswordRequirements(typedPassword)
+  const isCustomPasswordValid = typedPassword.length === 0 || isPasswordValid(typedPassword)
 
   // Only clear the form on a confirmed success — never wipe the user's
   // input out from under a validation error.
   useEffect(() => {
-    if (state?.success) formRef.current?.reset()
+    if (state?.success) {
+      formRef.current?.reset()
+      setTypedPassword('')
+    }
   }, [state])
 
   const copyPassword = (pwd: string) => {
@@ -107,27 +114,61 @@ export function InspectorForm({
           A welcome email with login credentials will be automatically sent to this address.
         </p>
       </div>
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <label htmlFor="member_password" className={LABEL_CLASSES}>
-            Temporary Password
-          </label>
-          <span className="flex items-center gap-1 text-xs text-primary font-medium">
-            <Sparkles className="h-3.5 w-3.5" /> Auto-Generated if blank
-          </span>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="member_password" className={LABEL_CLASSES}>
+          Temporary Password
+        </label>
+        <div className="flex items-center gap-1.5 text-xs text-primary font-medium">
+          <Sparkles className="h-3.5 w-3.5 shrink-0" />
+          <span>Auto-Generated if blank</span>
         </div>
         <input
           id="member_password"
           name="password"
           type="text"
+          value={typedPassword}
+          onChange={(e) => setTypedPassword(e.target.value)}
           placeholder="Leave blank to auto-generate secure 14-char password"
-          minLength={8}
           autoComplete="new-password"
-          className={`${INPUT_CLASSES} font-mono text-sm`}
+          className={`${INPUT_CLASSES} font-mono text-sm placeholder:text-xs ${
+            typedPassword.length > 0 && !isPasswordValid(typedPassword)
+              ? 'border-error/80 focus:border-error ring-1 ring-error/40'
+              : ''
+          }`}
         />
-        <p className="text-xs text-on-surface-variant">
-          User will be required to configure their own permanent password on first sign-in.
-        </p>
+        {typedPassword.length > 0 ? (
+          <div className="rounded-lg border border-outline-variant/60 bg-surface-container-high/40 p-2.5 text-xs">
+            <p className="font-semibold text-on-surface mb-1.5 text-[11px] uppercase tracking-wider">
+              Password Requirements:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+              <span className={`flex items-center gap-1.5 ${passwordReqs.minLength ? 'text-emerald-500 font-medium' : 'text-on-surface-variant'}`}>
+                {passwordReqs.minLength ? <Check size={13} className="shrink-0" /> : <span className="w-2.5 h-2.5 rounded-full border border-outline-variant shrink-0 inline-block" />}
+                8+ characters
+              </span>
+              <span className={`flex items-center gap-1.5 ${passwordReqs.hasUpper ? 'text-emerald-500 font-medium' : 'text-on-surface-variant'}`}>
+                {passwordReqs.hasUpper ? <Check size={13} className="shrink-0" /> : <span className="w-2.5 h-2.5 rounded-full border border-outline-variant shrink-0 inline-block" />}
+                1 uppercase letter (A-Z)
+              </span>
+              <span className={`flex items-center gap-1.5 ${passwordReqs.hasLower ? 'text-emerald-500 font-medium' : 'text-on-surface-variant'}`}>
+                {passwordReqs.hasLower ? <Check size={13} className="shrink-0" /> : <span className="w-2.5 h-2.5 rounded-full border border-outline-variant shrink-0 inline-block" />}
+                1 lowercase letter (a-z)
+              </span>
+              <span className={`flex items-center gap-1.5 ${passwordReqs.hasNumber ? 'text-emerald-500 font-medium' : 'text-on-surface-variant'}`}>
+                {passwordReqs.hasNumber ? <Check size={13} className="shrink-0" /> : <span className="w-2.5 h-2.5 rounded-full border border-outline-variant shrink-0 inline-block" />}
+                1 number (0-9)
+              </span>
+              <span className={`flex items-center gap-1.5 ${passwordReqs.hasSpecial ? 'text-emerald-500 font-medium' : 'text-on-surface-variant'}`}>
+                {passwordReqs.hasSpecial ? <Check size={13} className="shrink-0" /> : <span className="w-2.5 h-2.5 rounded-full border border-outline-variant shrink-0 inline-block" />}
+                1 special character (!@#$%)
+              </span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-on-surface-variant">
+            User will be required to configure their own permanent password on first sign-in.
+          </p>
+        )}
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="role" className="text-sm font-semibold uppercase tracking-wide">
@@ -180,7 +221,7 @@ export function InspectorForm({
         </div>
       )}
 
-      <SubmitButton pendingText="Creating…">+ Add Team Member</SubmitButton>
+      <SubmitButton pendingText="Creating…" disabled={!isCustomPasswordValid}>+ Add Team Member</SubmitButton>
     </form>
     </Card>
   )

@@ -1,15 +1,36 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState, Suspense } from 'react'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
+import { CheckCircle2, Eye, EyeOff } from 'lucide-react'
 import { signIn, type SignInState } from '@/lib/actions/auth'
 import { SubmitButton } from '@/components/SubmitButton'
+
+function LoginNotice() {
+  const searchParams = useSearchParams()
+  const notice = searchParams.get('notice')
+
+  if (notice === 'password_updated') {
+    return (
+      <div className="flex items-start gap-2.5 rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3.5 text-xs text-emerald-200 shadow-sm animate-in fade-in duration-300">
+        <CheckCircle2 size={18} className="shrink-0 text-emerald-400 mt-0.5" />
+        <div className="flex flex-col gap-0.5">
+          <span className="font-semibold text-emerald-300">Password Updated Successfully</span>
+          <span>Please log in with your new password.</span>
+        </div>
+      </div>
+    )
+  }
+  return null
+}
 
 export default function LoginPage() {
   const [state, formAction] = useActionState<SignInState, FormData>(
     signIn,
     undefined
   )
+  const [showPassword, setShowPassword] = useState(false)
 
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-12">
@@ -21,6 +42,12 @@ export default function LoginPage() {
             Property Inspections &amp; Audits
           </p>
         </div>
+
+        <Suspense fallback={null}>
+          <div className="mb-4">
+            <LoginNotice />
+          </div>
+        </Suspense>
 
         <form
           action={formAction}
@@ -44,14 +71,24 @@ export default function LoginPage() {
             <label htmlFor="password" className="text-sm font-semibold uppercase tracking-wide">
               Password
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              className="min-h-12 rounded border border-outline-variant bg-surface-container-lowest px-3 focus:border-primary-container focus:outline-none"
-            />
+            <div className="relative flex items-center">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                autoComplete="current-password"
+                className="min-h-12 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 pr-10 focus:border-primary-container focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 p-1 text-on-surface-variant hover:text-on-surface transition"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           {state?.error && (

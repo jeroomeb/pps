@@ -8,6 +8,7 @@ import { genSpecialistId, uuidSchema } from '@/lib/ids'
 import { composeAddress, normalizeAddressParts } from '@/lib/address'
 import { isSafeObjectPath } from '@/lib/storage-paths'
 import { generateSecureTemporaryPassword } from '@/lib/security'
+import { getPasswordValidationError } from '@/lib/password'
 import { sendWelcomeCredentialsEmail } from '@/lib/email/sendWelcomeCredentialsEmail'
 import type { Database } from '@/lib/database.types'
 
@@ -29,9 +30,17 @@ export async function createTeamMember(
 
   const rawTenantId = formData.get('tenant_id')
   const rawPassword = formData.get('password')
-  const passwordStr = typeof rawPassword === 'string' && rawPassword.trim().length >= 8
-    ? rawPassword.trim()
-    : generateSecureTemporaryPassword()
+  let passwordStr: string
+  if (typeof rawPassword === 'string' && rawPassword.trim().length > 0) {
+    const trimmed = rawPassword.trim()
+    const passwordError = getPasswordValidationError(trimmed)
+    if (passwordError) {
+      return { error: `Temporary password invalid: ${passwordError}` }
+    }
+    passwordStr = trimmed
+  } else {
+    passwordStr = generateSecureTemporaryPassword()
+  }
 
   const parsed = teamMemberSchema.safeParse({
     full_name: formData.get('full_name'),

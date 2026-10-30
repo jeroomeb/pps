@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { isRecoverySession } from '@/lib/auth/session'
+import { getPasswordValidationError } from '@/lib/password'
 
 export type SignInState = { error?: string } | undefined
 export type ResetState = { error?: string; sent?: boolean } | undefined
@@ -93,11 +94,12 @@ export async function updatePassword(
   const confirm = String(formData.get('confirm') ?? '')
   const currentPassword = String(formData.get('current_password') ?? '')
 
-  if (password.length < 8) {
-    return { error: 'Password must be at least 8 characters.' }
+  const passwordError = getPasswordValidationError(password)
+  if (passwordError) {
+    return { error: passwordError }
   }
   if (password !== confirm) {
-    return { error: 'Passwords do not match.' }
+    return { error: 'Confirm Password must match the New Password.' }
   }
 
   const supabase = await createClient()
@@ -136,7 +138,7 @@ export async function updatePassword(
   // Sign out the current session so the user signs in with their new password
   await supabase.auth.signOut()
 
-  redirect('/login')
+  redirect('/login?notice=password_updated')
 }
 
 /**
@@ -155,14 +157,15 @@ export async function completeForcedPasswordChange(
   if (!currentPassword) {
     return { error: 'Please enter your temporary initial password.' }
   }
-  if (password.length < 8) {
-    return { error: 'New password must be at least 8 characters long.' }
+  const passwordError = getPasswordValidationError(password)
+  if (passwordError) {
+    return { error: passwordError }
   }
   if (password === currentPassword) {
     return { error: 'New password must be different from your temporary password.' }
   }
   if (password !== confirm) {
-    return { error: 'Passwords do not match.' }
+    return { error: 'Confirm Password must match the New Password.' }
   }
 
   const supabase = await createClient()
