@@ -60,17 +60,17 @@ export function AdminAnalyticsDashboard({
   return (
     <div className="flex flex-col gap-8">
       {/* Time Range Selector Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-3">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-          <Calendar size={14} className="text-primary" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-3">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant shrink-0">
+          <Calendar className="w-4 h-4 shrink-0 text-primary" />
           <span>Analytics Time Horizon:</span>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 max-w-full">
           {TIME_RANGES.map((r) => (
             <button
               key={r.id}
               onClick={() => handleRangeChange(r.id)}
-              className={`min-h-9 rounded-lg px-3.5 text-xs font-semibold transition-all ${
+              className={`shrink-0 whitespace-nowrap min-h-9 rounded-lg px-3.5 text-xs font-semibold transition-all ${
                 timeRange === r.id
                   ? 'bg-primary-container text-on-primary-container shadow-sm'
                   : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
@@ -88,8 +88,8 @@ export function AdminAnalyticsDashboard({
         <Card className="flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <p className="label-tracked text-on-surface-variant">Completed Audits</p>
-            <div className="rounded-lg bg-emerald-100 p-2 text-emerald-800">
-              <CheckCircle2 size={18} />
+            <div className="h-9 w-9 shrink-0 flex items-center justify-center rounded-lg bg-emerald-100 text-emerald-800">
+              <CheckCircle2 className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <div className="mt-4">
@@ -106,8 +106,8 @@ export function AdminAnalyticsDashboard({
         <Card className="flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <p className="label-tracked text-on-surface-variant">On-Time Arrival</p>
-            <div className="rounded-lg bg-primary-container/40 p-2 text-primary">
-              <Clock size={18} />
+            <div className="h-9 w-9 shrink-0 flex items-center justify-center rounded-lg bg-primary-container/40 text-primary">
+              <Clock className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <div className="mt-4">
@@ -124,8 +124,8 @@ export function AdminAnalyticsDashboard({
         <Card className="flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <p className="label-tracked text-on-surface-variant">Avg Duration & Dwell</p>
-            <div className="rounded-lg bg-blue-100 p-2 text-blue-800">
-              <Navigation size={18} />
+            <div className="h-9 w-9 shrink-0 flex items-center justify-center rounded-lg bg-blue-100 text-blue-800">
+              <Navigation className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <div className="mt-4">
@@ -142,8 +142,8 @@ export function AdminAnalyticsDashboard({
         <Card className="flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <p className="label-tracked text-on-surface-variant">Issue Discovery Rate</p>
-            <div className="rounded-lg bg-error-container/40 p-2 text-error">
-              <AlertTriangle size={18} />
+            <div className="h-9 w-9 shrink-0 flex items-center justify-center rounded-lg bg-error-container/40 text-error">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <div className="mt-4">
@@ -160,8 +160,8 @@ export function AdminAnalyticsDashboard({
         <Card className="flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <p className="label-tracked text-on-surface-variant">Photo Compliance</p>
-            <div className="rounded-lg bg-amber-100 p-2 text-amber-900">
-              <Camera size={18} />
+            <div className="h-9 w-9 shrink-0 flex items-center justify-center rounded-lg bg-amber-100 text-amber-900">
+              <Camera className="w-5 h-5 shrink-0" />
             </div>
           </div>
           <div className="mt-4">
@@ -177,16 +177,18 @@ export function AdminAnalyticsDashboard({
 
       {/* Checklist Template / Asset Volume Breakdown */}
       <Card>
-        <div className="mb-4 flex items-center justify-between border-b border-outline-variant pb-3">
-          <div className="flex items-center gap-2">
-            <Layers size={18} className="text-primary" />
-            <h3 className="font-headline text-base font-bold text-on-surface">
-              Audit Volume by Checklist Template / Asset Category
-            </h3>
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-outline-variant pb-3">
+          <div className="flex items-start gap-2.5">
+            <Layers className="w-5 h-5 shrink-0 text-primary mt-0.5" />
+            <div>
+              <h3 className="font-headline text-base font-bold text-on-surface">
+                Audit Volume by Checklist Template / Asset Category
+              </h3>
+              <p className="text-xs font-medium text-on-surface-variant mt-0.5">
+                {summary.templateBreakdown.length} Active Checklist Types
+              </p>
+            </div>
           </div>
-          <span className="text-xs font-semibold text-on-surface-variant">
-            {summary.templateBreakdown.length} Active Checklist Types
-          </span>
         </div>
 
         {summary.templateBreakdown.length === 0 ? (
@@ -217,25 +219,27 @@ export function AdminAnalyticsDashboard({
 
       {/* Specialist Performance Scorecard & Leaderboard */}
       <Card padded={false}>
-        <div className="flex items-center justify-between border-b border-outline-variant p-4 sm:p-6">
-          <div className="flex items-center gap-2">
-            <Award size={18} className="text-primary" />
-            <div>
+        <div className="flex flex-col gap-3 border-b border-outline-variant p-4 sm:p-6">
+          <div className="flex items-start gap-2.5 w-full">
+            <Award className="w-5 h-5 shrink-0 text-primary mt-0.5" />
+            <div className="w-full">
               <h3 className="font-headline text-base font-bold text-on-surface">
-                Specialist Performance Scorecards & Ranking
+                Specialist Performance Scorecards &amp; Ranking
               </h3>
-              <p className="text-xs text-on-surface-variant">
+              <p className="mt-0.5 text-xs text-on-surface-variant">
                 Evaluates audit velocity, on-time punctuality, issue discovery, and quality compliance
               </p>
             </div>
           </div>
-          <Link
-            href="/admin/team"
-            className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-          >
-            Manage Team
-            <ChevronRight size={14} />
-          </Link>
+          <div>
+            <Link
+              href="/admin/team"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              Manage Team
+              <ChevronRight size={14} className="shrink-0" />
+            </Link>
+          </div>
         </div>
 
         {/* Desktop Table View */}
@@ -395,25 +399,27 @@ export function AdminAnalyticsDashboard({
 
       {/* Property Audit Volume Breakdown */}
       <Card padded={false}>
-        <div className="flex items-center justify-between border-b border-outline-variant p-4 sm:p-6">
-          <div className="flex items-center gap-2">
-            <Building2 size={18} className="text-primary" />
-            <div>
+        <div className="flex flex-col gap-3 border-b border-outline-variant p-4 sm:p-6">
+          <div className="flex items-start gap-2.5 w-full">
+            <Building2 className="w-5 h-5 shrink-0 text-primary mt-0.5" />
+            <div className="w-full">
               <h3 className="font-headline text-base font-bold text-on-surface">
-                Property Inspection Frequency & Issue Rates
+                Property Inspection Frequency &amp; Issue Rates
               </h3>
-              <p className="text-xs text-on-surface-variant">
+              <p className="mt-0.5 text-xs text-on-surface-variant">
                 Throughput and issue discovery across audited properties
               </p>
             </div>
           </div>
-          <Link
-            href="/admin/properties"
-            className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-          >
-            All Properties
-            <ChevronRight size={14} />
-          </Link>
+          <div>
+            <Link
+              href="/admin/properties"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              All Properties
+              <ChevronRight size={14} className="shrink-0" />
+            </Link>
+          </div>
         </div>
 
         {/* Desktop Table */}

@@ -53,7 +53,7 @@ export const GLOBAL_ADMIN_NAV_ITEMS: NavItem[] = [
 // the most specific match rather than lighting up both.
 export const INSPECTOR_NAV_ITEMS: NavItem[] = [
   { href: '/inspector', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/inspector/metrics', label: 'Performance', shortLabel: 'Scorecard', icon: Award },
+  { href: '/inspector/metrics', label: 'Performance', shortLabel: 'Performance', icon: Award },
   { href: '/inspector/profile', label: 'Profile', icon: UserCircle },
 ]
 

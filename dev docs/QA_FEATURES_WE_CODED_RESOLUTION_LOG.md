@@ -4,7 +4,7 @@
 > **Source Plan:** [`dev docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md`](file:///d:/Nextjs%20Projects/amenityops/dev%20docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md)  
 > **Total Actionable Items:** 31 Concrete Development Tasks  
 > **Last Updated:** October 30, 2026  
-> **Status:** 16 of 31 Resolved (51.6% Complete)
+> **Status:** 21 of 31 Resolved (67.7% Complete)
 
 ---
 
@@ -16,10 +16,10 @@
 | **Module 2** | Task 6 — GPS Geofencing & Telemetry Validation | 2 | **2** | 0 | **COMPLETED** |
 | **Module 3** | Task 3 — Property Staff Rosters & Gate Enforcement | 4 | **4** | 0 | **COMPLETED** |
 | **Module 4** | Task 7 — Field Specialist AI Chatbot | 3 | **3** | 0 | **COMPLETED** |
-| **Module 5** | Task 8 — Analytics Hub & Performance Scorecards | 5 | 0 | 5 | PENDING |
+| **Module 5** | Task 8 — Analytics Hub & Performance Scorecards | 5 | **5** | 0 | **COMPLETED** |
 | **Module 6** | Phase 2 — Specialist Impersonation & Admin Security | 5 | 0 | 5 | PENDING |
 | **Module 7** | Task 1 & 3 — Multi-Tenancy Tags & Action Alignment | 5 | 0 | 5 | PENDING |
-| **Total** | | **31** | **16** | **15** | **In Progress** |
+| **Total** | | **31** | **21** | **10** | **In Progress** |
 
 ---
 
@@ -341,30 +341,75 @@
 
 ## Module 5: Task 8 — Analytics Hub & Performance Scorecards
 
-### 17. `RESP-04`: Day Filters Swipeable Slider on Mobile Viewports
+### 17. `RESP-04`: Analytics Page Day Filters Are Overlapping Instead of Displaying in a Swipeable Slider
+* **Priority:** `Medium` | **Severity:** `Low`
+* **Target Files:**
+  * [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+* **Reported Issue:**
+  The analytics day filter options (Last 7 Days, Last 30 Days, Last 90 Days, All-Time) overlapped and wrapped awkwardly on mobile and tablet screens, creating a cluttered and difficult-to-tap layout.
+* **Engineering Resolution:**
+  1. Restructured the Time Horizon strip into a responsive container (`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3`).
+  2. Wrapped the filter pill buttons in a dedicated horizontally scrollable slider (`flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 max-w-full`).
+  3. Applied `shrink-0 whitespace-nowrap min-h-9 px-3.5` to all filter buttons, enabling smooth horizontal swipe gesture navigation without awkward vertical wrapping or button clipping on smaller devices.
+* **Verification Status:** `RESOLVED` (Responsive horizontal swipeable slider verified across viewports).
+
+---
+
+### 18. `RESP-05`: Misaligned Headings in Audit Volume by Checklist Template and Inconsistent Icon Sizing on Analytics Page
 * **Priority:** `Medium` | **Severity:** `Medium`
-* **Target Files:** `src/components/AdminAnalyticsDashboard.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+* **Reported Issue:**
+  The heading in the Audit Volume by Checklist Template / Asset Category section appeared inline with the "Active Checklist" badge, causing text collisions on narrower screens. Furthermore, metric card icons lacked fixed sizing and would shrink when adjacent metric descriptions wrapped.
+* **Engineering Resolution:**
+  1. **Vertical Heading Separation:**
+     * Replaced the inline layout with a vertically stacked header (`flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between`), placing the active checklist type counter neatly beneath the section heading.
+  2. **Standardized Icon Constraints:**
+     * Enforced rigid icon dimensions (`w-5 h-5 shrink-0`) and fixed container dimensions (`h-9 w-9 shrink-0 flex items-center justify-center rounded-lg`) across all 5 primary KPI cards (Completed Audits, On-Time Arrival, Avg Duration & Dwell, Issue Discovery Rate, Photo Compliance).
+     * Added `shrink-0` constraints to section header icons (`Layers`, `Calendar`, `Award`, `Building2`) to prevent icon shrinkage when descriptions or numbers expand.
+* **Verification Status:** `RESOLVED` (Clean vertical headings and uniform icon dimensions verified).
 
-### 18. `RESP-05`: Audit Volume Headings Stack & Metric Icon Flex Dimensions
+---
+
+### 19. `RESP-06`: Cramped Specialist Performance Scorecards Layout and Inconsistent Icon Sizes
 * **Priority:** `Medium` | **Severity:** `Low`
-* **Target Files:** `src/components/AdminAnalyticsDashboard.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+* **Reported Issue:**
+  The Specialist Performance Scorecards & Ranking card header squeezed the title and description into a narrow space because the "Manage Team" link was forced inline on the right, causing cramped text wrapping on mobile and tablet viewports.
+* **Engineering Resolution:**
+  1. Expanded the title and description to full width (`w-full`).
+  2. Repositioned the "Manage Team" action link into its own dedicated row below the descriptive text (`inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline`).
+  3. Enforced consistent `Award` icon sizing (`w-5 h-5 shrink-0 text-primary mt-0.5`).
+* **Verification Status:** `RESOLVED` (Full-width heading layout with positioned action link verified).
 
-### 19. `RESP-06`: Specialist Performance Scorecards Layout
+---
+
+### 20. `RESP-07`: Cramped Property Inspection Frequency & Issue Rates Layout and Inconsistent Icon Sizes
 * **Priority:** `Medium` | **Severity:** `Low`
-* **Target Files:** `src/components/AdminAnalyticsDashboard.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+* **Reported Issue:**
+  The Property Inspection Frequency & Issue Rates section was horizontally cramped by having the "All Properties" link inline on the right, resulting in awkward multiline wrapping of the subtitle on mobile and tablet screens.
+* **Engineering Resolution:**
+  1. Restructured the header to provide full-width allocation (`w-full`) for the section heading and description.
+  2. Positioned the "All Properties" navigation link cleanly below the description block.
+  3. Enforced standardized `Building2` icon sizing (`w-5 h-5 shrink-0 text-primary mt-0.5`).
+* **Verification Status:** `RESOLVED` (Clean full-width layout with structured link placement verified).
 
-### 20. `RESP-07`: Property Inspection Frequency Full-Width Layout
-* **Priority:** `Medium` | **Severity:** `Low`
-* **Target Files:** `src/components/AdminAnalyticsDashboard.tsx`
-* **Status:** `PENDING`
+---
 
-### 21. `RESP-15`: Performance Tab Label Inconsistency Across Viewports
+### 21. `RESP-15`: Inconsistent Performance Tab Naming Across Viewports
 * **Priority:** `Low` | **Severity:** `Low`
-* **Target Files:** `src/components/AdminAnalyticsDashboard.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/lib/nav-items.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/nav-items.ts)
+  * [`src/components/BottomNav.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/BottomNav.tsx)
+* **Reported Issue:**
+  The navigation tab for specialist metrics was labeled "Performance" on desktop sidebar navigation, but showed "Scorecard" on mobile and tablet bottom navigation, creating inconsistent nomenclature across viewports.
+* **Engineering Resolution:**
+  1. In [`src/lib/nav-items.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/nav-items.ts), updated `INSPECTOR_NAV_ITEMS` for `/inspector/metrics` from `shortLabel: 'Scorecard'` to `shortLabel: 'Performance'`.
+  2. Desktop navigation, mobile navigation, and tablet bottom bar now all display the unified term **"Performance"**.
+* **Verification Status:** `RESOLVED` (Unified 'Performance' label across all viewports verified).
 
 ---
 
