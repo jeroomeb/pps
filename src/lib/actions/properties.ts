@@ -42,6 +42,24 @@ const propertySchema = z.object({
   timezone: z.enum(PROPERTY_TIMEZONES).default('America/New_York'),
   tenant_id: uuidSchema.optional().nullable(),
   enable_predictive_scoring: z.coerce.boolean().default(true),
+  enable_schedule: z.coerce.boolean().default(false),
+}).superRefine((data, ctx) => {
+  if (data.enable_gps_geofencing) {
+    if (data.latitude == null || isNaN(data.latitude) || data.latitude < -90 || data.latitude > 90) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Valid Latitude between -90 and 90 is required when On-Site GPS Geofence Verification is enabled.',
+        path: ['latitude'],
+      })
+    }
+    if (data.longitude == null || isNaN(data.longitude) || data.longitude < -180 || data.longitude > 180) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Valid Longitude between -180 and 180 is required when On-Site GPS Geofence Verification is enabled.',
+        path: ['longitude'],
+      })
+    }
+  }
 })
 
 export type PropertyFormState = { error?: string } | undefined
@@ -93,6 +111,7 @@ function propertyFormFields(formData: FormData) {
       formData.has('enable_predictive_scoring')
         ? formData.get('enable_predictive_scoring') === 'on' || formData.get('enable_predictive_scoring') === 'true'
         : true,
+    enable_schedule: formData.get('enable_schedule') === 'on' || formData.get('enable_schedule') === 'true',
   }
 }
 
@@ -107,6 +126,12 @@ export async function createProperty(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+  }
+
+  const enableSchedule = formData.get('enable_schedule') === 'on' || formData.get('enable_schedule') === 'true'
+  const scheduleEntries = parseScheduleFromForm(formData)
+  if (enableSchedule && scheduleEntries.length === 0) {
+    return { error: 'Please select at least one inspection day when Required Inspection Days is enabled.' }
   }
 
   const supabase = await createClient()
@@ -157,7 +182,7 @@ export async function createProperty(
     email: parsed.data.email,
     phone: parsed.data.phone || null,
     notes: parsed.data.notes || null,
-    required_schedule: parseScheduleFromForm(formData),
+    required_schedule: enableSchedule ? scheduleEntries : [],
     human_id: genPropertyId(),
     tenant_id: targetTenantId,
     require_id_photo: parsed.data.require_id_photo,
@@ -222,6 +247,12 @@ export async function updateProperty(
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
   }
 
+  const enableSchedule = formData.get('enable_schedule') === 'on' || formData.get('enable_schedule') === 'true'
+  const scheduleEntries = parseScheduleFromForm(formData)
+  if (enableSchedule && scheduleEntries.length === 0) {
+    return { error: 'Please select at least one inspection day when Required Inspection Days is enabled.' }
+  }
+
   const supabase = await createClient()
 
   const updateFields: Database['public']['Tables']['properties']['Update'] = {
@@ -230,7 +261,7 @@ export async function updateProperty(
     email: parsed.data.email,
     phone: parsed.data.phone || null,
     notes: parsed.data.notes || null,
-    required_schedule: parseScheduleFromForm(formData),
+    required_schedule: enableSchedule ? scheduleEntries : [],
     require_id_photo: parsed.data.require_id_photo,
     enable_gps_geofencing: parsed.data.enable_gps_geofencing,
     latitude: parsed.data.latitude ?? null,

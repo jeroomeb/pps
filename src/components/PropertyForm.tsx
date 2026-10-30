@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import Link from 'next/link'
-import { MapPin, Navigation, Crosshair, ShieldCheck, CircleDollarSign, Building } from 'lucide-react'
+import { MapPin, Navigation, Crosshair, ShieldCheck, CircleDollarSign, Building, AlertCircle } from 'lucide-react'
 import { SubmitButton } from '@/components/SubmitButton'
 import { AddressFields } from '@/components/AddressFields'
 import { Card } from '@/components/ui/Card'
@@ -61,6 +61,7 @@ export function PropertyForm({
 }) {
   const [state, formAction] = useActionState<PropertyFormState, FormData>(action, undefined)
 
+  const [enableGps, setEnableGps] = useState<boolean>(defaultValues?.enableGpsGeofencing ?? true)
   const [lat, setLat] = useState<string>(defaultValues?.latitude?.toString() ?? '')
   const [lon, setLon] = useState<string>(defaultValues?.longitude?.toString() ?? '')
   const [payoutTier, setPayoutTier] = useState<PayoutTier>(defaultValues?.payoutTier ?? 'tier_2')
@@ -79,6 +80,15 @@ export function PropertyForm({
   // Schedule is first-of-month only, so a weekday is either on or off.
   const checkedDays = new Set((defaultValues?.schedule ?? []).map((e) => e.weekday))
   const [enableSchedule, setEnableSchedule] = useState(checkedDays.size > 0)
+  const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set(checkedDays))
+
+  const parsedLat = Number(lat)
+  const parsedLon = Number(lon)
+  const isLatValid = lat.trim() !== '' && !isNaN(parsedLat) && parsedLat >= -90 && parsedLat <= 90
+  const isLonValid = lon.trim() !== '' && !isNaN(parsedLon) && parsedLon >= -180 && parsedLon <= 180
+  const isGpsValid = !enableGps || (isLatValid && isLonValid)
+  const isScheduleValid = !enableSchedule || selectedDays.size > 0
+  const canSubmit = isGpsValid && isScheduleValid
 
   function handleDetectCurrentLocation() {
     if (typeof window === 'undefined' || !('geolocation' in navigator)) {
@@ -209,7 +219,8 @@ export function PropertyForm({
             <input
               type="checkbox"
               name="enable_gps_geofencing"
-              defaultChecked={defaultValues?.enableGpsGeofencing ?? true}
+              checked={enableGps}
+              onChange={(e) => setEnableGps(e.target.checked)}
               className="mt-1 h-4 w-4 accent-[#ee8a4b]"
             />
             <div>
@@ -224,8 +235,8 @@ export function PropertyForm({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-3 border-t border-outline-variant">
             <div className="flex flex-col gap-1">
-              <label htmlFor="latitude" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                Latitude (Center)
+              <label htmlFor="latitude" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center justify-between">
+                <span>Latitude (Center) {enableGps && <span className="text-error font-bold">*</span>}</span>
               </label>
               <input
                 id="latitude"
@@ -235,13 +246,23 @@ export function PropertyForm({
                 value={lat}
                 onChange={(e) => setLat(e.target.value)}
                 placeholder="e.g. 40.712776"
-                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+                className={`min-h-10 rounded border px-3 text-sm focus:border-primary-container focus:outline-none ${
+                  enableGps && (!isLatValid || lat.trim() === '')
+                    ? 'border-error/80 bg-surface ring-1 ring-error/30'
+                    : 'border-outline-variant bg-surface'
+                }`}
               />
+              {enableGps && lat.trim() !== '' && !isLatValid && (
+                <span className="text-xs text-error font-medium">Latitude must be between -90 and 90.</span>
+              )}
+              {enableGps && lat.trim() === '' && (
+                <span className="text-xs text-error font-medium">Latitude is required when GPS is enabled.</span>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="longitude" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                Longitude (Center)
+              <label htmlFor="longitude" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider flex items-center justify-between">
+                <span>Longitude (Center) {enableGps && <span className="text-error font-bold">*</span>}</span>
               </label>
               <input
                 id="longitude"
@@ -251,8 +272,18 @@ export function PropertyForm({
                 value={lon}
                 onChange={(e) => setLon(e.target.value)}
                 placeholder="e.g. -74.005974"
-                className="min-h-10 rounded border border-outline-variant bg-surface px-3 text-sm focus:border-primary-container focus:outline-none"
+                className={`min-h-10 rounded border px-3 text-sm focus:border-primary-container focus:outline-none ${
+                  enableGps && (!isLonValid || lon.trim() === '')
+                    ? 'border-error/80 bg-surface ring-1 ring-error/30'
+                    : 'border-outline-variant bg-surface'
+                }`}
               />
+              {enableGps && lon.trim() !== '' && !isLonValid && (
+                <span className="text-xs text-error font-medium">Longitude must be between -180 and 180.</span>
+              )}
+              {enableGps && lon.trim() === '' && (
+                <span className="text-xs text-error font-medium">Longitude is required when GPS is enabled.</span>
+              )}
             </div>
 
             <div className="flex flex-col gap-1">
@@ -522,6 +553,8 @@ export function PropertyForm({
           <label className="flex cursor-pointer items-start gap-3">
             <input
               type="checkbox"
+              name="enable_schedule"
+              value="on"
               checked={enableSchedule}
               onChange={(e) => setEnableSchedule(e.target.checked)}
               className="mt-1 h-4 w-4 accent-[#ee8a4b]"
@@ -551,13 +584,27 @@ export function PropertyForm({
                       type="checkbox"
                       name="schedule"
                       value={`1-${w}`}
-                      defaultChecked={checkedDays.has(w)}
+                      checked={selectedDays.has(w)}
+                      onChange={(e) => {
+                        setSelectedDays((prev) => {
+                          const next = new Set(prev)
+                          if (e.target.checked) next.add(w)
+                          else next.delete(w)
+                          return next
+                        })
+                      }}
                       className="h-4 w-4 accent-[#ee8a4b]"
                     />
                     {WEEKDAY_LABELS[w]}
                   </label>
                 ))}
               </div>
+              {enableSchedule && selectedDays.size === 0 && (
+                <p className="mt-2.5 flex items-center gap-1.5 text-xs font-semibold text-error">
+                  <AlertCircle size={14} className="shrink-0" />
+                  Please select at least one day of the week when Required Inspection Days is enabled.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -568,7 +615,16 @@ export function PropertyForm({
           </p>
         )}
 
-        <SubmitButton className="lg:self-start">Save Property</SubmitButton>
+        <div className="flex flex-col gap-2">
+          {!canSubmit && (
+            <p className="text-xs text-error font-medium">
+              {!isGpsValid
+                ? 'Valid coordinates (-90 to 90 lat, -180 to 180 lon) are required while GPS Geofencing is enabled.'
+                : 'Please select at least one inspection day while Required Inspection Days is enabled.'}
+            </p>
+          )}
+          <SubmitButton className="lg:self-start" disabled={!canSubmit}>Save Property</SubmitButton>
+        </div>
       </form>
     </Card>
   )

@@ -26,7 +26,7 @@ export async function POST(
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, predicted_score, predicted_flags, predicted_summary, predicted_recurring_items, properties(name, address, email, custom_payout_rate, payout_tier, building_category), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, geofence_status, predicted_score, predicted_flags, predicted_summary, predicted_recurring_items, properties(name, address, email, custom_payout_rate, payout_tier, building_category, enable_gps_geofencing, latitude, longitude, geofence_radius_meters), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()
@@ -37,6 +37,30 @@ export async function POST(
 
   if (profile.role !== 'admin' && inspection.inspector_id !== profile.id) {
     return NextResponse.json({ error: 'Not authorized.' }, { status: 403 })
+  }
+
+  // Task 6 / INSP-10: Backend geofence gate enforcement
+  const prop = inspection.properties as unknown as {
+    enable_gps_geofencing?: boolean
+    latitude?: number | null
+    longitude?: number | null
+    geofence_radius_meters?: number | null
+  } | null
+
+  if (
+    prop?.enable_gps_geofencing &&
+    prop.latitude != null &&
+    prop.longitude != null
+  ) {
+    if (!inspection.arrived_at && inspection.geofence_status !== 'verified') {
+      return NextResponse.json(
+        {
+          error:
+            'Cannot submit inspection: On-site GPS geofence verification is required for this property. You must be physically inside the property perimeter to submit.',
+        },
+        { status: 403 }
+      )
+    }
   }
 
   if (inspection.status === 'completed') {

@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, AlertTriangle, MapPin, Phone, Clock, LifeBuoy, Pencil } from 'lucide-react'
+import { ArrowLeft, AlertTriangle, MapPin, Phone, Clock, LifeBuoy, Pencil, Lock, ShieldAlert } from 'lucide-react'
+import { formatDistance } from '@/lib/geo'
 import { ChecklistItemCard, type ChecklistItemData } from '@/components/ChecklistItemCard'
 import { CancelInspectionButton } from '@/components/CancelInspectionButton'
 import { GpsTelemetryTracker } from '@/components/GpsTelemetryTracker'
@@ -82,6 +83,15 @@ export function ActiveInspectionChecklist({
   // normal case, in which case nothing about this screen changes.
   const [recoverable, setRecoverable] = useState<RecoverableAnswer[]>([])
   const [restoring, startRestore] = useTransition()
+
+  const isGeofenceConfigured = Boolean(
+    enableGpsGeofencing && propertyLatitude != null && propertyLongitude != null
+  )
+  const [geofenceStatus, setGeofenceStatus] = useState<string>(
+    isGeofenceConfigured ? 'initializing' : 'exempt'
+  )
+  const [geofenceDistance, setGeofenceDistance] = useState<number | null>(null)
+  const isGeofenceHardBlocked = isGeofenceConfigured && (geofenceStatus === 'denied' || geofenceStatus === 'outside')
 
   function handleSaved(itemId: string, patch: Partial<ChecklistItemData>) {
     setItems((prev) =>
@@ -340,6 +350,10 @@ export function ActiveInspectionChecklist({
         propertyLatitude={propertyLatitude}
         propertyLongitude={propertyLongitude}
         geofenceRadiusMeters={geofenceRadiusMeters}
+        onStatusChange={(status, dist) => {
+          setGeofenceStatus(status)
+          setGeofenceDistance(dist)
+        }}
       />
 
       {recoverable.length > 0 && (
@@ -396,7 +410,39 @@ export function ActiveInspectionChecklist({
         </Card>
       )}
 
-      <div className="flex flex-col gap-6">
+      {isGeofenceHardBlocked && (
+        <Card className="mb-6 border-2 border-error/50 bg-error-container/20 p-5 shadow-sm">
+          <div className="flex items-start gap-3.5">
+            <div className="rounded-full bg-error/20 p-2.5 text-error shrink-0">
+              <Lock className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-headline font-bold text-sm text-on-surface">
+                {geofenceStatus === 'denied'
+                  ? 'Checklist Locked: Location Access Disabled'
+                  : 'Checklist Locked: Outside On-Site Perimeter'}
+              </h3>
+              <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
+                {geofenceStatus === 'denied' ? (
+                  <>
+                    On-site GPS geofence verification is required for <strong>{propertyName}</strong>.
+                    You must grant browser location permissions so the system can verify your physical presence inside the property perimeter before performing checklist work.
+                  </>
+                ) : (
+                  <>
+                    You are currently <strong>{geofenceDistance != null ? formatDistance(geofenceDistance) : 'outside'}</strong> from <strong>{propertyName}</strong> (perimeter boundary: <strong>{geofenceRadiusMeters}m</strong>).
+                    Checklist inputs, photos, and submissions are locked until you are physically on-site.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      <div className={`flex flex-col gap-6 transition-all ${
+        isGeofenceHardBlocked ? 'opacity-40 pointer-events-none select-none filter blur-[0.5px]' : ''
+      }`}>
         {grouped.map(([category, categoryItems]) => (
           <section key={category}>
             <h2 className="label-tracked mb-2 text-on-surface-variant">{category}</h2>
@@ -454,17 +500,21 @@ export function ActiveInspectionChecklist({
           <button
             type="button"
             onClick={handleComplete}
-            disabled={!canSubmit || submitting}
+            disabled={!canSubmit || submitting || isGeofenceHardBlocked}
             className="min-h-12 w-full rounded-lg bg-primary-container font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container shadow-lg transition hover:brightness-95 disabled:opacity-50 disabled:shadow-none"
           >
-            {submitting ? 'Submitting…' : 'Submit Inspection'}
+            {submitting ? 'Submitting…' : isGeofenceHardBlocked ? 'Locked (Must Be On-Site)' : 'Submit Inspection'}
           </button>
-          {!canSubmit && (
+          {isGeofenceHardBlocked ? (
+            <p className="mt-2 text-center text-xs text-error font-medium">
+              Checklist is locked until your physical presence inside the property perimeter is verified.
+            </p>
+          ) : !canSubmit ? (
             <p className="mt-2 text-center text-xs text-on-surface-variant">
               {issues.length} item{issues.length === 1 ? '' : 's'} above need a status, photo, or
               comment before you can submit.
             </p>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

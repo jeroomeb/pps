@@ -5,7 +5,7 @@ import { MapPin, Navigation, CheckCircle2, AlertCircle, ShieldCheck, RefreshCw }
 import { calculateHaversineDistance, formatDistance, formatSpeed } from '@/lib/geo'
 import { logInspectionGeoBreadcrumb } from '@/lib/actions/geo'
 
-interface GpsTelemetryTrackerProps {
+export interface GpsTelemetryTrackerProps {
   inspectionId: string
   propertyId: string
   propertyName: string
@@ -13,9 +13,10 @@ interface GpsTelemetryTrackerProps {
   propertyLatitude: number | null
   propertyLongitude: number | null
   geofenceRadiusMeters?: number
+  onStatusChange?: (status: TrackerState['status'], distanceMeters: number | null) => void
 }
 
-type TrackerState = {
+export type TrackerState = {
   status: 'initializing' | 'verified' | 'outside' | 'denied' | 'unsupported' | 'exempt'
   distanceMeters: number | null
   speedMps: number | null
@@ -32,9 +33,10 @@ export function GpsTelemetryTracker({
   propertyLatitude,
   propertyLongitude,
   geofenceRadiusMeters = 100,
+  onStatusChange,
 }: GpsTelemetryTrackerProps) {
   const [state, setState] = useState<TrackerState>({
-    status: enableGpsGeofencing ? 'initializing' : 'exempt',
+    status: enableGpsGeofencing && propertyLatitude != null && propertyLongitude != null ? 'initializing' : 'exempt',
     distanceMeters: null,
     speedMps: null,
     accuracyMeters: null,
@@ -42,8 +44,14 @@ export function GpsTelemetryTracker({
     lastLoggedTime: null,
   })
 
+  const [refreshing, setRefreshing] = useState(false)
   const lastSentRef = useRef<number>(0)
   const lastCoordsRef = useRef<{ lat: number; lon: number } | null>(null)
+
+  // Notify parent component of live status changes for gate enforcement (INSP-10)
+  useEffect(() => {
+    onStatusChange?.(state.status, state.distanceMeters)
+  }, [state.status, state.distanceMeters, onStatusChange])
 
   const sendBreadcrumb = useCallback(
     async (lat: number, lon: number, speed: number | null, accuracy: number | null) => {
@@ -74,20 +82,8 @@ export function GpsTelemetryTracker({
     [inspectionId, propertyId]
   )
 
-  useEffect(() => {
-    if (!enableGpsGeofencing) {
-      setState((prev) => ({ ...prev, status: 'exempt' }))
-      return
-    }
-
-    if (typeof window === 'undefined' || !('geolocation' in navigator)) {
-      setState((prev) => ({ ...prev, status: 'unsupported' }))
-      return
-    }
-
-    let watchId: number | null = null
-
-    const handleSuccess = (position: GeolocationPosition) => {
+  const handlePositionSuccess = useCallback(
+    (position: GeolocationPosition) => {
       const { latitude, longitude, speed, accuracy } = position.coords
       const now = Date.now()
 
@@ -127,17 +123,52 @@ export function GpsTelemetryTracker({
         lastCoordsRef.current = { lat: latitude, lon: longitude }
         void sendBreadcrumb(latitude, longitude, speed, accuracy)
       }
+    },
+    [propertyLatitude, propertyLongitude, geofenceRadiusMeters, sendBreadcrumb]
+  )
+
+  const handlePositionError = useCallback((error: GeolocationPositionError) => {
+    if (error.code === error.PERMISSION_DENIED) {
+      setState((prev) => ({ ...prev, status: 'denied' }))
+    } else {
+      setState((prev) => ({ ...prev, status: 'outside' }))
+    }
+  }, [])
+
+  const handleManualRefresh = useCallback(() => {
+    if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+      setState((prev) => ({ ...prev, status: 'unsupported' }))
+      return
     }
 
-    const handleError = (error: GeolocationPositionError) => {
-      if (error.code === error.PERMISSION_DENIED) {
-        setState((prev) => ({ ...prev, status: 'denied' }))
-      } else {
-        setState((prev) => ({ ...prev, status: 'outside' }))
-      }
+    setRefreshing(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setRefreshing(false)
+        handlePositionSuccess(pos)
+      },
+      (err) => {
+        setRefreshing(false)
+        handlePositionError(err)
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    )
+  }, [handlePositionSuccess, handlePositionError])
+
+  useEffect(() => {
+    if (!enableGpsGeofencing || propertyLatitude == null || propertyLongitude == null) {
+      setState((prev) => ({ ...prev, status: 'exempt' }))
+      return
     }
 
-    watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, {
+    if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+      setState((prev) => ({ ...prev, status: 'unsupported' }))
+      return
+    }
+
+    let watchId: number | null = null
+
+    watchId = navigator.geolocation.watchPosition(handlePositionSuccess, handlePositionError, {
       enableHighAccuracy: true,
       maximumAge: 10000,
       timeout: 20000,
@@ -153,7 +184,8 @@ export function GpsTelemetryTracker({
     propertyLatitude,
     propertyLongitude,
     geofenceRadiusMeters,
-    sendBreadcrumb,
+    handlePositionSuccess,
+    handlePositionError,
   ])
 
   if (state.status === 'exempt') {
@@ -178,25 +210,44 @@ export function GpsTelemetryTracker({
 
   if (state.status === 'denied') {
     return (
-      <div className="mb-4 flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-900">
-        <div className="flex items-center gap-2">
-          <AlertCircle size={16} className="text-amber-600 shrink-0" />
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-error/50 bg-error-container/30 px-3.5 py-3 text-xs text-on-error-container">
+        <div className="flex items-start gap-2.5">
+          <AlertCircle size={18} className="text-error shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold">Location Access Disabled</p>
-            <p className="text-amber-800">
+            <p className="font-bold text-sm text-error">Location Access Disabled</p>
+            <p className="text-on-error-container mt-0.5 leading-relaxed">
               Enable browser location permissions to verify your physical presence inside the property perimeter.
             </p>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={handleManualRefresh}
+          disabled={refreshing}
+          className="inline-flex items-center gap-1.5 rounded bg-error px-3 py-1.5 font-semibold text-white hover:brightness-95 transition self-start sm:self-auto shrink-0 cursor-pointer disabled:opacity-60"
+        >
+          <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+          {refreshing ? 'Checking…' : 'Retry Permission Check'}
+        </button>
       </div>
     )
   }
 
   if (state.status === 'initializing') {
     return (
-      <div className="mb-4 flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-3.5 py-2 text-xs text-on-surface-variant">
-        <RefreshCw size={13} className="animate-spin text-primary shrink-0" />
-        <span>Acquiring satellite GPS coordinates & virtual perimeter status…</span>
+      <div className="mb-4 flex items-center justify-between gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-3.5 py-2 text-xs text-on-surface-variant">
+        <div className="flex items-center gap-2">
+          <RefreshCw size={13} className="animate-spin text-primary shrink-0" />
+          <span>Acquiring satellite GPS coordinates & virtual perimeter status…</span>
+        </div>
+        <button
+          type="button"
+          onClick={handleManualRefresh}
+          disabled={refreshing}
+          className="text-primary hover:underline font-semibold"
+        >
+          Force Check
+        </button>
       </div>
     )
   }
@@ -229,7 +280,7 @@ export function GpsTelemetryTracker({
                   : 'bg-amber-200 text-amber-900'
               }`}
             >
-              {isVerified ? 'Within Perimeter' : 'Proximity Check'}
+              {isVerified ? 'Within Perimeter' : 'Proximity Gate'}
             </span>
           </div>
           <p className="mt-0.5 opacity-90">
@@ -246,6 +297,15 @@ export function GpsTelemetryTracker({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t sm:border-t-0 border-current/10 pt-2 sm:pt-0 text-[11px] opacity-85">
+        <button
+          type="button"
+          onClick={handleManualRefresh}
+          disabled={refreshing}
+          className="inline-flex items-center gap-1 rounded border border-current/20 px-2 py-0.5 font-semibold hover:bg-black/5 transition cursor-pointer"
+        >
+          <RefreshCw size={11} className={refreshing ? 'animate-spin' : ''} />
+          {refreshing ? 'Updating…' : 'Refresh'}
+        </button>
         <span className="flex items-center gap-1">
           <Navigation size={12} />
           {formatSpeed(state.speedMps)}
