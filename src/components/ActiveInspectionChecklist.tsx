@@ -43,6 +43,8 @@ export function ActiveInspectionChecklist({
   riskSummary = null,
   riskAreas = [],
   riskRecurringItems = [],
+  requireIdPhoto = false,
+  isIdVerified = false,
 }: {
   inspectionId: string
   propertyId: string
@@ -72,6 +74,8 @@ export function ActiveInspectionChecklist({
   riskSummary?: string | null
   riskAreas?: { domain: RiskDomain; label: string }[]
   riskRecurringItems?: { itemName: string; domain: string; count: number }[]
+  requireIdPhoto?: boolean
+  isIdVerified?: boolean
 }) {
   const router = useRouter()
   const showToast = useToast()
@@ -92,6 +96,8 @@ export function ActiveInspectionChecklist({
   )
   const [geofenceDistance, setGeofenceDistance] = useState<number | null>(null)
   const isGeofenceHardBlocked = isGeofenceConfigured && (geofenceStatus === 'denied' || geofenceStatus === 'outside')
+  const isIdHardBlocked = !isAdmin && Boolean(requireIdPhoto) && !isIdVerified
+  const isChecklistHardLocked = isGeofenceHardBlocked || isIdHardBlocked
 
   function handleSaved(itemId: string, patch: Partial<ChecklistItemData>) {
     setItems((prev) =>
@@ -410,6 +416,33 @@ export function ActiveInspectionChecklist({
         </Card>
       )}
 
+      {isIdHardBlocked && (
+        <Card className="mb-6 border-2 border-error/50 bg-error-container/20 p-5 shadow-sm">
+          <div className="flex items-start gap-3.5">
+            <div className="rounded-full bg-error/20 p-2.5 text-error shrink-0">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-headline font-bold text-sm text-on-surface">
+                Checklist Locked: Photo ID Document Verification Required
+              </h3>
+              <p className="mt-1 text-xs text-on-surface-variant leading-relaxed">
+                <strong>{propertyName}</strong> mandates Driver&apos;s License photo ID document verification.
+                You must upload your ID document to your specialist profile before you can access and perform any work on this inspection checklist.
+              </p>
+              <div className="mt-3">
+                <a
+                  href="/inspector/profile"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary-container px-3.5 py-2 font-headline text-xs font-semibold uppercase tracking-wide text-on-primary-container transition hover:brightness-95"
+                >
+                  Upload Photo ID Document
+                </a>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {isGeofenceHardBlocked && (
         <Card className="mb-6 border-2 border-error/50 bg-error-container/20 p-5 shadow-sm">
           <div className="flex items-start gap-3.5">
@@ -441,7 +474,7 @@ export function ActiveInspectionChecklist({
       )}
 
       <div className={`flex flex-col gap-6 transition-all ${
-        isGeofenceHardBlocked ? 'opacity-40 pointer-events-none select-none filter blur-[0.5px]' : ''
+        isChecklistHardLocked ? 'opacity-40 pointer-events-none select-none filter blur-[0.5px]' : ''
       }`}>
         {grouped.map(([category, categoryItems]) => (
           <section key={category}>
@@ -500,12 +533,22 @@ export function ActiveInspectionChecklist({
           <button
             type="button"
             onClick={handleComplete}
-            disabled={!canSubmit || submitting || isGeofenceHardBlocked}
+            disabled={!canSubmit || submitting || isChecklistHardLocked}
             className="min-h-12 w-full rounded-lg bg-primary-container font-headline text-sm font-semibold uppercase tracking-wide text-on-primary-container shadow-lg transition hover:brightness-95 disabled:opacity-50 disabled:shadow-none"
           >
-            {submitting ? 'Submitting…' : isGeofenceHardBlocked ? 'Locked (Must Be On-Site)' : 'Submit Inspection'}
+            {submitting
+              ? 'Submitting…'
+              : isIdHardBlocked
+                ? 'Locked (Photo ID Required)'
+                : isGeofenceHardBlocked
+                  ? 'Locked (Must Be On-Site)'
+                  : 'Submit Inspection'}
           </button>
-          {isGeofenceHardBlocked ? (
+          {isIdHardBlocked ? (
+            <p className="mt-2 text-center text-xs text-error font-medium">
+              Checklist is locked until Driver&apos;s License photo ID verification is completed in your profile.
+            </p>
+          ) : isGeofenceHardBlocked ? (
             <p className="mt-2 text-center text-xs text-error font-medium">
               Checklist is locked until your physical presence inside the property perimeter is verified.
             </p>

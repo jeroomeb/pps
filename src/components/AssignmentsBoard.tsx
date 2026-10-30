@@ -106,7 +106,7 @@ export function AssignmentsBoard({
 
   return (
     <div>
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           const active = filter === stat.filter
@@ -116,20 +116,20 @@ export function AssignmentsBoard({
               type="button"
               aria-pressed={active}
               onClick={() => setFilter((f) => (f === stat.filter ? 'all' : stat.filter))}
-              className={`rounded-lg text-left transition hover:brightness-95 ${
+              className={`w-full h-full rounded-xl text-left transition hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 active ? 'ring-2 ring-primary' : ''
               }`}
             >
-              <Card className="flex items-center justify-between">
+              <Card className="flex h-full w-full items-center justify-between p-3.5 sm:p-4">
                 <div>
                   <p className="label-tracked text-on-surface-variant">{stat.label}</p>
                   <p
-                    className={`font-headline text-2xl font-bold lg:text-3xl ${stat.accent ? 'text-primary' : ''}`}
+                    className={`font-headline text-2xl font-bold sm:text-3xl ${stat.accent ? 'text-primary' : ''}`}
                   >
                     {stat.value.toString().padStart(2, '0')}
                   </p>
                 </div>
-                <Icon size={24} className="hidden text-primary lg:block" />
+                <Icon size={24} className="hidden text-primary sm:block shrink-0" />
               </Card>
             </button>
           )
@@ -217,12 +217,12 @@ export function AssignmentsBoard({
             <section>
               <h2 className="mb-3 font-headline text-lg font-semibold">Completed</h2>
               {completed.length ? (
-                <Card padded={false}>
+                <Card padded={false} className="overflow-hidden border border-outline-variant">
                   {/* Desktop table — every cell is a full-bleed link so the whole
                       row opens the report (admin) or read-only detail (specialist) */}
                   <table className="hidden w-full text-sm lg:table">
                     <thead>
-                      <tr className="border-b border-outline-variant text-left label-tracked text-on-surface-variant">
+                      <tr className="border-b border-outline-variant bg-surface-container-low text-left label-tracked text-on-surface-variant">
                         <th className="px-4 py-3 font-semibold">Property</th>
                         <th className="px-4 py-3 font-semibold">Checklist</th>
                         <th className="px-4 py-3 font-semibold">Completed</th>
@@ -277,7 +277,11 @@ export function AssignmentsBoard({
                   </div>
                 </Card>
               ) : (
-                <p className="text-sm text-on-surface-variant">No completed inspections yet.</p>
+                <EmptyState
+                  icon={CheckCircle2}
+                  title="No completed inspections yet"
+                  description="Submitted inspection reports will appear here."
+                />
               )}
             </section>
           )}
@@ -318,7 +322,7 @@ export function AssignmentsBoard({
 
           <div>
             <h2 className="mb-3 font-headline text-lg font-semibold">Recently Completed</h2>
-            <Card padded={false}>
+            <Card padded={false} className="overflow-hidden border border-outline-variant">
               {completed.length ? (
                 <div className="flex flex-col divide-y divide-outline-variant">
                   {completed.slice(0, 4).map((inspection) => (

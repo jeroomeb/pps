@@ -27,7 +27,7 @@ export default async function InspectionDetailPage({
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, created_at, completed_at, scheduled_for, cancellation_reason, arrived_at, departed_at, dwell_time_seconds, geofence_status, predicted_score, predicted_flags, predicted_summary, predicted_recurring_items, properties(id, name, address, phone, notes, required_schedule, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, timezone, enable_predictive_scoring), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, created_at, completed_at, scheduled_for, cancellation_reason, arrived_at, departed_at, dwell_time_seconds, geofence_status, predicted_score, predicted_flags, predicted_summary, predicted_recurring_items, properties(id, name, address, phone, notes, required_schedule, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, timezone, enable_predictive_scoring, require_id_photo), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name, id_front_path, id_back_path)'
     )
     .eq('id', id)
     .single()
@@ -89,9 +89,14 @@ export default async function InspectionDetailPage({
     geofence_radius_meters: number
     timezone: string | null
     enable_predictive_scoring?: boolean
+    require_id_photo?: boolean
   }
   const template = inspection.checklist_templates as unknown as { name: string }
-  const inspector = inspection.profiles as unknown as { full_name: string }
+  const inspector = inspection.profiles as unknown as {
+    full_name: string
+    id_front_path?: string | null
+    id_back_path?: string | null
+  }
 
   // Reference-only weekday list (see src/lib/schedule.ts) — plain strings, no
   // ScheduleEntry[] crosses into the client components below.
@@ -310,6 +315,8 @@ export default async function InspectionDetailPage({
         propertyLatitude={property.latitude}
         propertyLongitude={property.longitude}
         geofenceRadiusMeters={property.geofence_radius_meters}
+        requireIdPhoto={property.require_id_photo ?? false}
+        isIdVerified={Boolean(inspector?.id_front_path)}
         riskScore={prediction?.score ?? null}
         riskSummary={prediction?.summary ?? null}
         riskAreas={prediction?.flags ?? []}

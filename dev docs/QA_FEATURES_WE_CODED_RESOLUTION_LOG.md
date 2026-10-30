@@ -4,7 +4,7 @@
 > **Source Plan:** [`dev docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md`](file:///d:/Nextjs%20Projects/amenityops/dev%20docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md)  
 > **Total Actionable Items:** 31 Concrete Development Tasks  
 > **Last Updated:** October 30, 2026  
-> **Status:** 9 of 31 Resolved (29.0% Complete)
+> **Status:** 13 of 31 Resolved (41.9% Complete)
 
 ---
 
@@ -14,12 +14,12 @@
 | :--- | :--- | :---: | :---: | :---: | :---: |
 | **Module 1** | Task 4 — Forced Password Reset & Team Setup | 7 | **7** | 0 | **COMPLETED** |
 | **Module 2** | Task 6 — GPS Geofencing & Telemetry Validation | 2 | **2** | 0 | **COMPLETED** |
-| **Module 3** | Task 3 — Property Staff Rosters & Gate Enforcement | 4 | 0 | 4 | PENDING |
+| **Module 3** | Task 3 — Property Staff Rosters & Gate Enforcement | 4 | **4** | 0 | **COMPLETED** |
 | **Module 4** | Task 7 — Field Specialist AI Chatbot | 3 | 0 | 3 | PENDING |
 | **Module 5** | Task 8 — Analytics Hub & Performance Scorecards | 5 | 0 | 5 | PENDING |
 | **Module 6** | Phase 2 — Specialist Impersonation & Admin Security | 5 | 0 | 5 | PENDING |
 | **Module 7** | Task 1 & 3 — Multi-Tenancy Tags & Action Alignment | 5 | 0 | 5 | PENDING |
-| **Total** | | **31** | **9** | **22** | **In Progress** |
+| **Total** | | **31** | **13** | **18** | **In Progress** |
 
 ---
 
@@ -195,25 +195,80 @@
 
 ## Module 3: Task 3 — Property Staff Rosters & Gate Enforcement
 
-### 10. `INSP-07`: Specialist Assignment Dropdown Must Filter by Property Staff Roster
+### 10. `INSP-07`: Incorrect Specialist Assignment Flow and Property Staff Roster Synchronization
 * **Priority:** `High` | **Severity:** `High`
-* **Target Files:** `src/components/PropertyRosterManager.tsx`, `src/app/admin/inspections/new/page.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/components/SpecialistSelect.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistSelect.tsx)
+  * [`src/app/admin/inspections/new/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/inspections/new/page.tsx)
+  * [`src/app/admin/inspections/[id]/edit/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/inspections/[id]/edit/page.tsx)
+  * [`src/app/admin/properties/[id]/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/[id]/page.tsx)
+  * [`src/lib/actions/inspections.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/inspections.ts)
+* **Reported Issue:**
+  The specialist assignment dropdown displayed admins, team members, and all specialists across the tenant regardless of property roster assignment. Assigning an unlisted specialist to an inspection did not enroll them on the property roster, resulting in desynchronized data between property rosters and inspection records.
+* **Engineering Resolution:**
+  1. **Strict Specialist Filtering:** Excluded accounts with `role: 'admin'` from specialist selection in [`src/components/SpecialistSelect.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistSelect.tsx), [`src/app/admin/inspections/new/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/inspections/new/page.tsx), and [`src/app/admin/inspections/[id]/edit/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/inspections/[id]/edit/page.tsx). Also filtered candidate specialists in [`src/app/admin/properties/[id]/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/[id]/page.tsx) to only eligible inspectors.
+  2. **Roster Prioritization & Unlisted Assignment Workflow:**
+     * In [`src/components/SpecialistSelect.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistSelect.tsx), by default, the dropdown displays *only* specialists assigned to the selected property's staff roster.
+     * If specialists are assigned, a badge displays the count on the roster (e.g., `[PRIMARY]`, `[BACKUP]`, `[STAFF]`).
+     * Added an explicit toggle checkbox: *"Allow assigning unlisted specialist (automatically adds to property staff roster)"*. When checked, other active specialists are listed in an optgroup with an auto-enrollment notice.
+     * If a property has no assigned roster members, an informative amber warning banner informs the admin, and available organization specialists are presented with automatic roster enrollment.
+  3. **Automatic Roster Synchronization:**
+     * In [`src/lib/actions/inspections.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/inspections.ts), both `createInspection` and `updateInspection` verify whether the assigned specialist exists in `property_specialist_assignments` for that property.
+     * If not already enrolled, the server automatically inserts them into `property_specialist_assignments` with role `'staff'` and triggers immediate revalidation of `/admin/properties/${propertyId}`, keeping property rosters and inspections completely synchronized.
+* **Verification Status:** `RESOLVED` (Full dropdown gating and bi-directional roster sync verified).
 
-### 11. `INSP-08`: Photo ID Verification Gate Enforcement
+---
+
+### 11. `INSP-08`: Photo ID Document Verification Is Not Enforced Before Inspection Checklist Access
 * **Priority:** `High` | **Severity:** `High`
-* **Target Files:** `src/components/ActiveInspectionChecklist.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx)
+  * [`src/app/inspector/inspections/[id]/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/inspections/[id]/page.tsx)
+  * [`src/app/api/inspections/[id]/complete/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/api/inspections/[id]/complete/route.ts)
+  * [`src/lib/actions/inspections.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/inspections.ts)
+* **Reported Issue:**
+  Even when "Require Photo ID Document Verification" was enabled in property settings, the assigned specialist could access the inspection checklist, enter data, and complete inspections without having submitted their Driver's License photo ID documents.
+* **Engineering Resolution:**
+  1. **Data Pipeline Integration:**
+     * In [`src/app/inspector/inspections/[id]/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/inspections/[id]/page.tsx), queried `require_id_photo` on `properties` and `id_front_path` / `id_back_path` on `profiles`.
+     * Passed `requireIdPhoto` and `isIdVerified` flags to `ActiveInspectionChecklist`.
+  2. **Hard Blocking Photo ID Gate UI:**
+     * In [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx), when `requireIdPhoto` is true and the non-admin specialist lacks an ID front document, a prominent gate card is rendered with an immediate deep link to `/inspector/profile` (*"Upload Photo ID Document"*).
+     * The entire checklist item stream is blurred, dimmed, and input-locked (`opacity-40 pointer-events-none select-none filter blur-[0.5px]`).
+     * The inspection submission button is locked with the label *"Locked (Photo ID Required)"* and an explanatory warning.
+     * When `requireIdPhoto` is false, specialists have seamless, unhindered access.
+  3. **Backend API & Action Enforcement:**
+     * In [`src/lib/actions/inspections.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/inspections.ts) (`saveInspectionItem`), added verification rejecting item updates with an error if the property mandates photo ID verification and the user profile has not uploaded an ID document.
+     * In [`src/app/api/inspections/[id]/complete/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/api/inspections/[id]/complete/route.ts), added a backend security check returning `403 Forbidden` if `require_id_photo` is enabled and the specialist has not uploaded an approved ID on file.
+* **Verification Status:** `RESOLVED` (End-to-end frontend blocking gate + backend API enforcement verified).
 
-### 12. `INSP-11`: Specialist Assignments Layout & Summary Cards Responsiveness
+---
+
+### 12. `INSP-11`: Misaligned Borders and Excessive Empty Space in My Assignments Summary Cards on Mobile and Tablet Viewports
 * **Priority:** `Medium` | **Severity:** `Medium`
-* **Target Files:** `src/app/specialist/assignments/page.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/components/AssignmentsBoard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AssignmentsBoard.tsx)
+* **Reported Issue:**
+  The summary cards on the My Assignments page displayed misaligned borders, uneven dimensions, and excessive empty space on tablet and mobile viewports due to abrupt breakpoint transitions.
+* **Engineering Resolution:**
+  1. Updated the grid from `grid grid-cols-2 gap-3 lg:grid-cols-4` to `grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4`.
+  2. Wrapped each metric button with `w-full h-full rounded-xl focus:outline-none focus-visible:ring-2` and ensured the inner `Card` spans `h-full w-full` with consistent padding (`p-3.5 sm:p-4`).
+  3. Un-hid status indicator icons on tablet viewports (`hidden sm:block`) to create a balanced, professional presentation that eliminates dead horizontal space on tablet screens (768px-1024px) while preserving compact 2-column mobile layout.
+* **Verification Status:** `RESOLVED` (Responsive grid and aligned container borders verified).
 
-### 13. `INSP-12`: Completed Assignments Section Border Styling
+---
+
+### 13. `INSP-12`: Missing Border Styling in the Completed Section on the My Assignments Page
 * **Priority:** `Medium` | **Severity:** `Low`
-* **Target Files:** `src/app/specialist/assignments/page.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/components/AssignmentsBoard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AssignmentsBoard.tsx)
+* **Reported Issue:**
+  The Completed section on the My Assignments page lacked uniform border styling and rendered an unstyled plain text element when no completed inspections existed, resulting in visual inconsistency compared to the Open section.
+* **Engineering Resolution:**
+  1. Added explicit `border border-outline-variant overflow-hidden rounded-xl` to the Completed assignments card container on both desktop and mobile viewports.
+  2. Applied consistent header background (`bg-surface-container-low`) and border separators to table and mobile list items.
+  3. Replaced the unstyled empty state paragraph with the standard [`EmptyState`](file:///d:/Nextjs%20Projects/amenityops/src/components/ui/EmptyState.tsx) component with `CheckCircle2` icon, uniform dashed border, and structured description.
+* **Verification Status:** `RESOLVED` (Uniform card border and styled EmptyState container verified).
 
 ---
 

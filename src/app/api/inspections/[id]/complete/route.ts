@@ -26,7 +26,7 @@ export async function POST(
   const { data: inspection, error: inspectionError } = await supabase
     .from('inspections')
     .select(
-      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, geofence_status, predicted_score, predicted_flags, predicted_summary, predicted_recurring_items, properties(name, address, email, custom_payout_rate, payout_tier, building_category, enable_gps_geofencing, latitude, longitude, geofence_radius_meters), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
+      'id, status, inspector_id, property_id, template_id, tenant_id, arrived_at, geofence_status, predicted_score, predicted_flags, predicted_summary, predicted_recurring_items, properties(name, address, email, custom_payout_rate, payout_tier, building_category, enable_gps_geofencing, latitude, longitude, geofence_radius_meters, require_id_photo), checklist_templates(name), profiles!inspections_inspector_id_fkey(full_name)'
     )
     .eq('id', inspectionId)
     .single()
@@ -45,6 +45,7 @@ export async function POST(
     latitude?: number | null
     longitude?: number | null
     geofence_radius_meters?: number | null
+    require_id_photo?: boolean
   } | null
 
   if (
@@ -57,6 +58,25 @@ export async function POST(
         {
           error:
             'Cannot submit inspection: On-site GPS geofence verification is required for this property. You must be physically inside the property perimeter to submit.',
+        },
+        { status: 403 }
+      )
+    }
+  }
+
+  // INSP-08: Backend Photo ID Document Verification Gate
+  if (prop?.require_id_photo && profile.role !== 'admin') {
+    const { data: inspectorProf } = await supabase
+      .from('profiles')
+      .select('id_front_path')
+      .eq('id', inspection.inspector_id)
+      .single()
+
+    if (!inspectorProf?.id_front_path) {
+      return NextResponse.json(
+        {
+          error:
+            'Cannot submit inspection: Driver\'s License photo ID document verification is required for this property. Please upload your ID in your profile before completing work.',
         },
         { status: 403 }
       )

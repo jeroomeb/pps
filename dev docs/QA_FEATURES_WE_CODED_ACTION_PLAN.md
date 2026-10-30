@@ -143,7 +143,7 @@ Upgrade GPS Geofence verification from an informational banner to a hard blockin
 > Synchronizing property staff roster assignments, enforcing photo ID document verification, and polishing assignment summary cards.
 
 ### `INSP-07`: Incorrect Specialist Assignment Flow and Property Staff Roster Synchronization
-- **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/PropertyRosterManager.tsx & inspection start modal`](file:///d:/Nextjs%20Projects/amenityops/src/components/PropertyRosterManager.tsx & inspection start modal)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/PropertyRosterManager.tsx & inspection start modal`](file:///d:/Nextjs%20Projects/amenityops/src/components/PropertyRosterManager.tsx & inspection start modal)
 - **Evidence Media:** [Visual Evidence](https://take.ms/SePA9F)
 
 #### Reproduction & QA Observation
@@ -156,7 +156,7 @@ Filter the 'Assign Specialist' dropdown strictly to specialists who are currentl
 ---
 
 ### `INSP-08`: Photo ID Document Verification Is Not Enforced Before Inspection Checklist Access
-- **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/qJY91)
 
 #### Reproduction & QA Observation
@@ -169,7 +169,7 @@ Enforce the 'Require Photo ID Document Verification' gate: If enabled in propert
 ---
 
 ### `INSP-11`: Misaligned Borders and Excessive Empty Space in My Assignments Summary Cards on Mobile and Tablet Viewports
-- **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** [`src/app/specialist/assignments/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/specialist/assignments/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** [`src/components/AssignmentsBoard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AssignmentsBoard.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/IXmjz)
 
 #### Reproduction & QA Observation
@@ -182,7 +182,7 @@ Fix mobile and tablet CSS grid layout for the 4 summary cards (Total Assigned, P
 ---
 
 ### `INSP-12`: Missing Border Styling in the Completed Section on the My Assignments Page
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/specialist/assignments/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/specialist/assignments/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/components/AssignmentsBoard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AssignmentsBoard.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/5NpnW)
 
 #### Reproduction & QA Observation

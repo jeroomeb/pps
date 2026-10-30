@@ -46,6 +46,7 @@ export default async function EditInspectionPage({
     supabase
       .from('profiles')
       .select('id, full_name, role, state, zip, county, status')
+      .eq('role', 'inspector')
       .order('full_name'),
     supabase
       .from('property_specialist_assignments')

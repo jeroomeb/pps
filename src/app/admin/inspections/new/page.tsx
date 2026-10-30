@@ -31,7 +31,7 @@ export default async function NewInspectionPage({
   const [{ data: properties }, { data: templates }, { data: inspectors }, { data: allAssignments }] = await Promise.all([
     supabase.from('properties').select('id, name, state, zip, county').order('name'),
     supabase.from('checklist_templates').select('id, name').order('name'),
-    supabase.from('profiles').select('id, full_name, role, state, zip, county').neq('status', 'inactive').order('full_name'),
+    supabase.from('profiles').select('id, full_name, role, state, zip, county').neq('status', 'inactive').eq('role', 'inspector').order('full_name'),
     supabase.from('property_specialist_assignments').select('property_id, specialist_id, role'),
   ])
 

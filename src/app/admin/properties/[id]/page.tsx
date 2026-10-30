@@ -103,7 +103,7 @@ export default async function PropertyDetailPage({
   })
 
   const availableCandidates: CandidateSpecialist[] = (allProfiles ?? [])
-    .filter((ins) => ins.status !== 'inactive')
+    .filter((ins) => ins.status !== 'inactive' && ins.role === 'inspector')
     .map((ins) => ({
       id: ins.id,
       fullName: ins.full_name,

@@ -134,6 +134,29 @@ export async function createInspection(
     }
   }
 
+  // INSP-07: Ensure the specialist is enrolled in the property's staff roster
+  const { data: existingRosterMember } = await supabase
+    .from('property_specialist_assignments')
+    .select('id')
+    .eq('property_id', parsed.data.property_id)
+    .eq('specialist_id', parsed.data.inspector_id)
+    .maybeSingle()
+
+  if (!existingRosterMember) {
+    const { data: propData } = await supabase
+      .from('properties')
+      .select('tenant_id')
+      .eq('id', parsed.data.property_id)
+      .single()
+
+    await supabase.from('property_specialist_assignments').insert({
+      property_id: parsed.data.property_id,
+      specialist_id: parsed.data.inspector_id,
+      role: 'staff',
+      tenant_id: propData?.tenant_id ?? profile.tenant_id ?? null,
+    })
+  }
+
   revalidatePath(`/admin/properties/${parsed.data.property_id}`)
   revalidatePath('/admin')
   revalidatePath('/admin/inspections')
@@ -240,6 +263,29 @@ export async function updateInspection(
     } catch (err) {
       console.error('Reassignment email failed:', err)
     }
+  }
+
+  // INSP-07: Ensure the newly assigned specialist is enrolled in the property's staff roster
+  const { data: existingUpdateRoster } = await supabase
+    .from('property_specialist_assignments')
+    .select('id')
+    .eq('property_id', existing.property_id)
+    .eq('specialist_id', parsed.data.inspector_id)
+    .maybeSingle()
+
+  if (!existingUpdateRoster) {
+    const { data: propData } = await supabase
+      .from('properties')
+      .select('tenant_id')
+      .eq('id', existing.property_id)
+      .single()
+
+    await supabase.from('property_specialist_assignments').insert({
+      property_id: existing.property_id,
+      specialist_id: parsed.data.inspector_id,
+      role: 'staff',
+      tenant_id: propData?.tenant_id ?? null,
+    })
   }
 
   revalidatePath('/admin')
@@ -468,7 +514,7 @@ export async function saveInspectionItem(
 
   const { data: inspection } = await supabase
     .from('inspections')
-    .select('status, inspector_id, scheduled_for')
+    .select('status, inspector_id, scheduled_for, property_id, properties(require_id_photo)')
     .eq('id', inspectionId)
     .single()
 
@@ -495,6 +541,23 @@ export async function saveInspectionItem(
     new Date(inspection.scheduled_for) > new Date()
   ) {
     return { error: 'This inspection cannot be started before its scheduled time.' }
+  }
+
+  // INSP-08: Backend Photo ID Document Verification Gate
+  const inspectionProp = inspection.properties as unknown as { require_id_photo?: boolean } | null
+  if (inspectionProp?.require_id_photo && profile.role !== 'admin') {
+    const { data: inspectorProf } = await supabase
+      .from('profiles')
+      .select('id_front_path')
+      .eq('id', profile.id)
+      .single()
+
+    if (!inspectorProf?.id_front_path) {
+      return {
+        error:
+          'Driver\'s License photo ID document verification is required for this property. Please upload your ID in your profile before completing work.',
+      }
+    }
   }
 
   // A client-supplied photo path must belong to THIS inspection's folder —
