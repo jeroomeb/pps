@@ -2,6 +2,7 @@
 
 > **Document Type:** Dedicated Action Plan for Features We Built & Coded (The 50%)  
 > **Total Actionable Items:** 31 Concrete Development Tasks  
+> **Current Progress:** 9 of 31 Resolved (29.0%) — Module 1 & Module 2 Completed  
 > **Target File:** `dev docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md`  
 > **Purpose:** This document details every single QA bug that directly touches the features we designed and built (Tasks 1–8, Impersonation, Chatbot, Analytics). For each item, you will find the exact code location, QA evidence, root cause, and concrete implementation steps.
 
@@ -20,7 +21,7 @@
 > Refining the First-Time Password Setup screen (`/force-password-change`), temporary password validation, eye visibility toggles, and form state retention.
 
 ### `ONB-04`: Missing Standard Password Validation in the Temporary Password Field When Adding a New Team Member
-- **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/MGz75)
 
 #### Reproduction & QA Observation
@@ -33,7 +34,7 @@ Add standard enterprise password regex check to the Temporary Password input in 
 ---
 
 ### `ONB-06`: Missing Password Visibility Toggle Icon on the First-Time Password Setup Page
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/zf6J5a)
 
 #### Reproduction & QA Observation
@@ -46,7 +47,7 @@ Add interactive eye visibility toggle icons (Show/Hide) to both New Password and
 ---
 
 ### `ONB-07`: Password Fields Reset After Invalid Input on the First-Time Password Setup Page
-- **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/HoDS4)
 
 #### Reproduction & QA Observation
@@ -59,7 +60,7 @@ Prevent form state wipe on validation failure. Preserve the typed passwords in s
 ---
 
 ### `ONB-08`: Missing Standard Password Validation on the First-Time Password Setup Page
-- **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/DxFBS)
 
 #### Reproduction & QA Observation
@@ -72,7 +73,7 @@ Upgrade password complexity validation from simple `length >= 8` to full standar
 ---
 
 ### `ONB-09`: Unclear Password Mismatch Validation Message on the First-Time Password Setup Page
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/zlQ4T)
 
 #### Reproduction & QA Observation
@@ -85,7 +86,7 @@ Replace the generic error with a specific inline message directly below the Conf
 ---
 
 ### `ONB-10`: Missing Success Notification After First-Time Password Setup and Password reset flow as well (Both for the New Team Member flow and the Password Reset flow)
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/force-password-change/page.tsx & src/app/login/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx & src/app/login/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/force-password-change/page.tsx & src/app/login/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx & src/app/login/page.tsx)
 
 #### Reproduction & QA Observation
 - **Actual Result:** After successfully setting a new password, the system redirects the user to the Login page without displaying a success toast or confirmation message.
@@ -97,7 +98,7 @@ Upon successful password update, redirect to `/login?notice=password_updated` an
 ---
 
 ### `RESP-12`: Misaligned Auto Generate If Blank Option and Oversized Placeholder Text in Add Team Member Form
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/Xt0y2)
 
 #### Reproduction & QA Observation
@@ -113,7 +114,7 @@ In the Add Team Member modal, move the 'Auto Generate If Blank' checkbox below t
 > Enforcing conditional validation on property settings and hard blocking checklist access if physical GPS perimeter verification fails.
 
 ### `PROP-04`: Missing Conditional Validation for GPS Coordinates and Required Inspection Days in the New and Edit Property Flows
-- **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/PropertyForm.tsx & src/lib/actions/properties.ts`](file:///d:/Nextjs%20Projects/amenityops/src/components/PropertyForm.tsx & src/lib/actions/properties.ts)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/PropertyForm.tsx & src/lib/actions/properties.ts`](file:///d:/Nextjs%20Projects/amenityops/src/components/PropertyForm.tsx & src/lib/actions/properties.ts)
 - **Evidence Media:** [Visual Evidence](https://take.ms/KcPGm)
 
 #### Reproduction & QA Observation
@@ -126,7 +127,7 @@ Add conditional schema validation: When 'Enable On-Site GPS Geofence Verificatio
 ---
 
 ### `INSP-10`: GPS Geofence Verification Is Not Working Correctly and Does Not Block Inspection Checklist Access
-- **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Critical` | **Target Component:** [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/7hVsY)
 
 #### Reproduction & QA Observation
