@@ -48,6 +48,11 @@ export async function GET(
       return NextResponse.redirect(getSafeRedirectUrl('/admin', request))
     }
 
+    // If caller is NOT global admin and trying to access an admin from another tenant, deny
+    if (targetUser.tenant_id && targetUser.tenant_id !== profile.tenant_id && !profile.is_global_admin) {
+      return NextResponse.redirect(getSafeRedirectUrl('/admin/team?error=unauthorized_admin_view', request))
+    }
+
     // Otherwise (HQ admin or same-tenant admin), open the admin dashboard
     cookieStore.delete(TENANT_VIEW_COOKIE)
     return NextResponse.redirect(getSafeRedirectUrl('/admin', request))

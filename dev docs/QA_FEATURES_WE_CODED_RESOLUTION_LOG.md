@@ -4,7 +4,7 @@
 > **Source Plan:** [`dev docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md`](file:///d:/Nextjs%20Projects/amenityops/dev%20docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md)  
 > **Total Actionable Items:** 31 Concrete Development Tasks  
 > **Last Updated:** October 30, 2026  
-> **Status:** 21 of 31 Resolved (67.7% Complete)
+> **Status:** 26 of 31 Resolved (83.9% Complete)
 
 ---
 
@@ -17,9 +17,9 @@
 | **Module 3** | Task 3 — Property Staff Rosters & Gate Enforcement | 4 | **4** | 0 | **COMPLETED** |
 | **Module 4** | Task 7 — Field Specialist AI Chatbot | 3 | **3** | 0 | **COMPLETED** |
 | **Module 5** | Task 8 — Analytics Hub & Performance Scorecards | 5 | **5** | 0 | **COMPLETED** |
-| **Module 6** | Phase 2 — Specialist Impersonation & Admin Security | 5 | 0 | 5 | PENDING |
+| **Module 6** | Phase 2 — Specialist Impersonation & Admin Security | 5 | **5** | 0 | **COMPLETED** |
 | **Module 7** | Task 1 & 3 — Multi-Tenancy Tags & Action Alignment | 5 | 0 | 5 | PENDING |
-| **Total** | | **31** | **21** | **10** | **In Progress** |
+| **Total** | | **31** | **26** | **5** | **In Progress** |
 
 ---
 
@@ -415,30 +415,102 @@
 
 ## Module 6: Phase 2 — Specialist Impersonation & Admin Security
 
-### 22. `TEAM-01`: Open Specialist Panel Button Alignment
+### 22. `TEAM-01`: Misaligned “Open Specialist Panel” Button in the Team Page — Active Members Section
 * **Priority:** `Medium` | **Severity:** `Low`
-* **Target Files:** `src/app/admin/team/page.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+* **Reported Issue:**
+  The "Open Specialist Panel" button alongside the role toggle and deactivation modal disrupted the layout of the Active Members section, forcing member summary details (names, role titles, contact info, coverage areas) into a narrow, squashed column that wrapped awkwardly across 4-6 lines on medium and desktop screens.
+* **Engineering Resolution:**
+  1. Restructured each member card in [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx) into a two-tier layout:
+     * **Top Tier:** Full-width profile summary containing member name, organization/HQ badge, setup pending indicator, open inspections counter, professional title, human ID, contact info, and coverage area with unobstructed horizontal space.
+     * **Bottom Action Bar:** A dedicated, clean action strip (`border-t border-outline-variant/30 pt-3 flex flex-wrap items-center gap-2`).
+  2. Placed the "Open Specialist Panel" button cleanly alongside the `RoleToggleButton` and `DeactivateMemberModal` within this dedicated container, eliminating all text collision and wrapping anomalies across all device viewports.
+* **Verification Status:** `RESOLVED` (Dedicated bottom action bar layout verified across viewports).
 
-### 23. `TEAM-02`: "Exit to Admin" In-App Redirect vs "Close Tab"
+---
+
+### 23. `TEAM-02`: "Exit to Admin" and "Close Tab" Buttons Perform the Same Action in the Specialist Team Member Panel
 * **Priority:** `High` | **Severity:** `Medium`
-* **Target Files:** `src/components/impersonation/ImpersonationBanner.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/components/AdminImpersonationBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminImpersonationBanner.tsx)
+  * [`src/components/TenantViewBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/TenantViewBanner.tsx)
+* **Reported Issue:**
+  Both "Exit to Admin" and "Close Tab" buttons in the impersonation header redirected the admin to `/api/impersonate/exit`, opening a new/duplicate browser tab and cluttering the admin's workspace with duplicate Team pages.
+* **Engineering Resolution:**
+  1. **Differentiated Action Semantics:**
+     * **"Exit to Admin":** Navigates the current browser tab cleanly back to the Admin Team page via `/api/impersonate/exit` (or `/api/tenant-view/exit`), clearing impersonation session cookies without spawning new tabs.
+     * **"Close Tab":** Programmatically attempts `window.close()` to cleanly close the specialist panel tab and return the user to their previously opened admin window.
+  2. **Non-Duplicating Browser Security Fallback:**
+     * When browser security restrictions prevent programmatic closure of tabs opened via direct link (`window.close()` blocked), instead of executing an unexpected redirect that opens duplicate tabs, the banner displays a non-intrusive inline dismissible instruction:
+       *`Browser tab closure was prevented by browser security. Please close this browser tab manually, or click Exit to Admin to return in this window.`*
+  3. Applied the identical robust dual-action pattern to both [`AdminImpersonationBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminImpersonationBanner.tsx) and [`TenantViewBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/TenantViewBanner.tsx).
+* **Verification Status:** `RESOLVED` (Distinct in-app redirect vs. window.close() with graceful browser fallback verified).
 
-### 24. `TEAM-03`: Specialist Impersonation Navigation Isolation
-* **Priority:** `High` | **Severity:** `Medium`
-* **Target Files:** `src/components/impersonation/ImpersonationBanner.tsx`, layout components
-* **Status:** `PENDING`
+---
 
-### 25. `TEAM-04`: Super Admin Authorization Required for Admin Demotion
-* **Priority:** `Critical` | **Severity:** `High`
-* **Target Files:** `src/lib/actions/team.ts`
-* **Status:** `PENDING`
+### 24. `TEAM-03`: Admin Impersonation Mode Displays Unauthorized Quick Actions and Allows Navigation Back to the Admin Portal
+* **Priority:** `High` | **Severity:** `High`
+* **Target Files:**
+  * [`src/app/inspector/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/page.tsx)
+  * [`src/app/inspector/layout.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/layout.tsx)
+  * [`src/components/AssignmentsBoard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AssignmentsBoard.tsx)
+* **Reported Issue:**
+  While in Specialist Impersonation mode, the specialist assignments board displayed unauthorized Admin quick actions ("Start Inspection" navigating to `/admin/inspections/new` and "Dashboard" navigating to `/admin`). Clicking these links leaked out of the impersonation view and dropped the user into the admin portal unexpectedly.
+* **Engineering Resolution:**
+  1. **Strict Viewport Isolation in RSC:**
+     * In [`src/app/inspector/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/page.tsx), computed `showAdminActions = !isImpersonating && (adminProfile?.role === 'admin' || profile.role === 'admin')`.
+     * Passed `isAdmin={showAdminActions}` to `AssignmentsBoard`.
+  2. **Suppression of Admin Quick Actions & Route Isolation:**
+     * When `isImpersonating` is active, `isAdmin` is strictly `false`.
+     * The "Start Inspection" (`/admin/inspections/new`) and "Dashboard" (`/admin`) buttons in the Quick Actions aside are suppressed.
+     * Completed inspection links route strictly within the specialist portal (`/inspector/inspections/${id}`) rather than linking to the admin report route (`/admin/reports/${id}`).
+  3. Combined with [`src/app/inspector/layout.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/layout.tsx), navigation headers, app shells, and bottom bars remain strictly isolated within the specialist viewport until the user explicitly clicks "Exit to Admin".
+* **Verification Status:** `RESOLVED` (Complete isolation of specialist viewport without admin link leaks verified).
 
-### 26. `TEAM-05`: Tenant Admin Panel Switching & Persistent Exit Banner
-* **Priority:** `High` | **Severity:** `Medium`
-* **Target Files:** `src/components/impersonation/ImpersonationBanner.tsx`, `src/lib/auth/tenant-view.ts`
-* **Status:** `PENDING`
+---
+
+### 25. `TEAM-04`: Admin Can Demote Another Admin to Specialist Without Super Admin Authorization
+* **Priority:** `High` | **Severity:** `Critical`
+* **Target Files:**
+  * [`src/lib/actions/team.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/team.ts)
+  * [`src/components/RoleToggleButton.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/RoleToggleButton.tsx)
+  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+* **Reported Issue:**
+  A standard tenant admin was able to demote another admin (or the initial HQ admin) to specialist, allowing unauthorized privilege alteration without Super Admin authorization.
+* **Engineering Resolution:**
+  1. **Backend Privilege Gate:**
+     * In [`src/lib/actions/team.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/team.ts) (`setTeamMemberRole`), queried target user's role and verified the calling admin's `current.is_global_admin` status.
+     * If the target profile is an `'admin'` and the proposed role is `'inspector'`, the server requires `current.is_global_admin` to be `true`. If not, execution is rejected with:
+       *`Unauthorized: Demoting an Administrator to Specialist requires Super Admin authorization.`*
+     * Also prevented standard admins from altering another administrator's account.
+  2. **Frontend UI Lock & Tooltip:**
+     * In [`src/components/RoleToggleButton.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/RoleToggleButton.tsx), added `canDemoteAdmin` prop.
+     * When `role === 'admin'` and `!canDemoteAdmin`, the button is locked with `disabled`, `opacity-40 cursor-not-allowed`, and a tooltip explaining *"Demoting an Administrator requires Super Admin authorization"*.
+     * Clicking triggers an explanatory error toast if bypassed.
+  3. In [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx), passed `canDemoteAdmin={Boolean(currentProfile.is_global_admin)}`.
+* **Verification Status:** `RESOLVED` (Dual frontend lock + backend security check verified).
+
+---
+
+### 26. `TEAM-05`: Incorrect Open Tenant Admin Panel Access and Missing Exit View Navigation
+* **Priority:** `High` | **Severity:** `High`
+* **Target Files:**
+  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+  * [`src/app/admin/impersonate/[id]/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/impersonate/[id]/route.ts)
+  * [`src/components/TenantViewBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/TenantViewBanner.tsx)
+* **Reported Issue:**
+  Standard tenant admins could see "Open Tenant Admin" on other admin cards, but clicking it redirected them back to their own dashboard without switching contexts or displaying an exit view top banner.
+* **Engineering Resolution:**
+  1. **Role-Based Button Rendering:**
+     * In [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx), "Open Tenant Admin" is now displayed **only** when `member.role === 'admin' && currentProfile.is_global_admin && member.tenant_id`. Standard tenant admins never see this action on peer admins.
+     * Specialist cards display "Open Specialist Panel" for all authorized admins.
+  2. **Impersonation Route Security & Context Switch:**
+     * In [`src/app/admin/impersonate/[id]/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/impersonate/[id]/route.ts), added verification: if target user is an admin belonging to a different tenant and the caller is not a Global HQ Admin, access is denied and redirected with `?error=unauthorized_admin_view`.
+     * When an authorized Global Admin opens a tenant admin, `TENANT_VIEW_COOKIE` is written and redirected to `/admin`.
+  3. **Persistent Exit Banner:**
+     * In [`src/app/admin/layout.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/layout.tsx), `TenantViewBanner` is rendered when viewing a tenant, providing an "Exit to HQ" button (`/api/tenant-view/exit`) and "Close Tab" with fallback notice.
+* **Verification Status:** `RESOLVED` (Tenant context switching, permission gating, and sticky exit banner verified).
 
 ---
 

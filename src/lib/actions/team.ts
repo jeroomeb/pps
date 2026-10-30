@@ -285,8 +285,37 @@ export async function setTeamMemberRole(
   profileId: string,
   role: 'admin' | 'inspector'
 ): Promise<{ error?: string } | void> {
-  await requireRole('admin')
+  const current = await requireRole('admin')
   const supabase = await createClient()
+
+  // TEAM-04: Verify target profile and enforce Super Admin authorization for Admin role modification/demotion
+  const { data: targetProfile, error: targetError } = await supabase
+    .from('profiles')
+    .select('id, role, full_name, is_global_admin')
+    .eq('id', profileId)
+    .single()
+
+  if (targetError || !targetProfile) {
+    return { error: 'Team member not found.' }
+  }
+
+  // Prevent demoting an Administrator without Super Admin privileges
+  if (targetProfile.role === 'admin' && role === 'inspector') {
+    if (!current.is_global_admin) {
+      return {
+        error:
+          'Unauthorized: Demoting an Administrator to Specialist requires Super Admin authorization.',
+      }
+    }
+  }
+
+  // Prevent modifying an Administrator's role by a standard non-global admin
+  if (targetProfile.role === 'admin' && !current.is_global_admin && targetProfile.id !== current.id) {
+    return {
+      error:
+        'Unauthorized: Only Super Admins are permitted to modify an Administrator account.',
+    }
+  }
 
   if (role === 'inspector') {
     const { count, error: countError } = await supabase

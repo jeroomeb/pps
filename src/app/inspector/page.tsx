@@ -72,6 +72,8 @@ export default async function InspectorDashboardPage({
   })
 
   const isSimulatedView = isImpersonating || targetSpecialistId !== profile.id
+  // When impersonating a specialist, suppress admin quick actions to maintain specialist viewport isolation
+  const showAdminActions = !isImpersonating && (adminProfile?.role === 'admin' || profile.role === 'admin')
 
   return (
     <div>
@@ -79,7 +81,7 @@ export default async function InspectorDashboardPage({
         eyebrow={isSimulatedView ? `${targetSpecialistName}'s Schedule` : "Today's Schedule"}
         title={isSimulatedView ? `${targetSpecialistName}'s Assignments` : 'My Assignments'}
       />
-      <AssignmentsBoard inspections={rows} isAdmin={adminProfile?.role === 'admin' || profile.role === 'admin'} />
+      <AssignmentsBoard inspections={rows} isAdmin={showAdminActions} />
     </div>
   )
 }

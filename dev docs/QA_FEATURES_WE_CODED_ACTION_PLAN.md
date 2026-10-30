@@ -308,7 +308,7 @@ Standardize the tab label to 'Performance' consistently across desktop, tablet, 
 > Securing admin-to-specialist role changes, isolating impersonation viewports, fixing browser tab close behavior, and impersonation exit headers.
 
 ### `TEAM-01`: Misaligned “Open Specialist Panel” Button in the Team Page — Active Members Section
-- **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/hRBtn)
 
 #### Reproduction & QA Observation
@@ -321,7 +321,7 @@ Reposition the 'Open Specialist Panel' button in the team member card into a ded
 ---
 
 ### `TEAM-02`: Exit to Admin” and “Close Tab” Buttons Perform the Same Action in the Specialist Team Member Panel
-- **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/components/impersonation/ImpersonationBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/impersonation/ImpersonationBanner.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/components/AdminImpersonationBanner.tsx & src/components/TenantViewBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminImpersonationBanner.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/HAXAK)
 
 #### Reproduction & QA Observation
@@ -334,7 +334,7 @@ Differentiate 'Exit to Admin' vs 'Close Tab': 'Exit to Admin' performs an in-app
 ---
 
 ### `TEAM-03`: Admin Impersonation Mode Displays Unauthorized Quick Actions and Allows Navigation Back to the Admin Portal
-- **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/impersonation/ImpersonationBanner.tsx & navigation`](file:///d:/Nextjs%20Projects/amenityops/src/components/impersonation/ImpersonationBanner.tsx & navigation)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/app/inspector/page.tsx & src/app/inspector/layout.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/81ZbF) [Visual Evidence](https://take.ms/4YwcGt)
 
 #### Reproduction & QA Observation
@@ -347,7 +347,7 @@ In Specialist Impersonation mode, suppress or hide unauthorized Admin quick acti
 ---
 
 ### `TEAM-04`: Admin Can Demote Another Admin to Specialist Without Super Admin Authorization
-- **Priority:** `High` | **Severity:** `Critical` | **Target Component:** [`src/lib/actions/team.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/team.ts)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Critical` | **Target Component:** [`src/lib/actions/team.ts & src/components/RoleToggleButton.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/team.ts)
 - **Evidence Media:** [Visual Evidence](https://take.ms/w6KGO)
 
 #### Reproduction & QA Observation
@@ -360,7 +360,7 @@ Add backend and frontend security check: Require `current_user_is_global_admin()
 ---
 
 ### `TEAM-05`: Incorrect Open Tenant Admin Panel Access and Missing Exit View Navigation
-- **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/app/admin/team/page.tsx & src/app/admin/impersonate/[id]/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/bDojE)
 
 #### Reproduction & QA Observation

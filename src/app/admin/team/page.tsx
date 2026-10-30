@@ -130,104 +130,124 @@ export default async function TeamPage({
                     return (
                       <div
                         key={member.id}
-                        className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                        className="flex flex-col gap-3 p-4 hover:bg-surface-container-low transition"
                       >
-                        <Link href={`/admin/team/${member.id}`} className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold hover:underline">{member.full_name}</p>
-                            {/* Organization / Tenant container badge */}
-                            {tenantName ? (
-                              <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-2 py-0.5 text-[10px] font-semibold text-primary">
-                                <Building size={11} className="shrink-0" />
-                                {tenantName}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded bg-secondary-container px-2 py-0.5 text-[10px] font-semibold text-on-secondary-container">
-                                <ShieldCheck size={11} className="shrink-0" />
-                                Amenity Op&apos;s HQ
-                              </span>
-                            )}
-                            {member.must_reset_password && (
-                              <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
-                                Setup Pending
-                              </span>
-                            )}
-                            {(openCounts.get(member.id) ?? 0) > 0 && (
-                              <span className="rounded bg-primary-container px-1.5 py-0.5 text-[10px] font-semibold text-on-primary-container">
-                                {openCounts.get(member.id)} open
-                              </span>
-                            )}
-                          </div>
-                          <p className="label-tracked flex flex-wrap items-center gap-x-2 text-on-surface-variant mt-0.5">
-                            <span className="font-semibold text-on-surface">
-                              {member.role === 'admin'
-                                ? (tenantName ? `${tenantName} Administrator` : 'HQ Administrator')
-                                : 'Operations Continuity Specialist'}
-                            </span>
-                            {member.human_id && (
-                              <span className="font-mono normal-case">({member.human_id})</span>
-                            )}
-                          </p>
-                          <p className="truncate text-xs text-on-surface-variant mt-0.5">
-                            {[member.email, member.phone].filter(Boolean).join(' · ')}
-                          </p>
-                          {/* Coverage area — drives proximity-based assignment. */}
-                          {(member.county || member.state) ? (
-                            <p className="truncate text-xs text-on-surface-variant mt-0.5">
-                              {[member.city, member.county && `${member.county} County`, member.state]
-                                .filter(Boolean)
-                                .join(' · ')}
-                            </p>
-                          ) : (
-                            <p className="truncate text-xs text-error mt-0.5">Coverage area not set</p>
-                          )}
-                        </Link>
-
-                        {member.id !== currentProfile.id ? (
-                          <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant/40 pt-2 sm:border-t-0 sm:pt-0 sm:shrink-0">
-                            <a
-                              href={`/admin/impersonate/${member.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition"
-                              title={
-                                member.role === 'admin'
-                                  ? (tenantName ? `Open ${tenantName} Admin Dashboard` : `Open HQ Admin Dashboard`)
-                                  : `Open full specialist panel for ${member.full_name} in a new tab`
-                              }
-                            >
-                              <ExternalLink size={13} className="text-primary" />
-                              <span>
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                          <Link href={`/admin/team/${member.id}`} className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold hover:underline">{member.full_name}</p>
+                              {/* Organization / Tenant container badge */}
+                              {tenantName ? (
+                                <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-2 py-0.5 text-[10px] font-semibold text-primary">
+                                  <Building size={11} className="shrink-0" />
+                                  {tenantName}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded bg-secondary-container px-2 py-0.5 text-[10px] font-semibold text-on-secondary-container">
+                                  <ShieldCheck size={11} className="shrink-0" />
+                                  Amenity Op&apos;s HQ
+                                </span>
+                              )}
+                              {member.must_reset_password && (
+                                <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                                  Setup Pending
+                                </span>
+                              )}
+                              {(openCounts.get(member.id) ?? 0) > 0 && (
+                                <span className="rounded bg-primary-container px-1.5 py-0.5 text-[10px] font-semibold text-on-primary-container">
+                                  {openCounts.get(member.id)} open
+                                </span>
+                              )}
+                            </div>
+                            <p className="label-tracked flex flex-wrap items-center gap-x-2 text-on-surface-variant mt-0.5">
+                              <span className="font-semibold text-on-surface">
                                 {member.role === 'admin'
-                                  ? (tenantName ? 'Open Tenant Admin' : 'Open HQ Admin')
-                                  : 'Open Specialist Panel'}
+                                  ? (tenantName ? `${tenantName} Administrator` : 'HQ Administrator')
+                                  : 'Operations Continuity Specialist'}
                               </span>
-                            </a>
-                            <RoleToggleButton profileId={member.id} role={member.role} />
-                            <DeactivateMemberModal
-                              memberId={member.id}
-                              memberName={member.full_name}
-                              memberStatus={member.status ?? 'active'}
-                              openInspectionsCount={openCounts.get(member.id) ?? 0}
-                              availableInspectors={availableInspectors.filter((ins) => ins.id !== member.id)}
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
+                              {member.human_id && (
+                                <span className="font-mono normal-case">({member.human_id})</span>
+                              )}
+                            </p>
+                            <p className="truncate text-xs text-on-surface-variant mt-0.5">
+                              {[member.email, member.phone].filter(Boolean).join(' · ')}
+                            </p>
+                            {/* Coverage area — drives proximity-based assignment. */}
+                            {(member.county || member.state) ? (
+                              <p className="truncate text-xs text-on-surface-variant mt-0.5">
+                                {[member.city, member.county && `${member.county} County`, member.state]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                              </p>
+                            ) : (
+                              <p className="truncate text-xs text-error mt-0.5">Coverage area not set</p>
+                            )}
+                          </Link>
+
+                          {member.id === currentProfile.id && (
+                            <span className="self-start sm:self-center shrink-0 rounded-full bg-secondary-container px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
+                              You
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Dedicated action button container below summary (TEAM-01) */}
+                        <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant/30 pt-3">
+                          {member.id !== currentProfile.id ? (
+                            <>
+                              {/* Open Specialist Panel for specialists */}
+                              {member.role !== 'admin' && (
+                                <a
+                                  href={`/admin/impersonate/${member.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition shadow-xs"
+                                  title={`Open full specialist panel for ${member.full_name} in a new tab`}
+                                >
+                                  <ExternalLink size={13} className="text-primary" />
+                                  <span>Open Specialist Panel</span>
+                                </a>
+                              )}
+
+                              {/* Only Super Admins can open another tenant admin dashboard (TEAM-05) */}
+                              {member.role === 'admin' && currentProfile.is_global_admin && member.tenant_id && (
+                                <a
+                                  href={`/admin/impersonate/${member.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 transition shadow-xs"
+                                  title={tenantName ? `Open ${tenantName} Admin Dashboard` : 'Open Tenant Admin'}
+                                >
+                                  <ExternalLink size={13} className="text-primary" />
+                                  <span>Open Tenant Admin</span>
+                                </a>
+                              )}
+
+                              <RoleToggleButton
+                                profileId={member.id}
+                                role={member.role}
+                                canDemoteAdmin={Boolean(currentProfile.is_global_admin)}
+                              />
+                              <DeactivateMemberModal
+                                memberId={member.id}
+                                memberName={member.full_name}
+                                memberStatus={member.status ?? 'active'}
+                                openInspectionsCount={openCounts.get(member.id) ?? 0}
+                                availableInspectors={availableInspectors.filter((ins) => ins.id !== member.id)}
+                              />
+                            </>
+                          ) : (
                             <a
                               href={member.role === 'admin' ? '/admin' : '/inspector'}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high hover:border-outline transition"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high hover:border-outline transition shadow-xs"
                             >
                               <ExternalLink size={13} className="text-primary" />
                               <span>My Dashboard</span>
                             </a>
-                            <span className="self-start sm:self-center shrink-0 rounded-full bg-secondary-container px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-on-surface-variant">
-                              You
-                            </span>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     )
                   })}
@@ -260,7 +280,7 @@ export default async function TeamPage({
                     return (
                       <div
                         key={member.id}
-                        className="flex flex-col gap-3 p-4 opacity-75 hover:opacity-100 transition sm:flex-row sm:items-center sm:justify-between"
+                        className="flex flex-col gap-3 p-4 opacity-75 hover:opacity-100 transition"
                       >
                         <Link href={`/admin/team/${member.id}`} className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
@@ -292,24 +312,24 @@ export default async function TeamPage({
                               <span className="font-mono normal-case">({member.human_id})</span>
                             )}
                           </p>
-                        <p className="truncate text-xs text-on-surface-variant mt-0.5">
-                          {[member.email, member.phone].filter(Boolean).join(' · ')}
-                        </p>
-                      </Link>
+                          <p className="truncate text-xs text-on-surface-variant mt-0.5">
+                            {[member.email, member.phone].filter(Boolean).join(' · ')}
+                          </p>
+                        </Link>
 
-                      <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant/40 pt-2 sm:border-t-0 sm:pt-0 sm:shrink-0">
-                        <DeactivateMemberModal
-                          memberId={member.id}
-                          memberName={member.full_name}
-                          memberStatus="inactive"
-                          openInspectionsCount={0}
-                          availableInspectors={availableInspectors}
-                        />
+                        <div className="flex flex-wrap items-center gap-2 border-t border-outline-variant/30 pt-3">
+                          <DeactivateMemberModal
+                            memberId={member.id}
+                            memberName={member.full_name}
+                            memberStatus="inactive"
+                            openInspectionsCount={0}
+                            availableInspectors={availableInspectors}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
               </Card>
             </div>
           )}
