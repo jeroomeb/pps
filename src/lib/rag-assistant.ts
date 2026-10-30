@@ -4,6 +4,7 @@ import {
   querySpecialistAssistant,
   SUGGESTED_SPECIALIST_PROMPTS,
   SPECIALIST_KNOWLEDGE_BASE,
+  classifyQueryScope,
 } from '@/lib/specialist-bot-knowledge'
 
 export interface RagResponseResult {
@@ -31,11 +32,22 @@ function getOpenAIClient(): OpenAI | null {
 /**
  * System prompt instructing OpenAI on how to behave as the Amenity Op's Field Assistant
  */
-const SYSTEM_PROMPT = `You are the Amenity Op's Field Assistant, an expert on-site operational supervisor assisting field property inspectors.
+const SYSTEM_PROMPT = `You are the Amenity Op's Field Assistant, an expert on-site operational supervisor assisting field property inspectors and Operations Continuity Specialists.
 
-CORE RESPONSIBILITIES:
-1. Answer the specialist's question clearly, concisely, and professionally using the retrieved Standard Operating Procedures (SOPs) provided in the context below.
-2. Maintain strict adherence to Amenity Op's platform rules:
+STRICT SCOPE BOUNDARIES & OUT-OF-SCOPE ENFORCEMENT:
+1. EXCLUSIVE OPERATIONAL DOMAIN:
+   - You assist ONLY with Amenity Op's property audits, inspections, facility compliance, photo evidence standards, GPS geofencing & dwell time, locked access SOPs, offline autosave recovery, specialist scorecard metrics, and earnings/payout workflows.
+2. STRICT REFUSAL OF UNRELATED QUERIES:
+   - You MUST STRICTLY REFUSE to answer any questions outside property inspections and platform procedures.
+   - Examples of strictly forbidden topics: computer programming tutorials, binary-to-decimal or decimal-to-binary conversions, mathematics problem solving, general history/trivia, creative writing, personal advice, or non-property topics.
+   - When an unrelated query is received (e.g. "How do I convert binary to decimal?"), DO NOT provide any tutorial, steps, or explanation for that topic under any circumstances.
+   - Instead, decline politely and concisely redirect:
+     "I am the Amenity Op's Field Assistant, specialized exclusively in property inspection procedures, photo requirements, and on-site SOPs. I cannot assist with that topic. How can I assist you with your property audit or checklist today?"
+3. MIXED QUERIES (IN-SCOPE + OUT-OF-SCOPE):
+   - If the specialist asks both an inspection question and an out-of-scope question in the same message (e.g. "What are the photo rules and how do I convert binary to decimal?"):
+     a) Answer the property inspection question thoroughly and accurately using the SOP guidelines.
+     b) Explicitly and politely decline the unrelated topic at the end, redirecting to property inspection procedures.
+4. CORE PLATFORM RULES:
    - Photos are MANDATORY on all items marked Pass or Fail (only N/A is exempt).
    - Failed items strictly require BOTH an explanatory defect comment AND photo evidence.
    - N/A is strictly for amenities that do NOT physically exist on the property.
@@ -43,11 +55,10 @@ CORE RESPONSIBILITIES:
    - GPS geofencing logs physical arrival, dwell time, and departure telemetry.
    - Local drafts autosave and recover seamlessly in case of device crash or battery drain.
    - Compensation is calculated based on the 3x3 Property Category x Service Tier matrix.
-3. FORMATTING GUIDELINES:
+5. FORMATTING GUIDELINES:
    - Use clean markdown formatting optimized for mobile reading.
-   - Use bold headers (### ), bullet points (* ), and numbered steps (1. ).
-   - Keep answers direct, actionable, and under 250 words so specialists in the field get fast answers.
-4. If the retrieved context does not directly answer the specific edge case, provide safe general property audit guidance without making up fake contact numbers or unauthorized procedures.`
+   - Use bold headers (### ), bullet points (* ), numbered steps (1. ), and markdown tables/code blocks where appropriate.
+   - Keep answers direct, actionable, and under 250 words so specialists in the field get fast answers.`
 
 export interface ChatHistoryMessage {
   role: 'user' | 'assistant'
@@ -69,6 +80,22 @@ export async function generateSpecialistRagResponse(
         "Hello! I'm your on-site Amenity Op's Field Assistant. How can I assist you with your inspection, photo requirements, or on-site SOPs today?",
       relatedPrompts: SUGGESTED_SPECIALIST_PROMPTS.slice(0, 4),
       source: 'local_engine',
+    }
+  }
+
+  // CHAT-03: Scope boundary guardrail
+  const scope = classifyQueryScope(normalizedQuery)
+  if (scope.isPureOutOfScope) {
+    return {
+      answer: `### ℹ️ Topic Out of Scope
+
+I am the **Amenity Op's Field Assistant**, specialized exclusively in on-site property inspection procedures, photo evidence standards, GPS geofencing, and platform compliance.
+
+I cannot provide tutorials or explanations regarding **${scope.detectedTopic}**. 
+
+How can I assist you with your current property audit or checklist today?`,
+      relatedPrompts: SUGGESTED_SPECIALIST_PROMPTS.slice(0, 3),
+      source: 'supabase_rag',
     }
   }
 

@@ -198,7 +198,7 @@ Add the missing `border border-slate-700` styling to the Completed assignments c
 > Upgrading the AI assistant modal UX, Markdown/table/JSON rendering, conversation persistence, and system prompt boundary enforcement.
 
 ### `CHAT-01`: Chatbot Does Not Close on Outside Interaction and Conversation History Is Lost on Page Refresh
-- **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** [`src/components/SpecialistChatbot.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistChatbot.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** [`src/components/SpecialistChatbot.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistChatbot.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/krI74)
 
 #### Reproduction & QA Observation
@@ -211,7 +211,7 @@ Add an outside-click backdrop listener to dismiss the chatbot when clicking else
 ---
 
 ### `CHAT-02`: Chatbot Fails to Properly Render Tables, HTML, Regex, and JSON Responses
-- **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** [`src/components/SpecialistChatbot.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistChatbot.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** [`src/components/SpecialistChatbot.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistChatbot.tsx)
 - **Evidence Media:** [Visual Evidence](https://take.ms/DwCcU)
 
 #### Reproduction & QA Observation
@@ -224,7 +224,7 @@ Enhance markdown response rendering with `remark-gfm` to format Markdown tables,
 ---
 
 ### `CHAT-03`: Chatbot Violates Defined Scope by Answering Unrelated Questions
-- **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/lib/ai/specialist-assistant.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/ai/specialist-assistant.ts)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/lib/specialist-bot-knowledge.ts & src/lib/rag-assistant.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/rag-assistant.ts)
 - **Evidence Media:** [Visual Evidence](https://take.ms/1dyLg)
 
 #### Reproduction & QA Observation

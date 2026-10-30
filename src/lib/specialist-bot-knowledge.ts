@@ -185,9 +185,65 @@ export const SUGGESTED_SPECIALIST_PROMPTS = [
   'How do audit payouts work?',
 ]
 
+export const OUT_OF_SCOPE_PATTERNS = [
+  /\b(binary(\s+to\s+decimal)?|decimal\s+to\s+binary|hexadecimal|bitwise)\b/i,
+  /\b(write|solve|explain)\s+(python|javascript|typescript|c\+\+|java|rust|sql\s+query|code|program)\b/i,
+  /\b(algebra|calculus|derivative|integral|quadratic|pythagorean|math\s+problem)\b/i,
+  /\b(who\s+won|who\s+is|who\s+was|history\s+of|capital\s+of)\b/i,
+  /\b(recipe|how\s+to\s+cook|how\s+to\s+bake)\b/i,
+  /\b(stock\s+market|cryptocurrency|bitcoin)\b/i,
+  /\b(tell\s+me\s+a\s+joke|write\s+a\s+poem|dating\s+advice)\b/i,
+]
+
+export const IN_SCOPE_KEYWORDS = [
+  'photo', 'photos', 'picture', 'camera', 'fail', 'failure', 'pass', 'n/a', 'na',
+  'gps', 'geofence', 'geofencing', 'perimeter', 'arrival', 'dwell', 'on-site',
+  'inspection', 'audit', 'checklist', 'template', 'property', 'amenity',
+  'gate', 'lock', 'locked', 'access', 'fob', 'key',
+  'payout', 'payouts', 'compensation', 'tier', 'earnings',
+  'draft', 'autosave', 'restore', 'crash',
+  'scorecard', 'metrics', 'velocity', 'punctuality',
+  'driver license', 'license', 'id photo', 'profile', 'specialist',
+  'report', 'submit', 'submission', 'pdf', 'sop'
+]
+
+export interface QueryScopeClassification {
+  isPureOutOfScope: boolean
+  isMixed: boolean
+  isInScope: boolean
+  detectedTopic: string
+}
+
+export function classifyQueryScope(query: string): QueryScopeClassification {
+  const normalized = query.toLowerCase().trim()
+  const hasOutOfScope = OUT_OF_SCOPE_PATTERNS.some((pattern) => pattern.test(normalized))
+
+  const hasInScope = IN_SCOPE_KEYWORDS.some((kw) => {
+    const escaped = kw.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')
+    const regex = new RegExp(`(^|\\b|\\s)${escaped}(\\b|\\s|$)`, 'i')
+    return regex.test(normalized)
+  })
+
+  let detectedTopic = 'general tutorials or unrelated topics'
+  if (/binary|decimal|hex/i.test(normalized)) {
+    detectedTopic = 'binary-to-decimal conversion'
+  } else if (/python|javascript|code|programming/i.test(normalized)) {
+    detectedTopic = 'computer programming'
+  } else if (/math|algebra|calculus/i.test(normalized)) {
+    detectedTopic = 'mathematics problem solving'
+  }
+
+  return {
+    isPureOutOfScope: hasOutOfScope && !hasInScope,
+    isMixed: hasOutOfScope && hasInScope,
+    isInScope: hasInScope && !hasOutOfScope,
+    detectedTopic,
+  }
+}
+
 /**
  * Searches the knowledge base and generates an intelligent, formatted answer
- * for a specialist query.
+ * for a specialist query with strict scope guardrails.
  */
 export function querySpecialistAssistant(query: string): {
   answer: string
@@ -200,6 +256,21 @@ export function querySpecialistAssistant(query: string): {
     return {
       answer:
         "Hello! I'm your on-site Amenity Op's Field Assistant. How can I assist you with your audit or SOPs today?",
+      relatedPrompts: SUGGESTED_SPECIALIST_PROMPTS.slice(0, 3),
+    }
+  }
+
+  // CHAT-03: Scope boundary enforcement
+  const scope = classifyQueryScope(normalized)
+  if (scope.isPureOutOfScope) {
+    return {
+      answer: `### ℹ️ Topic Out of Scope
+
+I am the **Amenity Op's Field Assistant**, specialized exclusively in on-site property inspection procedures, photo evidence standards, GPS geofencing, and platform compliance.
+
+I cannot provide tutorials or explanations regarding **${scope.detectedTopic}**. 
+
+How can I assist you with your current property audit or checklist today?`,
       relatedPrompts: SUGGESTED_SPECIALIST_PROMPTS.slice(0, 3),
     }
   }
@@ -232,22 +303,28 @@ export function querySpecialistAssistant(query: string): {
   }
 
   if (bestTopic && highestScore >= 3) {
-    // Collect 2 other topics as related prompts
+    // Collect other topics as related prompts
     const otherPrompts = SPECIALIST_KNOWLEDGE_BASE
       .filter((t) => t.id !== bestTopic!.id)
       .slice(0, 3)
       .map((t) => t.shortLabel)
 
+    let finalAnswer = bestTopic.response
+
+    // If mixed query: answer in-scope question and explicitly decline out-of-scope part
+    if (scope.isMixed) {
+      finalAnswer += `\n\n---\n\n> ⚠️ **Note on Scope**: I can only provide guidance on property inspection procedures and Amenity Op's operational standards. I cannot provide assistance with ${scope.detectedTopic}. Please let me know if you need more details about your property inspection!`
+    }
+
     return {
-      answer: bestTopic.response,
+      answer: finalAnswer,
       matchedTopic: bestTopic,
       relatedPrompts: otherPrompts,
     }
   }
 
   // Fallback intelligent summary if no exact match
-  return {
-    answer: `### 📋 Field Specialist Operational Help
+  let fallbackAnswer = `### 📋 Field Specialist Operational Help
 
 I couldn't find an exact match for **"${query}"**, but here are the key on-site guidelines:
 
@@ -257,7 +334,14 @@ I couldn't find an exact match for **"${query}"**, but here are the key on-site 
 * **Locked Gates**: Mark as Fail with a comment noting locked access, and call on-site contact.
 * **Drafts**: All items autosave instantly to prevent data loss.
 
-*Select one of the suggested topics below or ask a more specific question:*`,
+*Select one of the suggested topics below or ask a more specific question:*`
+
+  if (scope.isMixed) {
+    fallbackAnswer += `\n\n---\n\n> ⚠️ **Note on Scope**: I cannot assist with ${scope.detectedTopic}. My assistance is focused on on-site inspection procedures.`
+  }
+
+  return {
+    answer: fallbackAnswer,
     relatedPrompts: SUGGESTED_SPECIALIST_PROMPTS.slice(0, 4),
   }
 }

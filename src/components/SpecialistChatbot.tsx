@@ -9,9 +9,9 @@ import {
   RotateCcw,
   Bot,
   User,
-  ChevronDown,
 } from 'lucide-react'
 import { SUGGESTED_SPECIALIST_PROMPTS } from '@/lib/specialist-bot-knowledge'
+import { ChatMarkdownRenderer } from '@/components/ChatMarkdownRenderer'
 
 export type ChatMessage = {
   id: string
@@ -20,6 +20,8 @@ export type ChatMessage = {
   timestamp: string
   relatedPrompts?: string[]
 }
+
+const CHAT_STORAGE_KEY = 'amenityops_specialist_chat_history'
 
 const INITIAL_GREETING: ChatMessage = {
   id: 'init-1',
@@ -43,6 +45,52 @@ export function SpecialistChatbot({
   const [unreadPrompt, setUnreadPrompt] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  // CHAT-01: Load persisted conversation history on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(CHAT_STORAGE_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed)
+        }
+      }
+    } catch (err) {
+      console.warn('[SpecialistChatbot] Failed to load chat history:', err)
+    }
+  }, [])
+
+  // CHAT-01: Persist conversation history to localStorage on change
+  useEffect(() => {
+    try {
+      if (messages.length > 1 || (messages.length === 1 && messages[0].id !== INITIAL_GREETING.id)) {
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages))
+      }
+    } catch (err) {
+      console.warn('[SpecialistChatbot] Failed to save chat history:', err)
+    }
+  }, [messages])
+
+  // CHAT-01: Close on outside click/tap listener across both mobile and desktop
+  useEffect(() => {
+    if (!isOpen) return
+
+    function handlePointerDownOutside(e: MouseEvent | TouchEvent) {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDownOutside)
+    document.addEventListener('touchstart', handlePointerDownOutside)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDownOutside)
+      document.removeEventListener('touchstart', handlePointerDownOutside)
+    }
+  }, [isOpen])
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -128,68 +176,18 @@ export function SpecialistChatbot({
     }
   }
 
+  // CHAT-01: Clear history only upon explicit confirmation
   function handleResetChat() {
+    if (messages.length > 1) {
+      const confirmed = window.confirm('Are you sure you want to clear your conversation history?')
+      if (!confirmed) return
+    }
     setMessages([INITIAL_GREETING])
-  }
-
-  // Format simple markdown into clean HTML elements
-  function renderFormattedMessage(text: string) {
-    const lines = text.split('\n')
-    return (
-      <div className="space-y-1.5 text-xs sm:text-[13px] leading-relaxed">
-        {lines.map((line, idx) => {
-          const trimmed = line.trim()
-          if (!trimmed) return <div key={idx} className="h-1" />
-
-          // Headers
-          if (trimmed.startsWith('### ')) {
-            return (
-              <h4 key={idx} className="font-headline font-bold text-sm text-primary pt-1 pb-0.5">
-                {trimmed.replace('### ', '')}
-              </h4>
-            )
-          }
-
-          // Bullet points
-          if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
-            const content = trimmed.substring(2)
-            return (
-              <div key={idx} className="flex items-start gap-1.5 pl-1 text-on-surface">
-                <span className="text-primary font-bold select-none">•</span>
-                <span>{renderInlineStyles(content)}</span>
-              </div>
-            )
-          }
-
-          // Numbered lists
-          const numberedMatch = trimmed.match(/^(\d+)\.\s+(.*)$/)
-          if (numberedMatch) {
-            return (
-              <div key={idx} className="flex items-start gap-1.5 pl-1 text-on-surface">
-                <span className="font-semibold text-primary select-none">{numberedMatch[1]}.</span>
-                <span>{renderInlineStyles(numberedMatch[2])}</span>
-              </div>
-            )
-          }
-
-          return <p key={idx} className="text-on-surface">{renderInlineStyles(trimmed)}</p>
-        })}
-      </div>
-    )
-  }
-
-  // Helper for bold and inline code formatting
-  function renderInlineStyles(text: string) {
-    const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g)
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-semibold text-on-surface">{part.slice(2, -2)}</strong>
-      }
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return <code key={i} className="rounded bg-surface-container-highest px-1 py-0.5 font-mono text-[11px] text-primary">{part.slice(1, -1)}</code>
-      }
-      return part
-    })
+    try {
+      localStorage.removeItem(CHAT_STORAGE_KEY)
+    } catch (err) {
+      console.warn('[SpecialistChatbot] Failed to clear chat history:', err)
+    }
   }
 
   return (
@@ -224,15 +222,17 @@ export function SpecialistChatbot({
       {/* Slide-over / Modal Chat Drawer */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end pointer-events-none lg:justify-end lg:items-end lg:p-6">
-          {/* Mobile backdrop for tap-out-to-dismiss */}
+          {/* Subtle mobile backdrop */}
           <div
             onClick={() => setIsOpen(false)}
             className="fixed inset-0 bg-black/40 backdrop-blur-xs pointer-events-auto lg:hidden"
           />
 
           {/* Chat Container Card */}
-          <div className="relative flex flex-col w-full h-[85vh] max-h-[620px] bg-surface rounded-t-2xl lg:rounded-2xl border border-outline-variant shadow-2xl overflow-hidden pointer-events-auto lg:w-[420px] lg:h-[580px] animate-in slide-in-from-bottom-6 duration-200">
-            
+          <div
+            ref={cardRef}
+            className="relative flex flex-col w-full h-[85vh] max-h-[620px] bg-surface rounded-t-2xl lg:rounded-2xl border border-outline-variant shadow-2xl overflow-hidden pointer-events-auto lg:w-[440px] lg:h-[580px] animate-in slide-in-from-bottom-6 duration-200"
+          >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant bg-surface-container-low">
               <div className="flex items-center gap-2.5">
@@ -259,6 +259,7 @@ export function SpecialistChatbot({
                   type="button"
                   onClick={handleResetChat}
                   title="Reset conversation"
+                  aria-label="Reset conversation"
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition"
                 >
                   <RotateCcw size={15} />
@@ -267,6 +268,7 @@ export function SpecialistChatbot({
                   type="button"
                   onClick={() => setIsOpen(false)}
                   title="Close Assistant"
+                  aria-label="Close Assistant"
                   className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition"
                 >
                   <X size={18} />
@@ -281,7 +283,7 @@ export function SpecialistChatbot({
                   key={msg.id}
                   className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                 >
-                  <div className="flex items-start gap-2 max-w-[88%]">
+                  <div className="flex items-start gap-2 max-w-[92%] sm:max-w-[88%]">
                     {msg.sender === 'assistant' && (
                       <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-container/60 text-primary mt-0.5">
                         <Sparkles size={12} />
@@ -289,7 +291,7 @@ export function SpecialistChatbot({
                     )}
 
                     <div
-                      className={`rounded-2xl px-3.5 py-2.5 shadow-xs ${
+                      className={`rounded-2xl px-3.5 py-2.5 shadow-xs overflow-hidden ${
                         msg.sender === 'user'
                           ? 'bg-primary text-on-primary rounded-br-xs'
                           : 'bg-surface-container-low border border-outline-variant/60 text-on-surface rounded-bl-xs'
@@ -298,7 +300,7 @@ export function SpecialistChatbot({
                       {msg.sender === 'user' ? (
                         <p className="text-xs sm:text-[13px] leading-relaxed font-medium">{msg.text}</p>
                       ) : (
-                        renderFormattedMessage(msg.text)
+                        <ChatMarkdownRenderer content={msg.text} />
                       )}
                     </div>
 

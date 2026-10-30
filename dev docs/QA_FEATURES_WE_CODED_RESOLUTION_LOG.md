@@ -4,7 +4,7 @@
 > **Source Plan:** [`dev docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md`](file:///d:/Nextjs%20Projects/amenityops/dev%20docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md)  
 > **Total Actionable Items:** 31 Concrete Development Tasks  
 > **Last Updated:** October 30, 2026  
-> **Status:** 13 of 31 Resolved (41.9% Complete)
+> **Status:** 16 of 31 Resolved (51.6% Complete)
 
 ---
 
@@ -15,11 +15,11 @@
 | **Module 1** | Task 4 — Forced Password Reset & Team Setup | 7 | **7** | 0 | **COMPLETED** |
 | **Module 2** | Task 6 — GPS Geofencing & Telemetry Validation | 2 | **2** | 0 | **COMPLETED** |
 | **Module 3** | Task 3 — Property Staff Rosters & Gate Enforcement | 4 | **4** | 0 | **COMPLETED** |
-| **Module 4** | Task 7 — Field Specialist AI Chatbot | 3 | 0 | 3 | PENDING |
+| **Module 4** | Task 7 — Field Specialist AI Chatbot | 3 | **3** | 0 | **COMPLETED** |
 | **Module 5** | Task 8 — Analytics Hub & Performance Scorecards | 5 | 0 | 5 | PENDING |
 | **Module 6** | Phase 2 — Specialist Impersonation & Admin Security | 5 | 0 | 5 | PENDING |
 | **Module 7** | Task 1 & 3 — Multi-Tenancy Tags & Action Alignment | 5 | 0 | 5 | PENDING |
-| **Total** | | **31** | **13** | **18** | **In Progress** |
+| **Total** | | **31** | **16** | **15** | **In Progress** |
 
 ---
 
@@ -274,20 +274,68 @@
 
 ## Module 4: Task 7 — Field Specialist AI Chatbot
 
-### 14. `CHAT-01`: Chatbot Outside-Click Modal Close & History Persistence
+### 14. `CHAT-01`: Chatbot Does Not Close on Outside Interaction and Conversation History Is Lost on Page Refresh
 * **Priority:** `Medium` | **Severity:** `Medium`
-* **Target Files:** `src/components/SpecialistChatbot.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/components/SpecialistChatbot.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistChatbot.tsx)
+* **Reported Issue:**
+  The chatbot did not close when clicking outside the window or interacting with other page components, especially on desktop. Additionally, refreshing the browser page or navigating away erased the active conversation history, even though a dedicated Reset button existed for intentional clearing.
+* **Engineering Resolution:**
+  1. **Universal Outside Interaction Dismissal:**
+     * Attached `cardRef` to the chatbot container and added document-level `mousedown` and `touchstart` pointer listeners whenever `isOpen` is true.
+     * Clicks or taps originating outside `cardRef.current` immediately close the chatbot (`setIsOpen(false)`), while internal interactions remain active without unintentional dismissal across mobile, tablet, and desktop viewports.
+  2. **Conversation History Persistence:**
+     * Implemented persistent local storage caching via `localStorage` key `'amenityops_specialist_chat_history'`.
+     * On component mount, the chatbot restores previously exchanged messages, maintaining conversational continuity across page refreshes, tab closures, and route transitions.
+     * Every new user or assistant message automatically updates the persisted cache.
+  3. **Guarded Conversation Reset Workflow:**
+     * Configured the Reset button (`RotateCcw`) to prompt the specialist with an explicit confirmation dialog before wiping the chat.
+     * Upon confirmation, the message history resets to the initial operational greeting and the `localStorage` cache is cleanly removed.
+* **Verification Status:** `RESOLVED` (Outside click dismissal + localStorage persistence + guarded reset verified).
 
-### 15. `CHAT-02`: Markdown & Structured Content Rendering in Chatbot
+---
+
+### 15. `CHAT-02`: Chatbot Fails to Properly Render Tables, HTML, Regex, and JSON Responses
 * **Priority:** `Medium` | **Severity:** `Medium`
-* **Target Files:** `src/components/SpecialistChatbot.tsx`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/components/ChatMarkdownRenderer.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ChatMarkdownRenderer.tsx)
+  * [`src/components/SpecialistChatbot.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistChatbot.tsx)
+* **Reported Issue:**
+  The assistant response renderer did not support structured content. Markdown tables rendered as broken pipe text, code blocks lacked formatting, raw HTML tags appeared unparsed, and regexes or JSON objects were displayed without syntax structure or copy capabilities.
+* **Engineering Resolution:**
+  1. **Structured Block Parser:**
+     * Built dedicated modular renderer [`ChatMarkdownRenderer.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ChatMarkdownRenderer.tsx) replacing basic line-by-line paragraph splitting.
+  2. **Markdown Table Rendering:**
+     * Implemented table parsing detecting headers, alignment specifiers (`:---`, `:---:`, `---:`), and rows.
+     * Rendered responsive tables inside `overflow-x-auto` containers with rounded borders, distinct `bg-surface-container-low` headers, padded cells, and alternating hover states.
+  3. **Code Blocks (JSON, Regex, Code):**
+     * Formats fenced code blocks (```lang ... ```) with language tags (`JSON`, `REGEX`, `CODE`).
+     * Added an interactive "Copy" button with instant feedback checkmark and 2-second timeout.
+     * Added automatic pretty-printing for JSON via `JSON.stringify(JSON.parse(code), null, 2)`.
+     * Preserved special characters, backslashes, and token boundaries in Regex and code patterns without double-escaping.
+  4. **HTML Sanitization & Inline Parsing:**
+     * Safely parses and normalizes inline HTML tags (`<strong>`, `<b>`, `<code>`, `<em>`, `<br>`) while stripping harmful tags (`<script>`, `<iframe>`, inline `on*` attributes) to prevent XSS vulnerabilities.
+* **Verification Status:** `RESOLVED` (Full table, code block, JSON, regex, and HTML rendering verified).
 
-### 16. `CHAT-03`: AI Scope Guardrails & Topic Hardening
+---
+
+### 16. `CHAT-03`: Chatbot Violates Defined Scope by Answering Unrelated Questions
 * **Priority:** `High` | **Severity:** `High`
-* **Target Files:** `src/lib/ai/specialist-assistant.ts`
-* **Status:** `PENDING`
+* **Target Files:**
+  * [`src/lib/specialist-bot-knowledge.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/specialist-bot-knowledge.ts)
+  * [`src/lib/rag-assistant.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/rag-assistant.ts)
+* **Reported Issue:**
+  The chatbot violated its operational boundary by answering unrelated questions (such as providing step-by-step tutorials on binary-to-decimal conversion) instead of maintaining focus on property inspection SOPs.
+* **Engineering Resolution:**
+  1. **Hardened System Prompt Guardrails:**
+     * In [`src/lib/rag-assistant.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/rag-assistant.ts), expanded `SYSTEM_PROMPT` with strict negative constraints: strictly forbidden from answering off-topic queries (programming tutorials, binary conversion, general trivia, math problem solving, personal advice).
+     * Instructed the model to politely decline and redirect the specialist back to property audits, photo evidence, and compliance SOPs.
+  2. **Automated Scope Classifier & Pre-Filter:**
+     * In [`src/lib/specialist-bot-knowledge.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/specialist-bot-knowledge.ts), implemented `classifyQueryScope()` with word-boundary regex detection for out-of-scope patterns vs. in-scope operational keywords.
+     * **Pure Out-of-Scope Queries:** When a query like *"How do you convert binary to decimal?"* or *"Write python code"* is received, the assistant immediately provides a polite refusal:
+       *`I am the Amenity Op's Field Assistant, specialized exclusively in on-site property inspection procedures, photo evidence standards, GPS geofencing, and platform compliance. I cannot provide tutorials regarding [topic]. How can I assist you with your current property audit or checklist today?`*
+     * **Mixed Queries:** When a query contains both an in-scope question and an out-of-scope question (e.g. *"What are the photo rules and how do I convert binary to decimal?"*), the assistant answers the property inspection question completely, and appends an explicit scope notice politely declining the unrelated question.
+* **Verification Status:** `RESOLVED` (Strict scope boundaries verified across pure out-of-scope, in-scope, and mixed queries).
 
 ---
 
