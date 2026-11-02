@@ -1,7 +1,7 @@
 # Amenity Op's — QA Bug Resolution Record & Engineering Audit Log
 
 > **Document Type:** Live Resolution Record & Engineering Audit Log (Features We Built & Coded)  
-> **Source Plan:** [`dev docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md`](file:///d:/Nextjs%20Projects/amenityops/dev%20docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md)  
+> **Source Plan:** `dev docs/QA_FEATURES_WE_CODED_ACTION_PLAN.md`  
 > **Total Actionable Items:** 31 Concrete Development Tasks  
 > **Last Updated:** October 30, 2026  
 > **Status:** 26 of 31 Resolved (83.9% Complete)
@@ -28,13 +28,13 @@
 ### 1. `ONB-04`: Missing Standard Password Validation in the Temporary Password Field When Adding a New Team Member
 * **Priority:** `High` | **Severity:** `Medium`
 * **Target Files:**
-  * [`src/components/InspectorForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/InspectorForm.tsx)
-  * [`src/lib/actions/team.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/team.ts)
-  * [`src/lib/password.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/password.ts)
+  * `src/components/InspectorForm.tsx`
+  * `src/lib/actions/team.ts`
+  * `src/lib/password.ts`
 * **Reported Issue:**
   The Temporary Password input in the Add Team Member modal did not enforce or display standard enterprise password validation when a custom temporary password was entered.
 * **Engineering Resolution:**
-  1. Integrated real-time complexity validation via `checkPasswordRequirements()` in [`src/components/InspectorForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/InspectorForm.tsx).
+  1. Integrated real-time complexity validation via `checkPasswordRequirements()` in `src/components/InspectorForm.tsx`.
   2. If the admin leaves the field blank, the system maintains the secure auto-generation of a 14-character cryptographically random password (`generateSecureTemporaryPassword()`).
   3. If the admin enters a custom password, a 5-point requirements grid displays live green checkmarks for:
      * Minimum 8 characters
@@ -43,7 +43,7 @@
      * At least 1 number (0-9)
      * At least 1 special character (!@#$%)
   4. Form submission is disabled until all 5 criteria are satisfied.
-  5. In [`src/lib/actions/team.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/team.ts), server-side validation (`getPasswordValidationError`) blocks invalid submissions before calling Supabase Auth admin API.
+  5. In `src/lib/actions/team.ts`, server-side validation (`getPasswordValidationError`) blocks invalid submissions before calling Supabase Auth admin API.
 * **Verification Status:** `RESOLVED` (Verified via `npx tsc --noEmit` and production build).
 
 ---
@@ -51,7 +51,7 @@
 ### 2. `RESP-12`: Misaligned Auto-Generate Option and Oversized Placeholder in Add Team Member Form
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/components/InspectorForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/InspectorForm.tsx)
+  * `src/components/InspectorForm.tsx`
 * **Reported Issue:**
   "Auto Generate If Blank" was rendered inline with the Temporary Password heading, creating an unbalanced layout, and the placeholder text was oversized and clipped on narrower viewports.
 * **Engineering Resolution:**
@@ -64,9 +64,9 @@
 ### 3. `ONB-06`: Missing Password Visibility Toggle Icon on the First-Time Password Setup Page
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/components/ForcePasswordChangeForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ForcePasswordChangeForm.tsx)
-  * [`src/components/ResetPasswordForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ResetPasswordForm.tsx)
-  * [`src/app/login/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/login/page.tsx)
+  * `src/components/ForcePasswordChangeForm.tsx`
+  * `src/components/ResetPasswordForm.tsx`
+  * `src/app/login/page.tsx`
 * **Reported Issue:**
   Users setting their permanent password on `/force-password-change` or resetting password on `/reset-password` had no show/hide toggle, increasing input error rates.
 * **Engineering Resolution:**
@@ -82,7 +82,7 @@
 ### 4. `ONB-07`: Password Fields Reset After Invalid Input on the First-Time Password Setup Page
 * **Priority:** `High` | **Severity:** `Medium`
 * **Target Files:**
-  * [`src/components/ForcePasswordChangeForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ForcePasswordChangeForm.tsx)
+  * `src/components/ForcePasswordChangeForm.tsx`
 * **Reported Issue:**
   When validation failed, all password input fields were cleared, forcing users to repeatedly type long passwords from scratch.
 * **Engineering Resolution:**
@@ -96,9 +96,9 @@
 ### 5. `ONB-08`: Missing Standard Password Complexity Validation on First-Time Password Setup
 * **Priority:** `High` | **Severity:** `Medium`
 * **Target Files:**
-  * [`src/components/ForcePasswordChangeForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ForcePasswordChangeForm.tsx)
-  * [`src/lib/actions/auth.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/auth.ts)
-  * [`src/lib/password.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/password.ts)
+  * `src/components/ForcePasswordChangeForm.tsx`
+  * `src/lib/actions/auth.ts`
+  * `src/lib/password.ts`
 * **Reported Issue:**
   The new password input previously only checked `length >= 8`, omitting uppercase, lowercase, numbers, and symbols.
 * **Engineering Resolution:**
@@ -110,7 +110,7 @@
      * 1 special character (!@#$%&*+)
   2. Renders dynamic green checks when satisfied and subtle gray indicators when incomplete.
   3. Action button is disabled until all 5 complexity rules are met.
-  4. Server action `completeForcedPasswordChange` in [`src/lib/actions/auth.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/auth.ts) enforces server-side compliance with exact error messages.
+  4. Server action `completeForcedPasswordChange` in `src/lib/actions/auth.ts` enforces server-side compliance with exact error messages.
 * **Verification Status:** `RESOLVED` (Dynamic UI checklist + server-side enforcement).
 
 ---
@@ -118,8 +118,8 @@
 ### 6. `ONB-09`: Unclear Password Mismatch Validation Message on First-Time Password Setup
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/components/ForcePasswordChangeForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ForcePasswordChangeForm.tsx)
-  * [`src/lib/actions/auth.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/auth.ts)
+  * `src/components/ForcePasswordChangeForm.tsx`
+  * `src/lib/actions/auth.ts`
 * **Reported Issue:**
   Displaying a generic "Passwords do not match" banner didn't indicate which field needed correction.
 * **Engineering Resolution:**
@@ -127,7 +127,7 @@
   2. If the fields mismatch, the confirm input border turns red (`border-error ring-1 ring-error/40`) with an inline warning:
      > ⚠️ *"Confirm Password must match the New Password."*
   3. Once matched, the error clears and the border turns green (`border-emerald-500/60`).
-  4. Updated server error in [`src/lib/actions/auth.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/auth.ts) to match the explicit wording.
+  4. Updated server error in `src/lib/actions/auth.ts` to match the explicit wording.
 * **Verification Status:** `RESOLVED` (Clear visual feedback and targeted inline error).
 
 ---
@@ -135,14 +135,14 @@
 ### 7. `ONB-10`: Missing Success Notification After Password Setup & Password Reset Flow
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/lib/actions/auth.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/auth.ts)
-  * [`src/app/login/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/login/page.tsx)
-  * [`src/components/ResetPasswordForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ResetPasswordForm.tsx)
+  * `src/lib/actions/auth.ts`
+  * `src/app/login/page.tsx`
+  * `src/components/ResetPasswordForm.tsx`
 * **Reported Issue:**
   After completing first-time password setup or password recovery, the user was silently redirected to `/login` without confirmation that the change succeeded.
 * **Engineering Resolution:**
-  1. Updated both `completeForcedPasswordChange` and `updatePassword` in [`src/lib/actions/auth.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/auth.ts) to redirect to `/login?notice=password_updated`.
-  2. In [`src/app/login/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/login/page.tsx), created a `<LoginNotice />` component wrapped in `<Suspense>` reading the query parameter.
+  1. Updated both `completeForcedPasswordChange` and `updatePassword` in `src/lib/actions/auth.ts` to redirect to `/login?notice=password_updated`.
+  2. In `src/app/login/page.tsx`, created a `<LoginNotice />` component wrapped in `<Suspense>` reading the query parameter.
   3. Renders a prominent green confirmation toast:
      > ✅ **Password Updated Successfully**  
      > *Please log in with your new password.*
@@ -155,17 +155,17 @@
 ### 8. `PROP-04`: Missing Conditional Validation for GPS Coordinates and Required Inspection Days in the New and Edit Property Flows
 * **Priority:** `High` | **Severity:** `High`
 * **Target Files:**
-  * [`src/components/PropertyForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/PropertyForm.tsx)
-  * [`src/lib/actions/properties.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/properties.ts)
+  * `src/components/PropertyForm.tsx`
+  * `src/lib/actions/properties.ts`
 * **Reported Issue:**
   The system allowed saving or creating a property with missing or invalid GPS coordinates even when "Enable On-Site GPS Geofence Verification" was enabled, and allowed saving with zero days selected when "Enable Required Inspection Days" was enabled.
 * **Engineering Resolution:**
   1. **Conditional GPS Geofence Validation:**
-     * In [`src/lib/actions/properties.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/properties.ts), added a strict Zod `.superRefine()` rule: when `enable_gps_geofencing` is true, validates that Latitude is a valid number between -90 and 90, and Longitude is a valid number between -180 and 180.
-     * In [`src/components/PropertyForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/PropertyForm.tsx), added real-time client validation for both Latitude and Longitude with red asterisk indicators and dynamic inline error feedback.
+     * In `src/lib/actions/properties.ts`, added a strict Zod `.superRefine()` rule: when `enable_gps_geofencing` is true, validates that Latitude is a valid number between -90 and 90, and Longitude is a valid number between -180 and 180.
+     * In `src/components/PropertyForm.tsx`, added real-time client validation for both Latitude and Longitude with red asterisk indicators and dynamic inline error feedback.
   2. **Conditional Required Inspection Days Validation:**
-     * In [`src/components/PropertyForm.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/PropertyForm.tsx), bound `name="enable_schedule"` to the toggle and tracked `selectedDays`. If the schedule is enabled and zero days are picked, an inline warning (`Please select at least one day of the week when Required Inspection Days is enabled.`) renders and blocks submission.
-     * In [`src/lib/actions/properties.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/properties.ts), enforced server-side validation in both `createProperty` and `updateProperty`. When `enable_schedule` is turned off, `required_schedule` is cleanly reset to `[]` so stale days are never stored.
+     * In `src/components/PropertyForm.tsx`, bound `name="enable_schedule"` to the toggle and tracked `selectedDays`. If the schedule is enabled and zero days are picked, an inline warning (`Please select at least one day of the week when Required Inspection Days is enabled.`) renders and blocks submission.
+     * In `src/lib/actions/properties.ts`, enforced server-side validation in both `createProperty` and `updateProperty`. When `enable_schedule` is turned off, `required_schedule` is cleanly reset to `[]` so stale days are never stored.
   3. Form submission button is conditionally locked and displays helper text until all conditional requirements are valid across both New and Edit property flows.
 * **Verification Status:** `RESOLVED` (Full frontend & backend validation verified).
 
@@ -174,21 +174,21 @@
 ### 9. `INSP-10`: GPS Geofence Verification Is Not Working Correctly and Does Not Block Inspection Checklist Access
 * **Priority:** `High` | **Severity:** `Critical`
 * **Target Files:**
-  * [`src/components/GpsTelemetryTracker.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/GpsTelemetryTracker.tsx)
-  * [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx)
-  * [`src/app/api/inspections/[id]/complete/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/api/inspections/[id]/complete/route.ts)
+  * `src/components/GpsTelemetryTracker.tsx`
+  * `src/components/ActiveInspectionChecklist.tsx`
+  * `src/app/api/inspections/[id]/complete/route.ts`
 * **Reported Issue:**
   GPS Geofence was purely advisory — specialists could access the checklist, fill answers, and submit audits even when location permissions were denied or when physically outside the property perimeter.
 * **Engineering Resolution:**
   1. **Telemetry Tracker Communication & Retry Mechanism:**
-     * In [`src/components/GpsTelemetryTracker.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/GpsTelemetryTracker.tsx), added `onStatusChange` prop reporting live status (`'verified'`, `'outside'`, `'denied'`, `'exempt'`) and proximity distance.
+     * In `src/components/GpsTelemetryTracker.tsx`, added `onStatusChange` prop reporting live status (`'verified'`, `'outside'`, `'denied'`, `'exempt'`) and proximity distance.
      * Added manual retry buttons ("Retry Permission Check" and "Refresh GPS Location") allowing specialists to re-trigger browser location checks without refreshing the page.
   2. **Hard Blocking Gate UI:**
-     * In [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx), when geofencing is configured and status is `'denied'` or `'outside'`, rendered a prominent red blocking gate card with explicit instructions.
+     * In `src/components/ActiveInspectionChecklist.tsx`, when geofencing is configured and status is `'denied'` or `'outside'`, rendered a prominent red blocking gate card with explicit instructions.
      * The entire checklist items container is blurred, grayed out, and input-locked (`opacity-40 pointer-events-none select-none filter blur-[0.5px]`), preventing question answering or photo capture while outside.
      * Submit button is hard-disabled with the message: *"Checklist is locked until your physical presence inside the property perimeter is verified."*
   3. **Backend Hard Gate Enforcement:**
-     * In [`src/app/api/inspections/[id]/complete/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/api/inspections/[id]/complete/route.ts), added a backend security gate before completing any inspection. If `enable_gps_geofencing` is true and the property has coordinates, the API returns a `403 Forbidden` error if the specialist was not verified on-site (`arrived_at` null and `geofence_status !== 'verified'`), eliminating any route or API bypass.
+     * In `src/app/api/inspections/[id]/complete/route.ts`, added a backend security gate before completing any inspection. If `enable_gps_geofencing` is true and the property has coordinates, the API returns a `403 Forbidden` error if the specialist was not verified on-site (`arrived_at` null and `geofence_status !== 'verified'`), eliminating any route or API bypass.
 * **Verification Status:** `RESOLVED` (Hard blocking screen gate + backend 403 enforcement verified).
 
 ---
@@ -198,22 +198,22 @@
 ### 10. `INSP-07`: Incorrect Specialist Assignment Flow and Property Staff Roster Synchronization
 * **Priority:** `High` | **Severity:** `High`
 * **Target Files:**
-  * [`src/components/SpecialistSelect.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistSelect.tsx)
-  * [`src/app/admin/inspections/new/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/inspections/new/page.tsx)
-  * [`src/app/admin/inspections/[id]/edit/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/inspections/[id]/edit/page.tsx)
-  * [`src/app/admin/properties/[id]/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/[id]/page.tsx)
-  * [`src/lib/actions/inspections.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/inspections.ts)
+  * `src/components/SpecialistSelect.tsx`
+  * `src/app/admin/inspections/new/page.tsx`
+  * `src/app/admin/inspections/[id]/edit/page.tsx`
+  * `src/app/admin/properties/[id]/page.tsx`
+  * `src/lib/actions/inspections.ts`
 * **Reported Issue:**
   The specialist assignment dropdown displayed admins, team members, and all specialists across the tenant regardless of property roster assignment. Assigning an unlisted specialist to an inspection did not enroll them on the property roster, resulting in desynchronized data between property rosters and inspection records.
 * **Engineering Resolution:**
-  1. **Strict Specialist Filtering:** Excluded accounts with `role: 'admin'` from specialist selection in [`src/components/SpecialistSelect.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistSelect.tsx), [`src/app/admin/inspections/new/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/inspections/new/page.tsx), and [`src/app/admin/inspections/[id]/edit/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/inspections/[id]/edit/page.tsx). Also filtered candidate specialists in [`src/app/admin/properties/[id]/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/[id]/page.tsx) to only eligible inspectors.
+  1. **Strict Specialist Filtering:** Excluded accounts with `role: 'admin'` from specialist selection in `src/components/SpecialistSelect.tsx`, `src/app/admin/inspections/new/page.tsx`, and `src/app/admin/inspections/[id]/edit/page.tsx`. Also filtered candidate specialists in `src/app/admin/properties/[id]/page.tsx` to only eligible inspectors.
   2. **Roster Prioritization & Unlisted Assignment Workflow:**
-     * In [`src/components/SpecialistSelect.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistSelect.tsx), by default, the dropdown displays *only* specialists assigned to the selected property's staff roster.
+     * In `src/components/SpecialistSelect.tsx`, by default, the dropdown displays *only* specialists assigned to the selected property's staff roster.
      * If specialists are assigned, a badge displays the count on the roster (e.g., `[PRIMARY]`, `[BACKUP]`, `[STAFF]`).
      * Added an explicit toggle checkbox: *"Allow assigning unlisted specialist (automatically adds to property staff roster)"*. When checked, other active specialists are listed in an optgroup with an auto-enrollment notice.
      * If a property has no assigned roster members, an informative amber warning banner informs the admin, and available organization specialists are presented with automatic roster enrollment.
   3. **Automatic Roster Synchronization:**
-     * In [`src/lib/actions/inspections.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/inspections.ts), both `createInspection` and `updateInspection` verify whether the assigned specialist exists in `property_specialist_assignments` for that property.
+     * In `src/lib/actions/inspections.ts`, both `createInspection` and `updateInspection` verify whether the assigned specialist exists in `property_specialist_assignments` for that property.
      * If not already enrolled, the server automatically inserts them into `property_specialist_assignments` with role `'staff'` and triggers immediate revalidation of `/admin/properties/${propertyId}`, keeping property rosters and inspections completely synchronized.
 * **Verification Status:** `RESOLVED` (Full dropdown gating and bi-directional roster sync verified).
 
@@ -222,24 +222,24 @@
 ### 11. `INSP-08`: Photo ID Document Verification Is Not Enforced Before Inspection Checklist Access
 * **Priority:** `High` | **Severity:** `High`
 * **Target Files:**
-  * [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx)
-  * [`src/app/inspector/inspections/[id]/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/inspections/[id]/page.tsx)
-  * [`src/app/api/inspections/[id]/complete/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/api/inspections/[id]/complete/route.ts)
-  * [`src/lib/actions/inspections.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/inspections.ts)
+  * `src/components/ActiveInspectionChecklist.tsx`
+  * `src/app/inspector/inspections/[id]/page.tsx`
+  * `src/app/api/inspections/[id]/complete/route.ts`
+  * `src/lib/actions/inspections.ts`
 * **Reported Issue:**
   Even when "Require Photo ID Document Verification" was enabled in property settings, the assigned specialist could access the inspection checklist, enter data, and complete inspections without having submitted their Driver's License photo ID documents.
 * **Engineering Resolution:**
   1. **Data Pipeline Integration:**
-     * In [`src/app/inspector/inspections/[id]/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/inspections/[id]/page.tsx), queried `require_id_photo` on `properties` and `id_front_path` / `id_back_path` on `profiles`.
+     * In `src/app/inspector/inspections/[id]/page.tsx`, queried `require_id_photo` on `properties` and `id_front_path` / `id_back_path` on `profiles`.
      * Passed `requireIdPhoto` and `isIdVerified` flags to `ActiveInspectionChecklist`.
   2. **Hard Blocking Photo ID Gate UI:**
-     * In [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx), when `requireIdPhoto` is true and the non-admin specialist lacks an ID front document, a prominent gate card is rendered with an immediate deep link to `/inspector/profile` (*"Upload Photo ID Document"*).
+     * In `src/components/ActiveInspectionChecklist.tsx`, when `requireIdPhoto` is true and the non-admin specialist lacks an ID front document, a prominent gate card is rendered with an immediate deep link to `/inspector/profile` (*"Upload Photo ID Document"*).
      * The entire checklist item stream is blurred, dimmed, and input-locked (`opacity-40 pointer-events-none select-none filter blur-[0.5px]`).
      * The inspection submission button is locked with the label *"Locked (Photo ID Required)"* and an explanatory warning.
      * When `requireIdPhoto` is false, specialists have seamless, unhindered access.
   3. **Backend API & Action Enforcement:**
-     * In [`src/lib/actions/inspections.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/inspections.ts) (`saveInspectionItem`), added verification rejecting item updates with an error if the property mandates photo ID verification and the user profile has not uploaded an ID document.
-     * In [`src/app/api/inspections/[id]/complete/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/api/inspections/[id]/complete/route.ts), added a backend security check returning `403 Forbidden` if `require_id_photo` is enabled and the specialist has not uploaded an approved ID on file.
+     * In `src/lib/actions/inspections.ts` (`saveInspectionItem`), added verification rejecting item updates with an error if the property mandates photo ID verification and the user profile has not uploaded an ID document.
+     * In `src/app/api/inspections/[id]/complete/route.ts`, added a backend security check returning `403 Forbidden` if `require_id_photo` is enabled and the specialist has not uploaded an approved ID on file.
 * **Verification Status:** `RESOLVED` (End-to-end frontend blocking gate + backend API enforcement verified).
 
 ---
@@ -247,7 +247,7 @@
 ### 12. `INSP-11`: Misaligned Borders and Excessive Empty Space in My Assignments Summary Cards on Mobile and Tablet Viewports
 * **Priority:** `Medium` | **Severity:** `Medium`
 * **Target Files:**
-  * [`src/components/AssignmentsBoard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AssignmentsBoard.tsx)
+  * `src/components/AssignmentsBoard.tsx`
 * **Reported Issue:**
   The summary cards on the My Assignments page displayed misaligned borders, uneven dimensions, and excessive empty space on tablet and mobile viewports due to abrupt breakpoint transitions.
 * **Engineering Resolution:**
@@ -261,13 +261,13 @@
 ### 13. `INSP-12`: Missing Border Styling in the Completed Section on the My Assignments Page
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/components/AssignmentsBoard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AssignmentsBoard.tsx)
+  * `src/components/AssignmentsBoard.tsx`
 * **Reported Issue:**
   The Completed section on the My Assignments page lacked uniform border styling and rendered an unstyled plain text element when no completed inspections existed, resulting in visual inconsistency compared to the Open section.
 * **Engineering Resolution:**
   1. Added explicit `border border-outline-variant overflow-hidden rounded-xl` to the Completed assignments card container on both desktop and mobile viewports.
   2. Applied consistent header background (`bg-surface-container-low`) and border separators to table and mobile list items.
-  3. Replaced the unstyled empty state paragraph with the standard [`EmptyState`](file:///d:/Nextjs%20Projects/amenityops/src/components/ui/EmptyState.tsx) component with `CheckCircle2` icon, uniform dashed border, and structured description.
+  3. Replaced the unstyled empty state paragraph with the standard `EmptyState` component with `CheckCircle2` icon, uniform dashed border, and structured description.
 * **Verification Status:** `RESOLVED` (Uniform card border and styled EmptyState container verified).
 
 ---
@@ -277,7 +277,7 @@
 ### 14. `CHAT-01`: Chatbot Does Not Close on Outside Interaction and Conversation History Is Lost on Page Refresh
 * **Priority:** `Medium` | **Severity:** `Medium`
 * **Target Files:**
-  * [`src/components/SpecialistChatbot.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistChatbot.tsx)
+  * `src/components/SpecialistChatbot.tsx`
 * **Reported Issue:**
   The chatbot did not close when clicking outside the window or interacting with other page components, especially on desktop. Additionally, refreshing the browser page or navigating away erased the active conversation history, even though a dedicated Reset button existed for intentional clearing.
 * **Engineering Resolution:**
@@ -298,13 +298,13 @@
 ### 15. `CHAT-02`: Chatbot Fails to Properly Render Tables, HTML, Regex, and JSON Responses
 * **Priority:** `Medium` | **Severity:** `Medium`
 * **Target Files:**
-  * [`src/components/ChatMarkdownRenderer.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ChatMarkdownRenderer.tsx)
-  * [`src/components/SpecialistChatbot.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistChatbot.tsx)
+  * `src/components/ChatMarkdownRenderer.tsx`
+  * `src/components/SpecialistChatbot.tsx`
 * **Reported Issue:**
   The assistant response renderer did not support structured content. Markdown tables rendered as broken pipe text, code blocks lacked formatting, raw HTML tags appeared unparsed, and regexes or JSON objects were displayed without syntax structure or copy capabilities.
 * **Engineering Resolution:**
   1. **Structured Block Parser:**
-     * Built dedicated modular renderer [`ChatMarkdownRenderer.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ChatMarkdownRenderer.tsx) replacing basic line-by-line paragraph splitting.
+     * Built dedicated modular renderer `ChatMarkdownRenderer.tsx` replacing basic line-by-line paragraph splitting.
   2. **Markdown Table Rendering:**
      * Implemented table parsing detecting headers, alignment specifiers (`:---`, `:---:`, `---:`), and rows.
      * Rendered responsive tables inside `overflow-x-auto` containers with rounded borders, distinct `bg-surface-container-low` headers, padded cells, and alternating hover states.
@@ -322,16 +322,16 @@
 ### 16. `CHAT-03`: Chatbot Violates Defined Scope by Answering Unrelated Questions
 * **Priority:** `High` | **Severity:** `High`
 * **Target Files:**
-  * [`src/lib/specialist-bot-knowledge.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/specialist-bot-knowledge.ts)
-  * [`src/lib/rag-assistant.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/rag-assistant.ts)
+  * `src/lib/specialist-bot-knowledge.ts`
+  * `src/lib/rag-assistant.ts`
 * **Reported Issue:**
   The chatbot violated its operational boundary by answering unrelated questions (such as providing step-by-step tutorials on binary-to-decimal conversion) instead of maintaining focus on property inspection SOPs.
 * **Engineering Resolution:**
   1. **Hardened System Prompt Guardrails:**
-     * In [`src/lib/rag-assistant.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/rag-assistant.ts), expanded `SYSTEM_PROMPT` with strict negative constraints: strictly forbidden from answering off-topic queries (programming tutorials, binary conversion, general trivia, math problem solving, personal advice).
+     * In `src/lib/rag-assistant.ts`, expanded `SYSTEM_PROMPT` with strict negative constraints: strictly forbidden from answering off-topic queries (programming tutorials, binary conversion, general trivia, math problem solving, personal advice).
      * Instructed the model to politely decline and redirect the specialist back to property audits, photo evidence, and compliance SOPs.
   2. **Automated Scope Classifier & Pre-Filter:**
-     * In [`src/lib/specialist-bot-knowledge.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/specialist-bot-knowledge.ts), implemented `classifyQueryScope()` with word-boundary regex detection for out-of-scope patterns vs. in-scope operational keywords.
+     * In `src/lib/specialist-bot-knowledge.ts`, implemented `classifyQueryScope()` with word-boundary regex detection for out-of-scope patterns vs. in-scope operational keywords.
      * **Pure Out-of-Scope Queries:** When a query like *"How do you convert binary to decimal?"* or *"Write python code"* is received, the assistant immediately provides a polite refusal:
        *`I am the Amenity Op's Field Assistant, specialized exclusively in on-site property inspection procedures, photo evidence standards, GPS geofencing, and platform compliance. I cannot provide tutorials regarding [topic]. How can I assist you with your current property audit or checklist today?`*
      * **Mixed Queries:** When a query contains both an in-scope question and an out-of-scope question (e.g. *"What are the photo rules and how do I convert binary to decimal?"*), the assistant answers the property inspection question completely, and appends an explicit scope notice politely declining the unrelated question.
@@ -344,7 +344,7 @@
 ### 17. `RESP-04`: Analytics Page Day Filters Are Overlapping Instead of Displaying in a Swipeable Slider
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+  * `src/components/AdminAnalyticsDashboard.tsx`
 * **Reported Issue:**
   The analytics day filter options (Last 7 Days, Last 30 Days, Last 90 Days, All-Time) overlapped and wrapped awkwardly on mobile and tablet screens, creating a cluttered and difficult-to-tap layout.
 * **Engineering Resolution:**
@@ -358,7 +358,7 @@
 ### 18. `RESP-05`: Misaligned Headings in Audit Volume by Checklist Template and Inconsistent Icon Sizing on Analytics Page
 * **Priority:** `Medium` | **Severity:** `Medium`
 * **Target Files:**
-  * [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+  * `src/components/AdminAnalyticsDashboard.tsx`
 * **Reported Issue:**
   The heading in the Audit Volume by Checklist Template / Asset Category section appeared inline with the "Active Checklist" badge, causing text collisions on narrower screens. Furthermore, metric card icons lacked fixed sizing and would shrink when adjacent metric descriptions wrapped.
 * **Engineering Resolution:**
@@ -374,7 +374,7 @@
 ### 19. `RESP-06`: Cramped Specialist Performance Scorecards Layout and Inconsistent Icon Sizes
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+  * `src/components/AdminAnalyticsDashboard.tsx`
 * **Reported Issue:**
   The Specialist Performance Scorecards & Ranking card header squeezed the title and description into a narrow space because the "Manage Team" link was forced inline on the right, causing cramped text wrapping on mobile and tablet viewports.
 * **Engineering Resolution:**
@@ -388,7 +388,7 @@
 ### 20. `RESP-07`: Cramped Property Inspection Frequency & Issue Rates Layout and Inconsistent Icon Sizes
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+  * `src/components/AdminAnalyticsDashboard.tsx`
 * **Reported Issue:**
   The Property Inspection Frequency & Issue Rates section was horizontally cramped by having the "All Properties" link inline on the right, resulting in awkward multiline wrapping of the subtitle on mobile and tablet screens.
 * **Engineering Resolution:**
@@ -402,12 +402,12 @@
 ### 21. `RESP-15`: Inconsistent Performance Tab Naming Across Viewports
 * **Priority:** `Low` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/lib/nav-items.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/nav-items.ts)
-  * [`src/components/BottomNav.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/BottomNav.tsx)
+  * `src/lib/nav-items.ts`
+  * `src/components/BottomNav.tsx`
 * **Reported Issue:**
   The navigation tab for specialist metrics was labeled "Performance" on desktop sidebar navigation, but showed "Scorecard" on mobile and tablet bottom navigation, creating inconsistent nomenclature across viewports.
 * **Engineering Resolution:**
-  1. In [`src/lib/nav-items.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/nav-items.ts), updated `INSPECTOR_NAV_ITEMS` for `/inspector/metrics` from `shortLabel: 'Scorecard'` to `shortLabel: 'Performance'`.
+  1. In `src/lib/nav-items.ts`, updated `INSPECTOR_NAV_ITEMS` for `/inspector/metrics` from `shortLabel: 'Scorecard'` to `shortLabel: 'Performance'`.
   2. Desktop navigation, mobile navigation, and tablet bottom bar now all display the unified term **"Performance"**.
 * **Verification Status:** `RESOLVED` (Unified 'Performance' label across all viewports verified).
 
@@ -418,11 +418,11 @@
 ### 22. `TEAM-01`: Misaligned “Open Specialist Panel” Button in the Team Page — Active Members Section
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+  * `src/app/admin/team/page.tsx`
 * **Reported Issue:**
   The "Open Specialist Panel" button alongside the role toggle and deactivation modal disrupted the layout of the Active Members section, forcing member summary details (names, role titles, contact info, coverage areas) into a narrow, squashed column that wrapped awkwardly across 4-6 lines on medium and desktop screens.
 * **Engineering Resolution:**
-  1. Restructured each member card in [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx) into a two-tier layout:
+  1. Restructured each member card in `src/app/admin/team/page.tsx` into a two-tier layout:
      * **Top Tier:** Full-width profile summary containing member name, organization/HQ badge, setup pending indicator, open inspections counter, professional title, human ID, contact info, and coverage area with unobstructed horizontal space.
      * **Bottom Action Bar:** A dedicated, clean action strip (`border-t border-outline-variant/30 pt-3 flex flex-wrap items-center gap-2`).
   2. Placed the "Open Specialist Panel" button cleanly alongside the `RoleToggleButton` and `DeactivateMemberModal` within this dedicated container, eliminating all text collision and wrapping anomalies across all device viewports.
@@ -433,8 +433,8 @@
 ### 23. `TEAM-02`: "Exit to Admin" and "Close Tab" Buttons Perform the Same Action in the Specialist Team Member Panel
 * **Priority:** `High` | **Severity:** `Medium`
 * **Target Files:**
-  * [`src/components/AdminImpersonationBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminImpersonationBanner.tsx)
-  * [`src/components/TenantViewBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/TenantViewBanner.tsx)
+  * `src/components/AdminImpersonationBanner.tsx`
+  * `src/components/TenantViewBanner.tsx`
 * **Reported Issue:**
   Both "Exit to Admin" and "Close Tab" buttons in the impersonation header redirected the admin to `/api/impersonate/exit`, opening a new/duplicate browser tab and cluttering the admin's workspace with duplicate Team pages.
 * **Engineering Resolution:**
@@ -444,7 +444,7 @@
   2. **Non-Duplicating Browser Security Fallback:**
      * When browser security restrictions prevent programmatic closure of tabs opened via direct link (`window.close()` blocked), instead of executing an unexpected redirect that opens duplicate tabs, the banner displays a non-intrusive inline dismissible instruction:
        *`Browser tab closure was prevented by browser security. Please close this browser tab manually, or click Exit to Admin to return in this window.`*
-  3. Applied the identical robust dual-action pattern to both [`AdminImpersonationBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminImpersonationBanner.tsx) and [`TenantViewBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/TenantViewBanner.tsx).
+  3. Applied the identical robust dual-action pattern to both `AdminImpersonationBanner.tsx` and `TenantViewBanner.tsx`.
 * **Verification Status:** `RESOLVED` (Distinct in-app redirect vs. window.close() with graceful browser fallback verified).
 
 ---
@@ -452,20 +452,20 @@
 ### 24. `TEAM-03`: Admin Impersonation Mode Displays Unauthorized Quick Actions and Allows Navigation Back to the Admin Portal
 * **Priority:** `High` | **Severity:** `High`
 * **Target Files:**
-  * [`src/app/inspector/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/page.tsx)
-  * [`src/app/inspector/layout.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/layout.tsx)
-  * [`src/components/AssignmentsBoard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AssignmentsBoard.tsx)
+  * `src/app/inspector/page.tsx`
+  * `src/app/inspector/layout.tsx`
+  * `src/components/AssignmentsBoard.tsx`
 * **Reported Issue:**
   While in Specialist Impersonation mode, the specialist assignments board displayed unauthorized Admin quick actions ("Start Inspection" navigating to `/admin/inspections/new` and "Dashboard" navigating to `/admin`). Clicking these links leaked out of the impersonation view and dropped the user into the admin portal unexpectedly.
 * **Engineering Resolution:**
   1. **Strict Viewport Isolation in RSC:**
-     * In [`src/app/inspector/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/page.tsx), computed `showAdminActions = !isImpersonating && (adminProfile?.role === 'admin' || profile.role === 'admin')`.
+     * In `src/app/inspector/page.tsx`, computed `showAdminActions = !isImpersonating && (adminProfile?.role === 'admin' || profile.role === 'admin')`.
      * Passed `isAdmin={showAdminActions}` to `AssignmentsBoard`.
   2. **Suppression of Admin Quick Actions & Route Isolation:**
      * When `isImpersonating` is active, `isAdmin` is strictly `false`.
      * The "Start Inspection" (`/admin/inspections/new`) and "Dashboard" (`/admin`) buttons in the Quick Actions aside are suppressed.
      * Completed inspection links route strictly within the specialist portal (`/inspector/inspections/${id}`) rather than linking to the admin report route (`/admin/reports/${id}`).
-  3. Combined with [`src/app/inspector/layout.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/layout.tsx), navigation headers, app shells, and bottom bars remain strictly isolated within the specialist viewport until the user explicitly clicks "Exit to Admin".
+  3. Combined with `src/app/inspector/layout.tsx`, navigation headers, app shells, and bottom bars remain strictly isolated within the specialist viewport until the user explicitly clicks "Exit to Admin".
 * **Verification Status:** `RESOLVED` (Complete isolation of specialist viewport without admin link leaks verified).
 
 ---
@@ -473,22 +473,22 @@
 ### 25. `TEAM-04`: Admin Can Demote Another Admin to Specialist Without Super Admin Authorization
 * **Priority:** `High` | **Severity:** `Critical`
 * **Target Files:**
-  * [`src/lib/actions/team.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/team.ts)
-  * [`src/components/RoleToggleButton.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/RoleToggleButton.tsx)
-  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+  * `src/lib/actions/team.ts`
+  * `src/components/RoleToggleButton.tsx`
+  * `src/app/admin/team/page.tsx`
 * **Reported Issue:**
   A standard tenant admin was able to demote another admin (or the initial HQ admin) to specialist, allowing unauthorized privilege alteration without Super Admin authorization.
 * **Engineering Resolution:**
   1. **Backend Privilege Gate:**
-     * In [`src/lib/actions/team.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/team.ts) (`setTeamMemberRole`), queried target user's role and verified the calling admin's `current.is_global_admin` status.
+     * In `src/lib/actions/team.ts` (`setTeamMemberRole`), queried target user's role and verified the calling admin's `current.is_global_admin` status.
      * If the target profile is an `'admin'` and the proposed role is `'inspector'`, the server requires `current.is_global_admin` to be `true`. If not, execution is rejected with:
        *`Unauthorized: Demoting an Administrator to Specialist requires Super Admin authorization.`*
      * Also prevented standard admins from altering another administrator's account.
   2. **Frontend UI Lock & Tooltip:**
-     * In [`src/components/RoleToggleButton.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/RoleToggleButton.tsx), added `canDemoteAdmin` prop.
+     * In `src/components/RoleToggleButton.tsx`, added `canDemoteAdmin` prop.
      * When `role === 'admin'` and `!canDemoteAdmin`, the button is locked with `disabled`, `opacity-40 cursor-not-allowed`, and a tooltip explaining *"Demoting an Administrator requires Super Admin authorization"*.
      * Clicking triggers an explanatory error toast if bypassed.
-  3. In [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx), passed `canDemoteAdmin={Boolean(currentProfile.is_global_admin)}`.
+  3. In `src/app/admin/team/page.tsx`, passed `canDemoteAdmin={Boolean(currentProfile.is_global_admin)}`.
 * **Verification Status:** `RESOLVED` (Dual frontend lock + backend security check verified).
 
 ---
@@ -496,20 +496,20 @@
 ### 26. `TEAM-05`: Incorrect Open Tenant Admin Panel Access and Missing Exit View Navigation
 * **Priority:** `High` | **Severity:** `High`
 * **Target Files:**
-  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
-  * [`src/app/admin/impersonate/[id]/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/impersonate/[id]/route.ts)
-  * [`src/components/TenantViewBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/TenantViewBanner.tsx)
+  * `src/app/admin/team/page.tsx`
+  * `src/app/admin/impersonate/[id]/route.ts`
+  * `src/components/TenantViewBanner.tsx`
 * **Reported Issue:**
   Standard tenant admins could see "Open Tenant Admin" on other admin cards, but clicking it redirected them back to their own dashboard without switching contexts or displaying an exit view top banner.
 * **Engineering Resolution:**
   1. **Role-Based Button Rendering:**
-     * In [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx), "Open Tenant Admin" is now displayed **only** when `member.role === 'admin' && currentProfile.is_global_admin && member.tenant_id`. Standard tenant admins never see this action on peer admins.
+     * In `src/app/admin/team/page.tsx`, "Open Tenant Admin" is now displayed **only** when `member.role === 'admin' && currentProfile.is_global_admin && member.tenant_id`. Standard tenant admins never see this action on peer admins.
      * Specialist cards display "Open Specialist Panel" for all authorized admins.
   2. **Impersonation Route Security & Context Switch:**
-     * In [`src/app/admin/impersonate/[id]/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/impersonate/[id]/route.ts), added verification: if target user is an admin belonging to a different tenant and the caller is not a Global HQ Admin, access is denied and redirected with `?error=unauthorized_admin_view`.
+     * In `src/app/admin/impersonate/[id]/route.ts`, added verification: if target user is an admin belonging to a different tenant and the caller is not a Global HQ Admin, access is denied and redirected with `?error=unauthorized_admin_view`.
      * When an authorized Global Admin opens a tenant admin, `TENANT_VIEW_COOKIE` is written and redirected to `/admin`.
   3. **Persistent Exit Banner:**
-     * In [`src/app/admin/layout.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/layout.tsx), `TenantViewBanner` is rendered when viewing a tenant, providing an "Exit to HQ" button (`/api/tenant-view/exit`) and "Close Tab" with fallback notice.
+     * In `src/app/admin/layout.tsx`, `TenantViewBanner` is rendered when viewing a tenant, providing an "Exit to HQ" button (`/api/tenant-view/exit`) and "Close Tab" with fallback notice.
 * **Verification Status:** `RESOLVED` (Tenant context switching, permission gating, and sticky exit banner verified).
 
 ---
@@ -519,16 +519,16 @@
 ### 27. `RESP-03`: Property License and SKU Unit Fields Are Displayed Inline Instead of on Separate Lines
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/app/admin/properties/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx)
-  * [`src/app/admin/properties/new/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/new/page.tsx)
+  * `src/app/admin/properties/page.tsx`
+  * `src/app/admin/properties/new/page.tsx`
 * **Reported Issue:**
   The Property License heading and SKU Unit allocation fields were displayed inline next to each other on a single row, creating a cramped layout that wrapped irregularly on narrower desktop and tablet viewports.
 * **Engineering Resolution:**
-  1. In [`src/app/admin/properties/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx), converted the Property License SKU Usage Indicator to a dedicated stacked structure (`flex flex-col gap-1`):
+  1. In `src/app/admin/properties/page.tsx`, converted the Property License SKU Usage Indicator to a dedicated stacked structure (`flex flex-col gap-1`):
      * **Line 1:** Icon and Title (`Property Licenses:`) with `KeyRound` icon.
      * **Line 2:** Indented SKU allocation details (`{used} of {max} SKU units allocated ({tier} Tier)`) directly below.
      * Placed available license badge / capacity status neatly aligned to the right or bottom on mobile (`sm:items-center sm:justify-between`).
-  2. In [`src/app/admin/properties/new/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/new/page.tsx), applied the identical vertical rhythm:
+  2. In `src/app/admin/properties/new/page.tsx`, applied the identical vertical rhythm:
      * **Line 1:** `Property Licenses` with icon.
      * **Line 2:** `SKU Units: {used} of {max} used` on its own distinct line.
 * **Verification Status:** `RESOLVED` (Vertical stacking of Property License and SKU units verified).
@@ -538,7 +538,7 @@
 ### 28. `RESP-09`: Misaligned Tenant and Staff Tags on Mobile Property Lists
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/app/admin/properties/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx)
+  * `src/app/admin/properties/page.tsx`
 * **Reported Issue:**
   On mobile viewports, property items forced tenant badges and staff roster tags inline with the property title, causing the badges to collide, wrap unpredictably, and truncate building names.
 * **Engineering Resolution:**
@@ -553,11 +553,11 @@
 ### 29. `RESP-10`: Inconsistent Placement of Tenant and Current Inspections Tags in Team Members List
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+  * `src/app/admin/team/page.tsx`
 * **Reported Issue:**
   In the Team Members list, Tenant and Current Inspections badges appeared inline with the member's name for shorter names, but wrapped below for longer names, producing an irregular, staggered presentation across rows.
 * **Engineering Resolution:**
-  1. Standardized the active and deactivated member cards in [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx) so that metadata badges are **consistently positioned on their own dedicated line directly below the member's full name**, regardless of name length.
+  1. Standardized the active and deactivated member cards in `src/app/admin/team/page.tsx` so that metadata badges are **consistently positioned on their own dedicated line directly below the member's full name**, regardless of name length.
   2. Enforced uniform spacing (`mt-1 flex flex-wrap items-center gap-1.5`) across all entries, establishing consistent vertical rhythm throughout the roster.
 * **Verification Status:** `RESOLVED` (Consistent placement of tags below member names verified).
 
@@ -566,7 +566,7 @@
 ### 30. `RESP-11`: Inconsistent Alignment of Team Member Action Buttons
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+  * `src/app/admin/team/page.tsx`
 * **Reported Issue:**
   Action buttons on the team page were inconsistently placed; some secondary actions wrapped next to the primary panel launch button while others broke below it, causing jagged alignment.
 * **Engineering Resolution:**
@@ -581,7 +581,7 @@
 ### 31. `RESP-16`: Inconsistent Alignment of Tenant Name and Open Inspection Tags on Tablet View
 * **Priority:** `Medium` | **Severity:** `Low`
 * **Target Files:**
-  * [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+  * `src/app/admin/team/page.tsx`
 * **Reported Issue:**
   On tablet viewports (768px-1024px), tenant and open inspection badges occasionally wrapped or clipped against right-aligned action elements depending on viewport width.
 * **Engineering Resolution:**

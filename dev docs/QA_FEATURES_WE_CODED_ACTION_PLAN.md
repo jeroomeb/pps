@@ -21,7 +21,7 @@
 > Refining the First-Time Password Setup screen (`/force-password-change`), temporary password validation, eye visibility toggles, and form state retention.
 
 ### `ONB-04`: Missing Standard Password Validation in the Temporary Password Field When Adding a New Team Member
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** `src/app/admin/team/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/MGz75)
 
 #### Reproduction & QA Observation
@@ -34,7 +34,7 @@ Add standard enterprise password regex check to the Temporary Password input in 
 ---
 
 ### `ONB-06`: Missing Password Visibility Toggle Icon on the First-Time Password Setup Page
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/app/force-password-change/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/zf6J5a)
 
 #### Reproduction & QA Observation
@@ -47,7 +47,7 @@ Add interactive eye visibility toggle icons (Show/Hide) to both New Password and
 ---
 
 ### `ONB-07`: Password Fields Reset After Invalid Input on the First-Time Password Setup Page
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** `src/app/force-password-change/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/HoDS4)
 
 #### Reproduction & QA Observation
@@ -60,7 +60,7 @@ Prevent form state wipe on validation failure. Preserve the typed passwords in s
 ---
 
 ### `ONB-08`: Missing Standard Password Validation on the First-Time Password Setup Page
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** `src/app/force-password-change/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/DxFBS)
 
 #### Reproduction & QA Observation
@@ -73,7 +73,7 @@ Upgrade password complexity validation from simple `length >= 8` to full standar
 ---
 
 ### `ONB-09`: Unclear Password Mismatch Validation Message on the First-Time Password Setup Page
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/force-password-change/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/app/force-password-change/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/zlQ4T)
 
 #### Reproduction & QA Observation
@@ -86,7 +86,7 @@ Replace the generic error with a specific inline message directly below the Conf
 ---
 
 ### `ONB-10`: Missing Success Notification After First-Time Password Setup and Password reset flow as well (Both for the New Team Member flow and the Password Reset flow)
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/force-password-change/page.tsx & src/app/login/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/force-password-change/page.tsx & src/app/login/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/app/force-password-change/page.tsx & src/app/login/page.tsx`
 
 #### Reproduction & QA Observation
 - **Actual Result:** After successfully setting a new password, the system redirects the user to the Login page without displaying a success toast or confirmation message.
@@ -98,7 +98,7 @@ Upon successful password update, redirect to `/login?notice=password_updated` an
 ---
 
 ### `RESP-12`: Misaligned Auto Generate If Blank Option and Oversized Placeholder Text in Add Team Member Form
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/app/admin/team/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/Xt0y2)
 
 #### Reproduction & QA Observation
@@ -114,7 +114,7 @@ In the Add Team Member modal, move the 'Auto Generate If Blank' checkbox below t
 > Enforcing conditional validation on property settings and hard blocking checklist access if physical GPS perimeter verification fails.
 
 ### `PROP-04`: Missing Conditional Validation for GPS Coordinates and Required Inspection Days in the New and Edit Property Flows
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/PropertyForm.tsx & src/lib/actions/properties.ts`](file:///d:/Nextjs%20Projects/amenityops/src/components/PropertyForm.tsx & src/lib/actions/properties.ts)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** `src/components/PropertyForm.tsx & src/lib/actions/properties.ts`
 - **Evidence Media:** [Visual Evidence](https://take.ms/KcPGm)
 
 #### Reproduction & QA Observation
@@ -127,7 +127,7 @@ Add conditional schema validation: When 'Enable On-Site GPS Geofence Verificatio
 ---
 
 ### `INSP-10`: GPS Geofence Verification Is Not Working Correctly and Does Not Block Inspection Checklist Access
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Critical` | **Target Component:** [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Critical` | **Target Component:** `src/components/ActiveInspectionChecklist.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/7hVsY)
 
 #### Reproduction & QA Observation
@@ -143,7 +143,7 @@ Upgrade GPS Geofence verification from an informational banner to a hard blockin
 > Synchronizing property staff roster assignments, enforcing photo ID document verification, and polishing assignment summary cards.
 
 ### `INSP-07`: Incorrect Specialist Assignment Flow and Property Staff Roster Synchronization
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/PropertyRosterManager.tsx & inspection start modal`](file:///d:/Nextjs%20Projects/amenityops/src/components/PropertyRosterManager.tsx & inspection start modal)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** `src/components/PropertyRosterManager.tsx & inspection start modal`
 - **Evidence Media:** [Visual Evidence](https://take.ms/SePA9F)
 
 #### Reproduction & QA Observation
@@ -156,7 +156,7 @@ Filter the 'Assign Specialist' dropdown strictly to specialists who are currentl
 ---
 
 ### `INSP-08`: Photo ID Document Verification Is Not Enforced Before Inspection Checklist Access
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/components/ActiveInspectionChecklist.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/ActiveInspectionChecklist.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** `src/components/ActiveInspectionChecklist.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/qJY91)
 
 #### Reproduction & QA Observation
@@ -169,7 +169,7 @@ Enforce the 'Require Photo ID Document Verification' gate: If enabled in propert
 ---
 
 ### `INSP-11`: Misaligned Borders and Excessive Empty Space in My Assignments Summary Cards on Mobile and Tablet Viewports
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** [`src/components/AssignmentsBoard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AssignmentsBoard.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** `src/components/AssignmentsBoard.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/IXmjz)
 
 #### Reproduction & QA Observation
@@ -182,7 +182,7 @@ Fix mobile and tablet CSS grid layout for the 4 summary cards (Total Assigned, P
 ---
 
 ### `INSP-12`: Missing Border Styling in the Completed Section on the My Assignments Page
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/components/AssignmentsBoard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AssignmentsBoard.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/components/AssignmentsBoard.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/5NpnW)
 
 #### Reproduction & QA Observation
@@ -198,7 +198,7 @@ Add the missing `border border-slate-700` styling to the Completed assignments c
 > Upgrading the AI assistant modal UX, Markdown/table/JSON rendering, conversation persistence, and system prompt boundary enforcement.
 
 ### `CHAT-01`: Chatbot Does Not Close on Outside Interaction and Conversation History Is Lost on Page Refresh
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** [`src/components/SpecialistChatbot.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistChatbot.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** `src/components/SpecialistChatbot.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/krI74)
 
 #### Reproduction & QA Observation
@@ -211,7 +211,7 @@ Add an outside-click backdrop listener to dismiss the chatbot when clicking else
 ---
 
 ### `CHAT-02`: Chatbot Fails to Properly Render Tables, HTML, Regex, and JSON Responses
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** [`src/components/SpecialistChatbot.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/SpecialistChatbot.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** `src/components/SpecialistChatbot.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/DwCcU)
 
 #### Reproduction & QA Observation
@@ -224,7 +224,7 @@ Enhance markdown response rendering with `remark-gfm` to format Markdown tables,
 ---
 
 ### `CHAT-03`: Chatbot Violates Defined Scope by Answering Unrelated Questions
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/lib/specialist-bot-knowledge.ts & src/lib/rag-assistant.ts`](file:///d:/Nextjs%20Projects/amenityops/src/lib/rag-assistant.ts)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** `src/lib/specialist-bot-knowledge.ts & src/lib/rag-assistant.ts`
 - **Evidence Media:** [Visual Evidence](https://take.ms/1dyLg)
 
 #### Reproduction & QA Observation
@@ -240,7 +240,7 @@ Harden the system prompt guardrails: Instruct the model to strictly decline off-
 > Fixing mobile swipeable day filters, heading alignments, flex-shrink icon constraints, and viewport label consistency.
 
 ### `RESP-04`: Analytics Page Day Filters Are Overlapping Instead of Displaying in a Swipeable Slider
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/components/AdminAnalyticsDashboard.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/mWk9O)
 
 #### Reproduction & QA Observation
@@ -253,7 +253,7 @@ Wrap day filter pill buttons (Today, 7D, 30D, 90D, YTD) in a horizontally scroll
 ---
 
 ### `RESP-05`: Misaligned Headings in Audit Volume by Checklist Template / Asset Category and Inconsistent Icon Sizing on the Analytics Page
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Medium` | **Target Component:** `src/components/AdminAnalyticsDashboard.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/OkZou)
 
 #### Reproduction & QA Observation
@@ -266,7 +266,7 @@ Stack the section heading and the 'Active Checklist' badge vertically rather tha
 ---
 
 ### `RESP-06`: Cramped Specialist Performance Scorecards Layout and Inconsistent Icon Sizes
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/components/AdminAnalyticsDashboard.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/q9TJb)
 
 #### Reproduction & QA Observation
@@ -279,7 +279,7 @@ Make the heading and description in Specialist Performance Scorecards full-width
 ---
 
 ### `RESP-07`: Cramped Property Inspection Frequency & Issue Rates Layout and Inconsistent Icon Sizes
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/components/AdminAnalyticsDashboard.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminAnalyticsDashboard.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/components/AdminAnalyticsDashboard.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/9PYz0)
 
 #### Reproduction & QA Observation
@@ -292,7 +292,7 @@ Make the heading and description in Property Inspection Frequency & Issue Rates 
 ---
 
 ### `RESP-15`: Inconsistent Performance Tab Naming Across Viewports
-- **Priority:** `Low` | **Severity:** `Low` | **Target Component:** [`src/components/navigation/ or layout`](file:///d:/Nextjs%20Projects/amenityops/src/components/navigation/ or layout)
+- **Priority:** `Low` | **Severity:** `Low` | **Target Component:** `src/components/navigation/ or layout`
 - **Evidence Media:** [Visual Evidence](https://take.ms/rkSy9g)
 
 #### Reproduction & QA Observation
@@ -308,7 +308,7 @@ Standardize the tab label to 'Performance' consistently across desktop, tablet, 
 > Securing admin-to-specialist role changes, isolating impersonation viewports, fixing browser tab close behavior, and impersonation exit headers.
 
 ### `TEAM-01`: Misaligned “Open Specialist Panel” Button in the Team Page — Active Members Section
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/app/admin/team/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/hRBtn)
 
 #### Reproduction & QA Observation
@@ -321,7 +321,7 @@ Reposition the 'Open Specialist Panel' button in the team member card into a ded
 ---
 
 ### `TEAM-02`: Exit to Admin” and “Close Tab” Buttons Perform the Same Action in the Specialist Team Member Panel
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** [`src/components/AdminImpersonationBanner.tsx & src/components/TenantViewBanner.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/components/AdminImpersonationBanner.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Medium` | **Target Component:** `src/components/AdminImpersonationBanner.tsx & src/components/TenantViewBanner.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/HAXAK)
 
 #### Reproduction & QA Observation
@@ -334,7 +334,7 @@ Differentiate 'Exit to Admin' vs 'Close Tab': 'Exit to Admin' performs an in-app
 ---
 
 ### `TEAM-03`: Admin Impersonation Mode Displays Unauthorized Quick Actions and Allows Navigation Back to the Admin Portal
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/app/inspector/page.tsx & src/app/inspector/layout.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/inspector/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** `src/app/inspector/page.tsx & src/app/inspector/layout.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/81ZbF) [Visual Evidence](https://take.ms/4YwcGt)
 
 #### Reproduction & QA Observation
@@ -347,7 +347,7 @@ In Specialist Impersonation mode, suppress or hide unauthorized Admin quick acti
 ---
 
 ### `TEAM-04`: Admin Can Demote Another Admin to Specialist Without Super Admin Authorization
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Critical` | **Target Component:** [`src/lib/actions/team.ts & src/components/RoleToggleButton.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/lib/actions/team.ts)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `Critical` | **Target Component:** `src/lib/actions/team.ts & src/components/RoleToggleButton.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/w6KGO)
 
 #### Reproduction & QA Observation
@@ -360,7 +360,7 @@ Add backend and frontend security check: Require `current_user_is_global_admin()
 ---
 
 ### `TEAM-05`: Incorrect Open Tenant Admin Panel Access and Missing Exit View Navigation
-- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** [`src/app/admin/team/page.tsx & src/app/admin/impersonate/[id]/route.ts`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `High` | **Severity:** `High` | **Target Component:** `src/app/admin/team/page.tsx & src/app/admin/impersonate/[id]/route.ts`
 - **Evidence Media:** [Visual Evidence](https://take.ms/bDojE)
 
 #### Reproduction & QA Observation
@@ -376,7 +376,7 @@ Ensure the 'Open Tenant Admin Panel' switches the session context properly to th
 > Polishing UI badge alignment, multi-tenancy license unit stacking, and action button rows across viewports.
 
 ### `RESP-03`: Property License and SKU Unit Fields Are Displayed Inline Instead of on Separate Lines
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/properties/page.tsx & src/app/admin/properties/new/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/components/PropertyForm.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/mwkw8)
 
 #### Reproduction & QA Observation
@@ -384,12 +384,12 @@ Ensure the 'Open Tenant Admin Panel' switches the session context properly to th
 - **Expected Result:** Display Property License and SKU Unit vertically, with each field on its own line. Ensure proper alignment, spacing, and readability while maintaining a consistent layout across supported screen sizes.
 
 #### Engineering Fix Plan
-Display Property License and SKU Unit fields on separate vertical lines (`flex flex-col gap-1`) rather than inline on desktop and mobile.
+Display Property License and SKU Unit fields on separate vertical lines (`flex flex-col gap-3`) rather than inline on desktop and mobile.
 
 ---
 
 ### `RESP-09`: Misaligned Tenant and Staff Tags on Mobile Property Lists
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/properties/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/properties/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/app/admin/properties/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/aKvM5)
 
 #### Reproduction & QA Observation
@@ -397,12 +397,12 @@ Display Property License and SKU Unit fields on separate vertical lines (`flex f
 - **Expected Result:** Place the Tenant and Staff tags below the property name in each property list item on mobile viewports. Ensure proper spacing, alignment, and responsiveness without affecting the desktop layout.
 
 #### Engineering Fix Plan
-Stack the Tenant and Staff badges below the property name in mobile viewports (`flex flex-col items-start gap-1`) to prevent badge text wrapping.
+Stack the Tenant and Staff badges below the property name in mobile viewports (`flex-col sm:flex-row items-start sm:items-center gap-1.5`) to prevent badge text wrapping.
 
 ---
 
 ### `RESP-10`: Inconsistent Placement of Tenant and Current Inspections Tags in Team Members List
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/app/admin/team/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/Q8T1G)
 
 #### Reproduction & QA Observation
@@ -415,7 +415,7 @@ Place Tenant and Current Inspections tags consistently below each team member's 
 ---
 
 ### `RESP-11`: Inconsistent Alignment of Team Member Action Buttons
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/app/admin/team/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/7KyyS)
 
 #### Reproduction & QA Observation
@@ -428,7 +428,7 @@ Align all team member secondary action buttons (Make Specialist/Admin, Activate/
 ---
 
 ### `RESP-16`: Inconsistent Alignment of Tenant Name and Open Inspection Tags on Tablet View
-- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** [`src/app/admin/team/page.tsx`](file:///d:/Nextjs%20Projects/amenityops/src/app/admin/team/page.tsx)
+- **Status:** ✅ `RESOLVED` | **Priority:** `Medium` | **Severity:** `Low` | **Target Component:** `src/app/admin/team/page.tsx`
 - **Evidence Media:** [Visual Evidence](https://take.ms/rybQL) [Visual Evidence](https://take.ms/R6ack)
 
 #### Reproduction & QA Observation
