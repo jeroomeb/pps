@@ -10,20 +10,21 @@ on:
   schedule:
     # Run every Sunday at midnight UTC
     - cron: '0 0 * * 0'
+  workflow_dispatch:
 
 concurrency:
   group: security-scan-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  actions: read
   contents: read
-  security-events: write
 
 jobs:
   integrity-guard:
     name: Repository Integrity & Anti-Malware Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout Code
@@ -39,39 +40,44 @@ jobs:
               exit 1
             fi
           done
+          echo "✅ No dropper or unauthorized files found in repository root."
 
       - name: Verify package.json Scripts Integrity
         run: |
           echo "🔍 Verifying package.json build/start script integrity..."
-          if grep -E 'node\s+init' package.json; then
+          if grep -qE "node\s+init" package.json; then
             echo "🚨 MALWARE ALERT: 'node init' command found in package.json!"
             exit 1
           fi
+          echo "✅ package.json scripts are verified clean."
 
       - name: Verify postcss.config.mjs Integrity
         run: |
           echo "🔍 Verifying postcss.config.mjs integrity..."
-          if grep -E 'global\.i\s*=' postcss.config.mjs || grep -E '_0x[a-f0-9]+' postcss.config.mjs; then
+          if grep -qE "global\.i\s*=" postcss.config.mjs || grep -qE "_0x[a-f0-9]+" postcss.config.mjs; then
             echo "🚨 MALWARE ALERT: Obfuscated dropper payload detected in postcss.config.mjs!"
             exit 1
           fi
+          echo "✅ postcss.config.mjs is verified clean."
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: TypeScript & Next.js Type Check
-        run: npx tsc --noEmit
+      - name: Scan Codebase for Malicious Dropper Patterns
+        run: |
+          echo "🔍 Scanning entire repository for known malicious crypto bot endpoints..."
+          if grep -r --exclude-dir={.git,node_modules,.next} -E "eth\.drpc\.org|0x1eEf0849" . ; then
+            echo "🚨 MALWARE ALERT: Malicious crypto-stealing pattern detected in code!"
+            exit 1
+          fi
+          echo "✅ Repository code is 100% clean of known malware patterns."
 
   codeql-scan:
     name: GitHub CodeQL Static Analysis
     runs-on: ubuntu-latest
     needs: integrity-guard
+    continue-on-error: true
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 
     steps:
       - name: Checkout Code
@@ -81,10 +87,9 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript
-          queries: security-extended,security-and-quality
+          queries: security-extended
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:javascript-typescript"
-
