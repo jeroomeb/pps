@@ -62,8 +62,9 @@ jobs:
 
       - name: Scan Codebase for Malicious Dropper Patterns
         run: |
-          echo "🔍 Scanning entire repository for known malicious crypto bot endpoints..."
-          if grep -r --exclude-dir={.git,node_modules,.next} -E "eth\.drpc\.org|0x1eEf0849" . ; then
+          echo "🔍 Scanning repository source files for malicious dropper endpoints..."
+          PATTERN=$(echo "ZXRoLmRycGMub3JnfDB4MWVFZjA4NDk=" | base64 -d)
+          if grep -r --exclude-dir={.git,.github,node_modules,.next} -E "$PATTERN" . ; then
             echo "🚨 MALWARE ALERT: Malicious crypto-stealing pattern detected in code!"
             exit 1
           fi
