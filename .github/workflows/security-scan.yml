@@ -1,0 +1,89 @@
+name: Security & Malware Scan (CodeQL & Supply Chain)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Run every Sunday at midnight UTC
+    - cron: '0 0 * * 0'
+
+concurrency:
+  group: security-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  integrity-guard:
+    name: Repository Integrity & Anti-Malware Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for Known Dropper & Malware Files
+        run: |
+          echo "🔍 Scanning repository root for unauthorized dropper scripts..."
+          SUSPICIOUS_FILES=("init" "init.js" "dropper.js" "temp.js" "run.sh")
+          for file in "${SUSPICIOUS_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "🚨 MALWARE ALERT: Rogue file '$file' found in repository root!"
+              exit 1
+            fi
+          done
+
+      - name: Verify package.json Scripts Integrity
+        run: |
+          echo "🔍 Verifying package.json build/start script integrity..."
+          if grep -E 'node\s+init' package.json; then
+            echo "🚨 MALWARE ALERT: 'node init' command found in package.json!"
+            exit 1
+          fi
+
+      - name: Verify postcss.config.mjs Integrity
+        run: |
+          echo "🔍 Verifying postcss.config.mjs integrity..."
+          if grep -E 'global\.i\s*=' postcss.config.mjs || grep -E '_0x[a-f0-9]+' postcss.config.mjs; then
+            echo "🚨 MALWARE ALERT: Obfuscated dropper payload detected in postcss.config.mjs!"
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: TypeScript & Next.js Type Check
+        run: npx tsc --noEmit
+
+  codeql-scan:
+    name: GitHub CodeQL Static Analysis
+    runs-on: ubuntu-latest
+    needs: integrity-guard
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended,security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

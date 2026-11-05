@@ -43,6 +43,13 @@ jobs:
             git reset --hard origin/main
             git clean -fd
 
+            # Anti-Malware Integrity Guard
+            echo "🛡️ Verifying code integrity and anti-malware safeguards..."
+            if [ -f init ] || grep -qE "node\s+init" package.json; then
+              echo "🚨 CRITICAL SECURITY ALERT: Rogue script detected! Aborting deployment immediately."
+              exit 1
+            fi
+
             # Stop Nginx from forcing Connection: upgrade on every request.
             # That header makes Next.js drop some connections and Nginx returns 502.
             if [ -f scripts/patch-nginx-502.sh ]; then
