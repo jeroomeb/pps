@@ -15,7 +15,7 @@
 | `ONB-03` | Onboarding | `src/app/login/page.tsx` | Verify and polish show/hide password visibility toggle icon | Resolved |
 | `ONB-05` | Onboarding | `src/app/login/page.tsx` | Retain entered email value upon failed login attempts | Resolved |
 | `ONB-11` & `RESP-14` | Onboarding / Nav | `src/components/Header.tsx`, `src/components/AppShell.tsx` | Sticky top header (`sticky top-0 z-40`) & fixed desktop sidebar | Resolved |
-| `ONB-12` | Onboarding | `src/components/ResetPasswordForm.tsx` | Add placeholders & enforce toggles on `/reset-password` | Pending |
+| `ONB-12` | Onboarding | `src/components/ResetPasswordForm.tsx` | Add placeholders & enforce toggles on `/reset-password` | Resolved |
 | `ONB-13` & `ONB-14` | Onboarding / Nav | `src/components/AppShell.tsx`, `src/components/Header.tsx` | Logout confirmation modal, toast feedback, and top-right profile dropdown | Pending |
 | `PROP-01` | Property | `src/app/admin/properties/new/page.tsx` | Expand New Property form from `max-w-2xl` to full container width | Pending |
 | `PROP-02` | Property | `src/components/PropertyForm.tsx`, `src/components/AddressFields.tsx` | Add missing placeholders (Name, Street, City, Phone) | Pending |
@@ -71,6 +71,17 @@
   - Added `lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto` to `<aside>` in `src/components/AppShell.tsx` to fix the sidebar in the viewport with its own container scroll.
   - Added `lg:sticky lg:top-0 lg:z-30 bg-surface-container-lowest/95 backdrop-blur-sm` to the desktop top bar in `src/components/AppShell.tsx`.
 - **Verification:** Verified responsive CSS classes and DOM hierarchy across mobile and desktop.
+
+### Task 6: `ONB-12` — Missing Placeholders, Toggles & Validation in Password Reset Flow
+- **Target File:** `src/components/ResetPasswordForm.tsx`
+- **Root Cause:** Input fields in the password reset form lacked descriptive placeholder text.
+- **Changes Applied:**
+  - Added `placeholder="Enter current password"` to the Current Password field.
+  - Added `placeholder="Enter your new password"` to the New Password field.
+  - Added `placeholder="Confirm your new password"` to the Confirm Password field.
+  - Verified active eye visibility toggles, standard 5-point password complexity rules, and mismatch validation.
+- **Verification:** Verified in diff and visual inspection.
+
 
 
 

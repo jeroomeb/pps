@@ -71,6 +71,7 @@ export function ResetPasswordForm({
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
               autoComplete="current-password"
+              placeholder="Enter current password"
               className={`${INPUT} w-full pr-10`}
             />
             <button
@@ -99,6 +100,7 @@ export function ResetPasswordForm({
             onChange={(e) => setNewPassword(e.target.value)}
             required
             autoComplete="new-password"
+            placeholder="Enter your new password"
             className={`${INPUT} w-full pr-10 ${
               newPassword.length > 0 && !isComplexityMet
                 ? 'border-error/80 focus:border-error ring-1 ring-error/40'
@@ -205,6 +207,7 @@ export function ResetPasswordForm({
             onBlur={() => setConfirmTouched(true)}
             required
             autoComplete="new-password"
+            placeholder="Confirm your new password"
             className={`${INPUT} w-full pr-10 ${
               hasMismatchError
                 ? 'border-error/80 focus:border-error ring-1 ring-error/40'
