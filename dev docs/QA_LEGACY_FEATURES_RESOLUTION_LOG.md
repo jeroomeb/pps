@@ -18,7 +18,7 @@
 | `ONB-12` | Onboarding | `src/components/ResetPasswordForm.tsx` | Add placeholders & enforce toggles on `/reset-password` | Resolved |
 | `ONB-13` & `ONB-14` | Onboarding / Nav | `src/components/AppShell.tsx`, `src/components/Header.tsx` | Logout confirmation modal, toast feedback, and top-right profile dropdown | Resolved |
 | `PROP-01` | Property | `src/app/admin/properties/new/page.tsx` | Expand New Property form from `max-w-2xl` to full container width | Resolved |
-| `PROP-02` | Property | `src/components/PropertyForm.tsx`, `src/components/AddressFields.tsx` | Add missing placeholders (Name, Street, City, Phone) | Pending |
+| `PROP-02` | Property | `src/components/PropertyForm.tsx`, `src/components/AddressFields.tsx` | Add missing placeholders (Name, Street, City, Phone) | Resolved |
 | `PROP-03` & `PROF-01` | Property / Profile | `src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx` | Standard phone number validation and formatting | Pending |
 | `PROP-05` | Property | `src/app/admin/properties/[id]/page.tsx`, `src/lib/actions/properties.ts` | Green success toast after creating / editing property | Pending |
 | `PROP-06` | Property | `src/app/admin/properties/page.tsx` | Fix misleading empty-state message on property search | Pending |
@@ -99,6 +99,17 @@
   - Expanded container from `max-w-2xl` to `w-full max-w-5xl` across both the New Property and Edit Property screens.
   - Ensured headings, address cards, geofencing perimeters, and submit buttons display with balanced spacing.
 - **Verification:** Verified clean diff and full-width responsive layout.
+
+### Task 9: `PROP-02` — Missing Placeholders in Property Name, Street Address, City, Phone
+- **Target Files:** `src/components/PropertyForm.tsx`, `src/components/AddressFields.tsx`
+- **Root Cause:** Input fields in the property address block lacked descriptive placeholders.
+- **Changes Applied:**
+  - Added `placeholder="Enter property name"` to Property Name in `PropertyForm.tsx`.
+  - Added `placeholder="Enter street address"` to Street Address in `AddressFields.tsx`.
+  - Added `placeholder="Enter city"` to City in `AddressFields.tsx`.
+  - Added `placeholder="Enter property phone number"` to Property Phone in `PropertyForm.tsx`.
+- **Verification:** Verified in diff and component rendering.
+
 
 
 

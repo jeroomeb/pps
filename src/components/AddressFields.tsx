@@ -32,6 +32,7 @@ export function AddressFields({
           name="street"
           required={requireStreet}
           defaultValue={defaults?.street ?? ''}
+          placeholder="Enter street address"
           className={INPUT}
         />
       </div>
@@ -41,7 +42,13 @@ export function AddressFields({
           <label htmlFor={id('city')} className={LABEL}>
             City
           </label>
-          <input id={id('city')} name="city" defaultValue={defaults?.city ?? ''} className={INPUT} />
+          <input
+            id={id('city')}
+            name="city"
+            defaultValue={defaults?.city ?? ''}
+            placeholder="Enter city"
+            className={INPUT}
+          />
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor={id('state')} className={LABEL}>

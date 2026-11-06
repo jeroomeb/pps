@@ -152,7 +152,14 @@ export function PropertyForm({
             <label htmlFor="name" className={LABEL}>
               Property Name
             </label>
-            <input id="name" name="name" required defaultValue={defaultValues?.name} className={INPUT} />
+            <input
+              id="name"
+              name="name"
+              required
+              defaultValue={defaultValues?.name}
+              placeholder="Enter property name"
+              className={INPUT}
+            />
           </div>
 
           <div className="flex flex-col gap-1">
@@ -185,6 +192,7 @@ export function PropertyForm({
             name="phone"
             type="tel"
             defaultValue={defaultValues?.phone ?? ''}
+            placeholder="Enter property phone number"
             className={`${INPUT} lg:max-w-xs`}
           />
         </div>
