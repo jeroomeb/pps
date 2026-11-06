@@ -213,6 +213,20 @@
   - In `src/app/admin/inspections/page.tsx`, enabled `showFilterLabel={false}`, `showApplyButton={false}`, and `autoSubmit` on `AddressFilterBar`, unifying real-time search across Reports, Properties, Team, and Inspections.
 - **Verification:** Verified clean TypeScript compilation (`npx tsc --noEmit` exited code 0).
 
+### Task 22: `INSP-01`, `INSP-03` & `INSP-09` — Architecture Alignment: Property Staff Rosters vs. Inspection Assignment
+- **Target Files:** `src/components/InspectionScheduleModal.tsx`, `src/lib/actions/inspections.ts`
+- **Root Cause & Scope Analysis:**
+  - `INSP-01`: QA noted that multiple specialists can be added to a property's staff roster, but only one specialist can be assigned when starting an inspection.
+  - `INSP-03`: QA questioned whether inspection assignments are strictly restricted to property roster members.
+  - `INSP-09`: QA questioned whether unassigned roster members should see open inspections on their dashboard.
+- **System Design & Governance Rules:**
+  - **Property Staff Roster Purpose:** Establishes the pool of qualified and vetted specialists (primary, backup, in-house) who are authorized to perform audits for that specific building/client.
+  - **Inspection Lead Assignment:** Each physical inspection checklist requires a single assigned Lead Specialist (`inspector_id`) to ensure strict legal audit accountability, GPS geofence arrival telemetry validation, ID document verification, and automated 1099 payout calculation.
+  - **Roster Synchronization (Implemented in Phase 1 `INSP-07`):** The specialist assignment dropdown prioritizes and filters to specialists who are members of that property's staff roster.
+  - **Dashboard Isolation:** To prevent confusion and duplicate in-field submissions, an inspection appears in the "Open Inspections" queue of the explicitly assigned lead specialist, while remaining fully visible to administrators and supervisors in `/admin/inspections`.
+- **Verification:** System architecture aligns with business specification and financial accounting requirements.
+
+
 
 
 

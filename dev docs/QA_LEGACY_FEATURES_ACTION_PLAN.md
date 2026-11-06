@@ -52,6 +52,7 @@ Following the 100% completion, testing, and deployment of **Phase 1** (31 QA bug
 - [x] **Task 19 (`RESP-08`):** Enable debounced real-time search (`autoSubmit`) and remove redundant filter label and apply button in Properties overview (`src/app/admin/properties/page.tsx`).
 - [x] **Task 20 (`RESP-13`):** Enable debounced real-time search (`autoSubmit`) and remove redundant filter label and apply button in Team overview (`src/app/admin/team/page.tsx`).
 - [x] **Task 21 (`INSP-06`, `INSP-02`, & `RESP-08` / Inspections Filter):** Enabled real-time filtering (`autoSubmit`) and removed redundant filter label on Inspections overview (`src/app/admin/inspections/page.tsx`), verified resilient background handling in checklist completion (`src/app/api/inspections/[id]/complete/route.ts`), and verified Admin inspection visibility across dashboards.
+- [x] **Task 22 (`INSP-01`, `INSP-03`, & `INSP-09`):** Architectural alignment on Property Staff Rosters vs Single Assigned Lead Specialist: Synchronized inspection specialist assignment selector with property roster membership (from Phase 1 `INSP-07`), preserved single-assigned auditor model for unambiguous accountability and payout ledger integrity, and documented client governance rules in `dev docs/QA_LEGACY_FEATURES_RESOLUTION_LOG.md`.
 
 ---
 
