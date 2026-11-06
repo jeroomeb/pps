@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { Camera, ImageOff } from 'lucide-react'
+import { Camera, ImageOff, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { saveInspectionItem } from '@/lib/actions/inspections'
 import { saveDraftItem, clearDraftItem } from '@/lib/inspection-drafts'
@@ -156,6 +156,16 @@ export function ChecklistItemCard({
     }
   }
 
+  function handleRemovePhoto() {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+    setPhotoUrl(null)
+    setPhotoSavedNoPreview(false)
+    persist({ photo_path: null })
+    showToast('info', 'Photo removed.')
+  }
+
   const hasPhoto = Boolean(photoUrl || photoSavedNoPreview)
   // Photo is required for every answered item except N/A (client punch list #8).
   const needsPhoto = status !== null && status !== 'na' && !hasPhoto
@@ -229,7 +239,6 @@ export function ChecklistItemCard({
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handlePhotoChange}
         className="hidden"
       />
@@ -243,35 +252,59 @@ export function ChecklistItemCard({
             loading="lazy"
             className="h-40 w-full rounded-lg object-cover"
           />
+          <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleRemovePhoto}
+              disabled={uploading}
+              className="flex items-center gap-1 rounded-lg bg-error px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-on-error shadow hover:brightness-95 transition"
+              aria-label="Remove Photo"
+            >
+              <Trash2 size={13} />
+              Remove
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="rounded-lg bg-surface-container-lowest/90 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-on-surface shadow hover:bg-surface-container transition"
+            >
+              {uploading ? 'Uploading…' : 'Replace Photo'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="absolute bottom-2 right-2 rounded-lg bg-surface-container-lowest/90 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide shadow"
+            className={`flex min-h-24 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-sm font-semibold ${
+              needsPhoto
+                ? 'border-error text-error'
+                : photoSavedNoPreview
+                  ? 'border-outline-variant text-on-surface-variant'
+                  : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
+            }`}
           >
-            {uploading ? 'Uploading…' : 'Replace Photo'}
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className={`flex min-h-24 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-sm font-semibold ${
-            needsPhoto
-              ? 'border-error text-error'
+            {photoSavedNoPreview ? <ImageOff size={20} /> : <Camera size={20} />}
+            {uploading
+              ? 'Uploading…'
               : photoSavedNoPreview
-                ? 'border-outline-variant text-on-surface-variant'
-                : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-low'
-          }`}
-        >
-          {photoSavedNoPreview ? <ImageOff size={20} /> : <Camera size={20} />}
-          {uploading
-            ? 'Uploading…'
-            : photoSavedNoPreview
-              ? 'Photo saved (preview unavailable) — Tap to replace'
-              : 'Tap to Capture or Upload'}
-        </button>
+                ? 'Photo saved (preview unavailable) — Tap to replace'
+                : 'Tap to Capture or Upload'}
+          </button>
+          {photoSavedNoPreview && (
+            <button
+              type="button"
+              onClick={handleRemovePhoto}
+              className="flex items-center justify-center gap-1 text-xs font-semibold text-error hover:underline self-end"
+            >
+              <Trash2 size={13} />
+              Remove Photo
+            </button>
+          )}
+        </div>
       )}
       {needsPhoto && (
         <p className="mt-1 text-xs font-semibold text-error">

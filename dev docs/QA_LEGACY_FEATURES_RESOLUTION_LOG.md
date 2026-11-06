@@ -23,8 +23,8 @@
 | `PROP-05` | Property | `src/app/admin/properties/[id]/page.tsx`, `src/lib/actions/properties.ts` | Green success toast after creating / editing property | Resolved |
 | `PROP-06` | Property | `src/app/admin/properties/page.tsx` | Fix misleading empty-state message on property search | Resolved |
 | `INSP-04` | Inspections | `src/components/ActiveInspectionChecklist.tsx` | Expand checklist layout to eliminate excessive empty space on the right | Resolved |
-| `INSP-05` | Inspections | `src/components/ChecklistItemCard.tsx` | Add Remove / Delete Photo option before submitting checklist | Pending |
-| `RESP-02` | Inspections | `src/components/ChecklistItemCard.tsx` | Fix mobile camera capture closing prematurely | Pending |
+| `INSP-05` | Inspections | `src/components/ChecklistItemCard.tsx` | Add Remove / Delete Photo option before submitting checklist | Resolved |
+| `RESP-02` | Inspections | `src/components/ChecklistItemCard.tsx` | Fix mobile camera capture closing prematurely | Resolved |
 | `REP-01` | Reports | `src/app/admin/reports/page.tsx` | Remove redundant filter heading and Apply button in favor of real-time search | Pending |
 | `RESP-01` | Responsiveness | `src/components/PropertyCard.tsx` / `src/app/admin/properties/[id]/page.tsx` | Stack tags and action buttons below inspection details on mobile | Pending |
 
@@ -142,6 +142,18 @@
   - Expanded layout wrapper to `w-full max-w-5xl` in both `ActiveInspectionChecklist.tsx` and `ReadOnlyInspectionView.tsx`.
   - Maintained proper margins, responsive grid scaling, and clean card padding across viewports.
 - **Verification:** Verified responsive CSS classes and diff inspection.
+
+### Task 14 & 15: `INSP-05` & `RESP-02` — Photo Removal Option & Mobile Camera Capture Stability
+- **Target File:** `src/components/ChecklistItemCard.tsx`
+- **Root Cause:**
+  - `INSP-05`: Once a photo was attached, no delete/remove button existed, trapping inspectors with an uploaded photo unless overwriting with another.
+  - `RESP-02`: Hardcoded `capture="environment"` attribute on the hidden file input caused mobile browsers (Safari/Chrome on Android/iOS) to prematurely terminate the camera intent during focus events.
+- **Changes Applied:**
+  - Added `handleRemovePhoto()` function that resets `photoUrl`, `photoSavedNoPreview`, clears the file input DOM reference, and calls `persist({ photo_path: null })`.
+  - Added a prominent red `Remove` button with `Trash2` icon alongside `Replace Photo`.
+  - Removed restrictive `capture="environment"` attribute to allow the native OS camera/gallery picker to operate without premature abortion.
+- **Verification:** Verified clean diff and TypeScript compilation.
+
 
 
 
