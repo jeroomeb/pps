@@ -9,7 +9,7 @@ export function Header({
   fullName: string
 }) {
   return (
-    <header className="flex items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-4 py-3 lg:hidden">
+    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-outline-variant bg-surface-container-lowest/95 backdrop-blur-sm px-4 py-3 lg:hidden">
       <div className="flex items-center gap-3">
         <Image src="/logo-sm.png" alt="" width={32} height={32} className="rounded" />
         <div>

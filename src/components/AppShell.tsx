@@ -34,7 +34,7 @@ export function AppShell({
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex lg:w-60 lg:shrink-0 lg:flex-col lg:border-r lg:border-outline-variant lg:bg-surface-container-lowest">
+      <aside className="hidden lg:flex lg:w-60 lg:shrink-0 lg:flex-col lg:border-r lg:border-outline-variant lg:bg-surface-container-lowest lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
         <div className="flex items-center gap-2 border-b border-outline-variant px-5 py-5">
           <Image src="/logo-sm.png" alt="" width={32} height={32} className="rounded" />
           <div className="min-w-0 flex-1">
@@ -112,7 +112,7 @@ export function AppShell({
 
       <div className="flex flex-1 flex-col">
         {/* Desktop top bar */}
-        <div className="hidden items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-6 py-3 lg:flex">
+        <div className="hidden items-center justify-between border-b border-outline-variant bg-surface-container-lowest/95 backdrop-blur-sm px-6 py-3 lg:flex lg:sticky lg:top-0 lg:z-30">
           <div className="flex items-center gap-2">
             <span className="text-xs text-on-surface-variant font-medium">Tenant Account:</span>
             <span className="text-xs font-semibold px-2 py-0.5 rounded bg-surface-container border border-outline-variant">

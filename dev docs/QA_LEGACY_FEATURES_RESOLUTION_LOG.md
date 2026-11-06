@@ -14,7 +14,7 @@
 | `ONB-02` | Onboarding | `src/app/forgot-password/page.tsx` | Add proper placeholder for Email on Forgot Password screen | Resolved |
 | `ONB-03` | Onboarding | `src/app/login/page.tsx` | Verify and polish show/hide password visibility toggle icon | Resolved |
 | `ONB-05` | Onboarding | `src/app/login/page.tsx` | Retain entered email value upon failed login attempts | Resolved |
-| `ONB-11` & `RESP-14` | Onboarding / Nav | `src/components/Header.tsx`, `src/components/AppShell.tsx` | Sticky top header (`sticky top-0 z-40`) & fixed desktop sidebar | Pending |
+| `ONB-11` & `RESP-14` | Onboarding / Nav | `src/components/Header.tsx`, `src/components/AppShell.tsx` | Sticky top header (`sticky top-0 z-40`) & fixed desktop sidebar | Resolved |
 | `ONB-12` | Onboarding | `src/components/ResetPasswordForm.tsx` | Add placeholders & enforce toggles on `/reset-password` | Pending |
 | `ONB-13` & `ONB-14` | Onboarding / Nav | `src/components/AppShell.tsx`, `src/components/Header.tsx` | Logout confirmation modal, toast feedback, and top-right profile dropdown | Pending |
 | `PROP-01` | Property | `src/app/admin/properties/new/page.tsx` | Expand New Property form from `max-w-2xl` to full container width | Pending |
@@ -62,6 +62,16 @@
   - Added controlled React state `email` bound via `value={email}` and `onChange={(e) => setEmail(e.target.value)}`.
   - The entered email remains preserved in the input across failed attempts while the error message is displayed.
 - **Verification:** Verified in code review and diff inspection.
+
+### Task 5: `ONB-11` & `RESP-14` — Dashboard Sidebar and Header Not Fixed During Scrolling
+- **Target Files:** `src/components/Header.tsx`, `src/components/AppShell.tsx`
+- **Root Cause:** Mobile/tablet header and desktop top bar lacked `sticky` positioning, scrolling out of view with the page. Desktop sidebar moved with page scroll, making navigation items inaccessible without scrolling.
+- **Changes Applied:**
+  - Added `sticky top-0 z-40 bg-surface-container-lowest/95 backdrop-blur-sm` to `<header>` in `src/components/Header.tsx` (mobile & tablet).
+  - Added `lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto` to `<aside>` in `src/components/AppShell.tsx` to fix the sidebar in the viewport with its own container scroll.
+  - Added `lg:sticky lg:top-0 lg:z-30 bg-surface-container-lowest/95 backdrop-blur-sm` to the desktop top bar in `src/components/AppShell.tsx`.
+- **Verification:** Verified responsive CSS classes and DOM hierarchy across mobile and desktop.
+
 
 
 
