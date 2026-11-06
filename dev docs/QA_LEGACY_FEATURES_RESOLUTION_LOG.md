@@ -22,7 +22,7 @@
 | `PROP-03` & `PROF-01` | Property / Profile | `src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx` | Standard phone number validation and formatting | Resolved |
 | `PROP-05` | Property | `src/app/admin/properties/[id]/page.tsx`, `src/lib/actions/properties.ts` | Green success toast after creating / editing property | Resolved |
 | `PROP-06` | Property | `src/app/admin/properties/page.tsx` | Fix misleading empty-state message on property search | Resolved |
-| `INSP-04` | Inspections | `src/components/ActiveInspectionChecklist.tsx` | Expand checklist layout to eliminate excessive empty space on the right | Pending |
+| `INSP-04` | Inspections | `src/components/ActiveInspectionChecklist.tsx` | Expand checklist layout to eliminate excessive empty space on the right | Resolved |
 | `INSP-05` | Inspections | `src/components/ChecklistItemCard.tsx` | Add Remove / Delete Photo option before submitting checklist | Pending |
 | `RESP-02` | Inspections | `src/components/ChecklistItemCard.tsx` | Fix mobile camera capture closing prematurely | Pending |
 | `REP-01` | Reports | `src/app/admin/reports/page.tsx` | Remove redundant filter heading and Apply button in favor of real-time search | Pending |
@@ -134,6 +134,15 @@
   - Updated title to `"No properties found"`.
   - Updated description to `"Try changing your search criteria or adjusting the filters."` when filters or queries are active.
 - **Verification:** Verified in diff and component rendering.
+
+### Task 13: `INSP-04` — Excessive Blank Space on Right Side of Inspection Checklist Page
+- **Target Files:** `src/components/ActiveInspectionChecklist.tsx`, `src/components/ReadOnlyInspectionView.tsx`
+- **Root Cause:** Both the active inspection checklist and read-only inspection views were restricted to `max-w-3xl`, creating an asymmetrical layout with excessive dead black space on the right of the screen on desktop and tablet viewports.
+- **Changes Applied:**
+  - Expanded layout wrapper to `w-full max-w-5xl` in both `ActiveInspectionChecklist.tsx` and `ReadOnlyInspectionView.tsx`.
+  - Maintained proper margins, responsive grid scaling, and clean card padding across viewports.
+- **Verification:** Verified responsive CSS classes and diff inspection.
+
 
 
 

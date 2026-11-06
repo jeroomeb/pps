@@ -39,7 +39,7 @@ Following the 100% completion, testing, and deployment of **Phase 1** (31 QA bug
 ---
 
 ### Module 3: Inspection Checklist, Photo Controls & Reports Polish
-- [ ] **Task 13 (`INSP-04`):** Expand inspection checklist layout container from `max-w-3xl` to full responsive width (`max-w-5xl`) in `src/components/ActiveInspectionChecklist.tsx` to eliminate excessive empty space on the right.
+- [x] **Task 13 (`INSP-04`):** Expand inspection checklist layout container from `max-w-3xl` to full responsive width (`max-w-5xl`) in `src/components/ActiveInspectionChecklist.tsx` to eliminate excessive empty space on the right.
 - [ ] **Task 14 (`INSP-05`):** Add an explicit "Remove / Delete Photo" action button alongside uploaded photos in `src/components/ChecklistItemCard.tsx` allowing specialists to remove or retake photos before submission.
 - [ ] **Task 15 (`RESP-02`):** Fix mobile camera capture closing prematurely by enhancing file input attributes in `src/components/ChecklistItemCard.tsx`.
 - [ ] **Task 16 (`REP-01`):** Remove redundant Filter heading and Apply button on Reports page (`src/app/admin/reports/page.tsx`) in favor of clean real-time search.

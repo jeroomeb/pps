@@ -79,7 +79,7 @@ export function ReadOnlyInspectionView({
   const completedLabel = formatDateTime(completedAt)
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full max-w-5xl">
       <div className="mb-4 flex items-center justify-between gap-3">
         <Link
           href="/inspector"

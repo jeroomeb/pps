@@ -229,7 +229,7 @@ export function ActiveInspectionChecklist({
   const progressPct = items.length ? (completedCount / items.length) * 100 : 0
 
   return (
-    <div className="max-w-3xl pb-28 lg:pb-8">
+    <div className="w-full max-w-5xl pb-28 lg:pb-8">
       <Link
         href="/inspector"
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
