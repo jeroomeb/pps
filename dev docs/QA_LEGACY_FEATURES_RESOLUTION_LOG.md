@@ -17,7 +17,7 @@
 | `ONB-11` & `RESP-14` | Onboarding / Nav | `src/components/Header.tsx`, `src/components/AppShell.tsx` | Sticky top header (`sticky top-0 z-40`) & fixed desktop sidebar | Resolved |
 | `ONB-12` | Onboarding | `src/components/ResetPasswordForm.tsx` | Add placeholders & enforce toggles on `/reset-password` | Resolved |
 | `ONB-13` & `ONB-14` | Onboarding / Nav | `src/components/AppShell.tsx`, `src/components/Header.tsx` | Logout confirmation modal, toast feedback, and top-right profile dropdown | Resolved |
-| `PROP-01` | Property | `src/app/admin/properties/new/page.tsx` | Expand New Property form from `max-w-2xl` to full container width | Pending |
+| `PROP-01` | Property | `src/app/admin/properties/new/page.tsx` | Expand New Property form from `max-w-2xl` to full container width | Resolved |
 | `PROP-02` | Property | `src/components/PropertyForm.tsx`, `src/components/AddressFields.tsx` | Add missing placeholders (Name, Street, City, Phone) | Pending |
 | `PROP-03` & `PROF-01` | Property / Profile | `src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx` | Standard phone number validation and formatting | Pending |
 | `PROP-05` | Property | `src/app/admin/properties/[id]/page.tsx`, `src/lib/actions/properties.ts` | Green success toast after creating / editing property | Pending |
@@ -91,6 +91,15 @@
   - Added click-outside dismissal listener for the profile menu.
   - Implemented confirmation modal dialog with red warning icon, informative text (*"Are you sure you want to log out of your session?"*), `Cancel` button, and `Confirm Logout` button across desktop (`AppShell.tsx`) and mobile (`Header.tsx`).
 - **Verification:** TypeScript compilation verified clean (`npx tsc --noEmit` exited with code 0).
+
+### Task 8: `PROP-01` — New Property Add Screen Restricted to Half Page Width
+- **Target Files:** `src/app/admin/properties/new/page.tsx`, `src/app/admin/properties/[id]/edit/page.tsx`
+- **Root Cause:** Container wrapper was constrained to `max-w-2xl`, causing excessive unused space on wide viewports and cramped inputs with awkward line wraps.
+- **Changes Applied:**
+  - Expanded container from `max-w-2xl` to `w-full max-w-5xl` across both the New Property and Edit Property screens.
+  - Ensured headings, address cards, geofencing perimeters, and submit buttons display with balanced spacing.
+- **Verification:** Verified clean diff and full-width responsive layout.
+
 
 
 

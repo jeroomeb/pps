@@ -26,7 +26,7 @@ Following the 100% completion, testing, and deployment of **Phase 1** (31 QA bug
 ---
 
 ### Module 2: Property Management & Profile Validation
-- [ ] **Task 8 (`PROP-01`):** Expand New Property add screen width from restrictive `max-w-2xl` to full responsive layout (`w-full max-w-5xl`) in `src/app/admin/properties/new/page.tsx`.
+- [x] **Task 8 (`PROP-01`):** Expand New Property add screen width from restrictive `max-w-2xl` to full responsive layout (`w-full max-w-5xl`) in `src/app/admin/properties/new/page.tsx`.
 - [ ] **Task 9 (`PROP-02`):** Add missing placeholders:
   - Property Name: `Enter property name` in `src/components/PropertyForm.tsx`
   - Street Address: `Enter street address` in `src/components/AddressFields.tsx`

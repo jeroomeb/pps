@@ -42,7 +42,7 @@ export default async function EditPropertyPage({
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="w-full max-w-5xl">
       <PageHeader
         eyebrow="Properties"
         title="Edit Property"

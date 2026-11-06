@@ -37,7 +37,7 @@ export default async function NewPropertyPage() {
   )
 
   return (
-    <div className="max-w-2xl">
+    <div className="w-full max-w-5xl">
       <PageHeader
         eyebrow="Properties"
         title="New Property"
