@@ -30,6 +30,7 @@ export default function LoginPage() {
     signIn,
     undefined
   )
+  const [email, setEmail] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
   return (
@@ -63,6 +64,8 @@ export default function LoginPage() {
               type="email"
               required
               autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
               className="min-h-12 rounded border border-outline-variant bg-surface-container-lowest px-3 focus:border-primary-container focus:outline-none"
             />

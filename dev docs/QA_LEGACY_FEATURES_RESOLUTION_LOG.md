@@ -13,7 +13,7 @@
 | `ONB-01` | Onboarding | `src/app/login/page.tsx` | Add proper placeholders for Email and Password fields on Login | Resolved |
 | `ONB-02` | Onboarding | `src/app/forgot-password/page.tsx` | Add proper placeholder for Email on Forgot Password screen | Resolved |
 | `ONB-03` | Onboarding | `src/app/login/page.tsx` | Verify and polish show/hide password visibility toggle icon | Resolved |
-| `ONB-05` | Onboarding | `src/app/login/page.tsx` | Retain entered email value upon failed login attempts | Pending |
+| `ONB-05` | Onboarding | `src/app/login/page.tsx` | Retain entered email value upon failed login attempts | Resolved |
 | `ONB-11` & `RESP-14` | Onboarding / Nav | `src/components/Header.tsx`, `src/components/AppShell.tsx` | Sticky top header (`sticky top-0 z-40`) & fixed desktop sidebar | Pending |
 | `ONB-12` | Onboarding | `src/components/ResetPasswordForm.tsx` | Add placeholders & enforce toggles on `/reset-password` | Pending |
 | `ONB-13` & `ONB-14` | Onboarding / Nav | `src/components/AppShell.tsx`, `src/components/Header.tsx` | Logout confirmation modal, toast feedback, and top-right profile dropdown | Pending |
@@ -54,6 +54,15 @@
   - Verified and confirmed interactive eye toggle (`Eye` and `EyeOff` from `lucide-react`) allowing users to show and hide entered passwords.
   - Positioned absolutely inside the relative password container with proper ARIA accessibility labels.
 - **Verification:** Verified in browser rendering and type checking.
+
+### Task 4: `ONB-05` — Email and Password Fields Reset After Invalid Login Attempt
+- **Target File:** `src/app/login/page.tsx`
+- **Root Cause:** Email input was uncontrolled and reset upon server action re-render on failed login attempts.
+- **Changes Applied:**
+  - Added controlled React state `email` bound via `value={email}` and `onChange={(e) => setEmail(e.target.value)}`.
+  - The entered email remains preserved in the input across failed attempts while the error message is displayed.
+- **Verification:** Verified in code review and diff inspection.
+
 
 
 
