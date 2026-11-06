@@ -82,6 +82,9 @@ export default async function ReportsPage({
         }
         defaultTenant="all"
         searchPlaceholder="Search by property, ID, checklist, or specialist…"
+        showFilterLabel={false}
+        showApplyButton={false}
+        autoSubmit
       />
 
       {inspections.length ? (
@@ -165,7 +168,13 @@ export default async function ReportsPage({
       ) : (
         <EmptyState
           icon={FileText}
-          title={q || (tenant && tenant !== 'all') ? 'No matching reports found' : 'No completed inspections yet'}
+          title={
+            q
+              ? 'No reports found with this name'
+              : tenant && tenant !== 'all'
+                ? 'No matching reports found'
+                : 'No completed inspections yet'
+          }
           description={
             q || (tenant && tenant !== 'all')
               ? 'Try adjusting your search query or organization filter.'

@@ -25,7 +25,7 @@
 | `INSP-04` | Inspections | `src/components/ActiveInspectionChecklist.tsx` | Expand checklist layout to eliminate excessive empty space on the right | Resolved |
 | `INSP-05` | Inspections | `src/components/ChecklistItemCard.tsx` | Add Remove / Delete Photo option before submitting checklist | Resolved |
 | `RESP-02` | Inspections | `src/components/ChecklistItemCard.tsx` | Fix mobile camera capture closing prematurely | Resolved |
-| `REP-01` | Reports | `src/app/admin/reports/page.tsx` | Remove redundant filter heading and Apply button in favor of real-time search | Pending |
+| `REP-01` | Reports | `src/app/admin/reports/page.tsx` | Remove redundant filter heading and Apply button in favor of real-time search | Resolved |
 | `RESP-01` | Responsiveness | `src/components/PropertyCard.tsx` / `src/app/admin/properties/[id]/page.tsx` | Stack tags and action buttons below inspection details on mobile | Pending |
 
 ---
@@ -153,6 +153,17 @@
   - Added a prominent red `Remove` button with `Trash2` icon alongside `Replace Photo`.
   - Removed restrictive `capture="environment"` attribute to allow the native OS camera/gallery picker to operate without premature abortion.
 - **Verification:** Verified clean diff and TypeScript compilation.
+
+### Task 16: `REP-01` — Remove Redundant Filter Heading and Apply Button from Reports Page
+- **Target Files:** `src/components/AddressFilterBar.tsx`, `src/app/admin/reports/page.tsx`
+- **Root Cause:** The generic filter bar displayed a static "Filter" label and required clicking an "Apply" button to search completed inspection reports.
+- **Changes Applied:**
+  - Enhanced `AddressFilterBar` with `showFilterLabel`, `showApplyButton`, and `autoSubmit` props.
+  - Added debounced auto-submit (350ms) on typing in the search input and immediate submit on select dropdown change.
+  - Configured Reports page to hide the redundant "Filter" label and "Apply" button (`showFilterLabel={false}`, `showApplyButton={false}`, `autoSubmit`).
+  - Updated empty-state message to `"No reports found with this name"` when queries yield zero matches.
+- **Verification:** Verified clean diff and static typing.
+
 
 
 

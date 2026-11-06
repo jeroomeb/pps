@@ -1,3 +1,6 @@
+'use client'
+
+import { useRef, useEffect } from 'react'
 import { Filter, X, Search } from 'lucide-react'
 import Link from 'next/link'
 
@@ -16,7 +19,7 @@ export type AddressFilterValues = {
 }
 
 /**
- * Server-rendered location, organization & keyword filter — a plain GET form, matching the
+ * Location, organization & keyword filter — a plain GET form, matching the
  * searchParams pattern the inspections list already uses. `hidden` carries any
  * other active params (e.g. `status`) through the submit so filters compose.
  */
@@ -30,6 +33,9 @@ export function AddressFilterBar({
   defaultTenant = 'hq',
   searchPlaceholder,
   hidden = {},
+  showFilterLabel = true,
+  showApplyButton = true,
+  autoSubmit = false,
 }: {
   /** Path this form submits to, e.g. "/admin/properties". */
   action: string
@@ -41,7 +47,32 @@ export function AddressFilterBar({
   defaultTenant?: string
   searchPlaceholder?: string
   hidden?: Record<string, string | undefined>
+  showFilterLabel?: boolean
+  showApplyButton?: boolean
+  autoSubmit?: boolean
 }) {
+  const formRef = useRef<HTMLFormElement>(null)
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [])
+
+  function handleSearchChange() {
+    if (!autoSubmit) return
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      formRef.current?.requestSubmit()
+    }, 350)
+  }
+
+  function handleSelectChange() {
+    if (!autoSubmit) return
+    formRef.current?.requestSubmit()
+  }
+
   const effectiveDefaultTenant = defaultTenant ?? 'hq'
   const hasAny = Boolean(
     values.q ||
@@ -57,6 +88,7 @@ export function AddressFilterBar({
 
   return (
     <form
+      ref={formRef}
       action={action}
       className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2"
     >
@@ -71,6 +103,7 @@ export function AddressFilterBar({
             type="search"
             name="q"
             defaultValue={values.q ?? ''}
+            onChange={handleSearchChange}
             placeholder={searchPlaceholder}
             className={`w-full ${SEARCH_INPUT}`}
             aria-label={searchPlaceholder}
@@ -78,15 +111,18 @@ export function AddressFilterBar({
         </div>
       )}
 
-      <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-        <Filter size={13} />
-        Filter
-      </span>
+      {showFilterLabel && (
+        <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+          <Filter size={13} />
+          Filter
+        </span>
+      )}
 
       {organizations && organizations.length > 0 && (
         <select
           name="tenant"
           defaultValue={values.tenant ?? effectiveDefaultTenant}
+          onChange={handleSelectChange}
           className={SELECT}
           aria-label="Organization"
         >
@@ -110,7 +146,13 @@ export function AddressFilterBar({
       )}
 
       {states.length > 0 && (
-        <select name="state" defaultValue={values.state ?? ''} className={SELECT} aria-label="State">
+        <select
+          name="state"
+          defaultValue={values.state ?? ''}
+          onChange={handleSelectChange}
+          className={SELECT}
+          aria-label="State"
+        >
           <option value="">All states</option>
           {states.map((s) => (
             <option key={s} value={s}>
@@ -124,6 +166,7 @@ export function AddressFilterBar({
         <select
           name="county"
           defaultValue={values.county ?? ''}
+          onChange={handleSelectChange}
           className={SELECT}
           aria-label="County"
         >
@@ -137,7 +180,13 @@ export function AddressFilterBar({
       )}
 
       {(zips ?? []).length > 0 && (
-        <select name="zip" defaultValue={values.zip ?? ''} className={SELECT} aria-label="ZIP code">
+        <select
+          name="zip"
+          defaultValue={values.zip ?? ''}
+          onChange={handleSelectChange}
+          className={SELECT}
+          aria-label="ZIP code"
+        >
           <option value="">All ZIPs</option>
           {(zips ?? []).map((z) => (
             <option key={z} value={z}>
@@ -147,12 +196,14 @@ export function AddressFilterBar({
         </select>
       )}
 
-      <button
-        type="submit"
-        className="min-h-10 rounded-lg bg-primary-container px-3 text-xs font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95"
-      >
-        Apply
-      </button>
+      {showApplyButton && (
+        <button
+          type="submit"
+          className="min-h-10 rounded-lg bg-primary-container px-3 text-xs font-semibold uppercase tracking-wide text-on-primary-container hover:brightness-95"
+        >
+          Apply
+        </button>
+      )}
 
       {hasAny && (
         <Link
