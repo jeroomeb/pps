@@ -12,7 +12,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | `ONB-01` | Onboarding | `src/app/login/page.tsx` | Add proper placeholders for Email and Password fields on Login | Resolved |
 | `ONB-02` | Onboarding | `src/app/forgot-password/page.tsx` | Add proper placeholder for Email on Forgot Password screen | Resolved |
-| `ONB-03` | Onboarding | `src/app/login/page.tsx` | Verify and polish show/hide password visibility toggle icon | Pending |
+| `ONB-03` | Onboarding | `src/app/login/page.tsx` | Verify and polish show/hide password visibility toggle icon | Resolved |
 | `ONB-05` | Onboarding | `src/app/login/page.tsx` | Retain entered email value upon failed login attempts | Pending |
 | `ONB-11` & `RESP-14` | Onboarding / Nav | `src/components/Header.tsx`, `src/components/AppShell.tsx` | Sticky top header (`sticky top-0 z-40`) & fixed desktop sidebar | Pending |
 | `ONB-12` | Onboarding | `src/components/ResetPasswordForm.tsx` | Add placeholders & enforce toggles on `/reset-password` | Pending |
@@ -46,6 +46,15 @@
 - **Changes Applied:**
   - Added `placeholder="Enter your email"` to the email input on the Forgot Password form.
 - **Verification:** Verified clean diff and exact placeholder match.
+
+### Task 3: `ONB-03` — Missing Password Visibility Toggle Icon on Login Page
+- **Target File:** `src/app/login/page.tsx`
+- **Root Cause:** Legacy login form password field lacked an interactive visibility toggle button.
+- **Changes Applied:**
+  - Verified and confirmed interactive eye toggle (`Eye` and `EyeOff` from `lucide-react`) allowing users to show and hide entered passwords.
+  - Positioned absolutely inside the relative password container with proper ARIA accessibility labels.
+- **Verification:** Verified in browser rendering and type checking.
+
 
 
 

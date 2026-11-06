@@ -17,7 +17,7 @@ Following the 100% completion, testing, and deployment of **Phase 1** (31 QA bug
 ### Module 1: Authentication & Onboarding Polish (Legacy Forms & Nav)
 - [x] **Task 1 (`ONB-01`):** Add missing descriptive placeholders (`Enter your email`, `Enter your password`) in `src/app/login/page.tsx`.
 - [x] **Task 2 (`ONB-02`):** Add missing descriptive placeholder (`Enter your email`) in `src/app/forgot-password/page.tsx`.
-- [ ] **Task 3 (`ONB-03`):** Ensure show/hide eye toggle is fully functional on `/login`.
+- [x] **Task 3 (`ONB-03`):** Ensure show/hide eye toggle is fully functional on `/login`.
 - [ ] **Task 4 (`ONB-05`):** Retain entered email in input field on failed login attempts (`src/app/login/page.tsx`) so users do not have to re-type.
 - [ ] **Task 5 (`ONB-11` & `RESP-14`):** Ensure dashboard header is sticky (`sticky top-0 z-40 bg-surface-container-lowest`) and desktop sidebar is fixed during scrolling across mobile, tablet, and desktop (`src/components/Header.tsx`, `src/components/AppShell.tsx`).
 - [ ] **Task 6 (`ONB-12`):** Add missing placeholders (`Enter current password`, `Enter your new password`, `Confirm your new password`) and ensure visibility toggles and validation work consistently on `/reset-password` (`src/components/ResetPasswordForm.tsx`).
