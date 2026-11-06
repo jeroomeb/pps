@@ -193,6 +193,16 @@
   - Selecting State, County, ZIP, or Organization filter dropdowns triggers instantaneous client-side navigation and table re-filtering.
 - **Verification:** Verified clean responsive filter layout and static type checking (`npx tsc --noEmit` exited code 0).
 
+### Task 20: `RESP-13` — Enable Real-Time Filtering & Clean Filter Bar Layout on Team Page
+- **Target File:** `src/app/admin/team/page.tsx`
+- **Root Cause:** The Team members overview page required clicking an "Apply" button and rendered an unnecessary "Filter" text label, causing layout clutter and redundant clicks.
+- **Changes Applied:**
+  - Configured `AddressFilterBar` on `/admin/team` with `showFilterLabel={false}`, `showApplyButton={false}`, and `autoSubmit`.
+  - Member search input updates results in real-time as the admin types with a 350ms debounce.
+  - Dropdown filter selections (State, County, Organization) immediately refresh team cards without requiring manual submission clicks.
+- **Verification:** Verified clean responsive filter layout and static type checking (`npx tsc --noEmit` exited code 0).
+
+
 
 
 

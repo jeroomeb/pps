@@ -109,6 +109,9 @@ export default async function TeamPage({
         counties={distinctValues(allMembers ?? [], 'county')}
         organizations={isHQ ? (allTenants ?? []).map((t) => ({ id: t.id, name: t.name })) : undefined}
         searchPlaceholder="Search team by name, email, or ID…"
+        showFilterLabel={false}
+        showApplyButton={false}
+        autoSubmit
       />
 
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1.3fr_1fr]">
