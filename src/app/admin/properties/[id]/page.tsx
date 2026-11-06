@@ -15,6 +15,7 @@ import {
   Navigation,
   CircleDollarSign,
   Pencil as PencilIcon,
+  CheckCircle2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getAdminScope } from '@/lib/auth/tenant-view'
@@ -35,10 +36,13 @@ import { localDateString, propertyTimezoneOrDefault } from '@/lib/property-timez
 
 export default async function PropertyDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams?: Promise<{ notice?: string }>
 }) {
   const { id } = await params
+  const { notice } = (await searchParams) ?? {}
   const [supabase, scope] = await Promise.all([createClient(), getAdminScope()])
 
   const [
@@ -130,6 +134,22 @@ export default async function PropertyDetailPage({
 
   return (
     <div>
+      {notice === 'created' && (
+        <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3.5 text-xs text-emerald-200 shadow-sm animate-in fade-in duration-300">
+          <CheckCircle2 size={18} className="shrink-0 text-emerald-400" />
+          <span className="font-semibold text-emerald-300">
+            Property has been created successfully.
+          </span>
+        </div>
+      )}
+      {notice === 'updated' && (
+        <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3.5 text-xs text-emerald-200 shadow-sm animate-in fade-in duration-300">
+          <CheckCircle2 size={18} className="shrink-0 text-emerald-400" />
+          <span className="font-semibold text-emerald-300">
+            Property has been updated successfully.
+          </span>
+        </div>
+      )}
       {eveningScore && property.enable_predictive_scoring !== false && (
         <RiskScoreBanner
           score={eveningScore.score}

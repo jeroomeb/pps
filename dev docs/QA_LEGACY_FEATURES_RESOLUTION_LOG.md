@@ -20,7 +20,7 @@
 | `PROP-01` | Property | `src/app/admin/properties/new/page.tsx` | Expand New Property form from `max-w-2xl` to full container width | Resolved |
 | `PROP-02` | Property | `src/components/PropertyForm.tsx`, `src/components/AddressFields.tsx` | Add missing placeholders (Name, Street, City, Phone) | Resolved |
 | `PROP-03` & `PROF-01` | Property / Profile | `src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx` | Standard phone number validation and formatting | Resolved |
-| `PROP-05` | Property | `src/app/admin/properties/[id]/page.tsx`, `src/lib/actions/properties.ts` | Green success toast after creating / editing property | Pending |
+| `PROP-05` | Property | `src/app/admin/properties/[id]/page.tsx`, `src/lib/actions/properties.ts` | Green success toast after creating / editing property | Resolved |
 | `PROP-06` | Property | `src/app/admin/properties/page.tsx` | Fix misleading empty-state message on property search | Pending |
 | `INSP-04` | Inspections | `src/components/ActiveInspectionChecklist.tsx` | Expand checklist layout to eliminate excessive empty space on the right | Pending |
 | `INSP-05` | Inspections | `src/components/ChecklistItemCard.tsx` | Add Remove / Delete Photo option before submitting checklist | Pending |
@@ -118,6 +118,15 @@
   - Integrated server-side Zod validation refines in `propertySchema` (`properties.ts`) and `ownProfileSchema` (`team.ts`).
   - Added dynamic inline error warnings and blur auto-formatting (`(XXX) XXX-XXXX`) in both `PropertyForm.tsx` and `InspectorProfileForm.tsx`.
 - **Verification:** TypeScript compilation verified clean (`npx tsc --noEmit` exited with code 0).
+
+### Task 11: `PROP-05` — Missing Success Notification After Creating or Editing a Property
+- **Target Files:** `src/lib/actions/properties.ts`, `src/app/admin/properties/[id]/page.tsx`
+- **Root Cause:** Redirects after property creation and updates navigated without query parameters, leaving the overview screen without visual confirmation feedback.
+- **Changes Applied:**
+  - Appended `?notice=created` and `?notice=updated` query parameters to redirects in `createProperty` and `updateProperty` server actions.
+  - Implemented green success confirmation banners with `CheckCircle2` icon in `PropertyDetailPage` for both actions matching exact QA text.
+- **Verification:** Verified clean diff and type checks.
+
 
 
 

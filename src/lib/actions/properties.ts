@@ -237,7 +237,7 @@ export async function createProperty(
   await ensureOpenInspectionsForProperty(data.id)
 
   revalidatePath('/admin/properties')
-  redirect(`/admin/properties/${data.id}`)
+  redirect(`/admin/properties/${data.id}?notice=created`)
 }
 
 export async function updateProperty(
@@ -314,7 +314,7 @@ export async function updateProperty(
   revalidatePath('/admin/properties')
   revalidatePath(`/admin/properties/${propertyId}`)
   revalidatePath('/admin')
-  redirect(`/admin/properties/${propertyId}`)
+  redirect(`/admin/properties/${propertyId}?notice=updated`)
 }
 
 export async function deleteProperty(propertyId: string): Promise<{ error?: string } | void> {
