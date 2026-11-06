@@ -44,8 +44,14 @@ export async function signIn(
 }
 
 export async function signOut() {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
+  try {
+    const supabase = await createClient()
+    // Scope 'local' ensures logging out on this device does not invalidate
+    // active sessions on other devices (fixing ONB-15 & ONB-16).
+    await supabase.auth.signOut({ scope: 'local' })
+  } catch (err) {
+    console.warn('Sign-out non-critical warning:', err)
+  }
   redirect('/login')
 }
 

@@ -61,7 +61,14 @@ export function Header({
               </button>
               <form action={async () => {
                 setIsLoggingOut(true)
-                await signOut()
+                try {
+                  await signOut()
+                } catch (error) {
+                  if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+                    throw error
+                  }
+                  window.location.href = '/login'
+                }
               }}>
                 <button
                   type="submit"

@@ -173,6 +173,18 @@
   - Separated status badges and action buttons into a dedicated bottom bar on mobile (`pt-2 border-t border-outline-variant/40 sm:border-t-0 sm:pt-0 shrink-0`) that aligns cleanly to the right on desktop while maintaining full touch target spacing on mobile.
 - **Verification:** Verified clean responsive layout, zero overflow, and successful TypeScript check.
 
+### Task 18: `ONB-15` & `ONB-16` — Multi-Device Session Logout Isolation & False Concurrent Logout Error Prevention
+- **Target Files:** `src/lib/actions/auth.ts`, `src/components/AppShell.tsx`, `src/components/Header.tsx`
+- **Root Cause:**
+  - `ONB-15`: Default Supabase `auth.signOut()` utilizes global scope which invalidates all refresh tokens associated with the user account, terminating active sessions on other devices (e.g. tablet while in the field).
+  - `ONB-16`: When a second device attempts to sign out after its session has already expired or been logged out, unhandled exception bubbling caused an alarming modal error ("Something went wrong...") despite a successful HTTP response.
+- **Changes Applied:**
+  - Configured `supabase.auth.signOut({ scope: 'local' })` in `signOut()` server action (`src/lib/actions/auth.ts`) so revoking session tokens is strictly scoped to the local device.
+  - Wrapped `supabase.auth.signOut` in safe try/catch error handling with graceful logging.
+  - Added safe error interception in `AppShell.tsx` and `Header.tsx` logout form actions to gracefully redirect to `/login` via `window.location.href = '/login'` without presenting false failure modals.
+- **Verification:** Verified TypeScript compilation clean (`npx tsc --noEmit` exited code 0).
+
+
 
 
 

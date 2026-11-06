@@ -240,7 +240,14 @@ export function AppShell({
               </button>
               <form action={async () => {
                 setIsLoggingOut(true)
-                await signOutAction()
+                try {
+                  await signOutAction()
+                } catch (error) {
+                  if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+                    throw error
+                  }
+                  window.location.href = '/login'
+                }
               }}>
                 <button
                   type="submit"

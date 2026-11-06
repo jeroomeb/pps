@@ -47,6 +47,14 @@ Following the 100% completion, testing, and deployment of **Phase 1** (31 QA bug
 
 ---
 
+### Module 4: Multi-Device Auth, Real-Time Filters & Completion Resilience
+- [x] **Task 18 (`ONB-15` & `ONB-16`):** Configure multi-device local session sign-out isolation (`scope: 'local'`) in `src/lib/actions/auth.ts`, and suppress false error modals on concurrent session logout in `src/components/AppShell.tsx` and `src/components/Header.tsx`.
+- [ ] **Task 19 (`RESP-08`):** Enable debounced real-time search (`autoSubmit`) and remove redundant filter label and apply button in Properties overview (`src/app/admin/properties/page.tsx`).
+- [ ] **Task 20 (`RESP-13`):** Enable debounced real-time search (`autoSubmit`) and remove redundant filter label and apply button in Team overview (`src/app/admin/team/page.tsx`).
+- [ ] **Task 21 (`INSP-06` & `INSP-02`):** Verify and document background queueing for inspection PDF reports avoiding 500 completion errors (`src/app/api/inspections/[id]/complete/route.ts`), and verify Admin inspection visibility across dashboards.
+
+---
+
 ## Verification & Deployment Protocol
 1. Static type checking: `npx tsc --noEmit`
 2. Production build verification: `npm run build`
