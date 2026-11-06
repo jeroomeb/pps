@@ -63,6 +63,7 @@ export default function LoginPage() {
               type="email"
               required
               autoComplete="email"
+              placeholder="Enter your email"
               className="min-h-12 rounded border border-outline-variant bg-surface-container-lowest px-3 focus:border-primary-container focus:outline-none"
             />
           </div>
@@ -78,6 +79,7 @@ export default function LoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 required
                 autoComplete="current-password"
+                placeholder="Enter your password"
                 className="min-h-12 w-full rounded border border-outline-variant bg-surface-container-lowest px-3 pr-10 focus:border-primary-container focus:outline-none"
               />
               <button
