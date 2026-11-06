@@ -11,7 +11,7 @@
 | Issue ID | Flow | Target File(s) | Description | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | `ONB-01` | Onboarding | `src/app/login/page.tsx` | Add proper placeholders for Email and Password fields on Login | Resolved |
-| `ONB-02` | Onboarding | `src/app/forgot-password/page.tsx` | Add proper placeholder for Email on Forgot Password screen | Pending |
+| `ONB-02` | Onboarding | `src/app/forgot-password/page.tsx` | Add proper placeholder for Email on Forgot Password screen | Resolved |
 | `ONB-03` | Onboarding | `src/app/login/page.tsx` | Verify and polish show/hide password visibility toggle icon | Pending |
 | `ONB-05` | Onboarding | `src/app/login/page.tsx` | Retain entered email value upon failed login attempts | Pending |
 | `ONB-11` & `RESP-14` | Onboarding / Nav | `src/components/Header.tsx`, `src/components/AppShell.tsx` | Sticky top header (`sticky top-0 z-40`) & fixed desktop sidebar | Pending |
@@ -39,5 +39,13 @@
   - Added `placeholder="Enter your email"` to the email `<input>` element.
   - Added `placeholder="Enter your password"` to the password `<input>` element.
 - **Verification:** TypeScript compilation verified clean (`npx tsc --noEmit` exited with code 0).
+
+### Task 2: `ONB-02` — Missing or Improper Placeholder in Email on Forgot Password Screen
+- **Target File:** `src/app/forgot-password/page.tsx`
+- **Root Cause:** Email input field lacked a placeholder.
+- **Changes Applied:**
+  - Added `placeholder="Enter your email"` to the email input on the Forgot Password form.
+- **Verification:** Verified clean diff and exact placeholder match.
+
 
 

@@ -47,6 +47,7 @@ export default function ForgotPasswordPage() {
                 type="email"
                 required
                 autoComplete="email"
+                placeholder="Enter your email"
                 className="min-h-12 rounded border border-outline-variant bg-surface-container-lowest px-3 focus:border-primary-container focus:outline-none"
               />
             </div>
