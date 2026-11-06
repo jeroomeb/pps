@@ -311,9 +311,11 @@ export default async function PropertiesPage({
       ) : (
         <EmptyState
           icon={Building2}
-          title={hasFilter ? 'No properties in this area' : 'No properties yet'}
+          title={hasFilter ? 'No properties found' : 'No properties yet'}
           description={
-            hasFilter ? 'Try clearing the location filter.' : 'Create your first one to get started.'
+            hasFilter
+              ? 'Try changing your search criteria or adjusting the filters.'
+              : 'Create your first one to get started.'
           }
         />
       )}

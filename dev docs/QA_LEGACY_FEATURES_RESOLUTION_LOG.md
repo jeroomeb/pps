@@ -21,7 +21,7 @@
 | `PROP-02` | Property | `src/components/PropertyForm.tsx`, `src/components/AddressFields.tsx` | Add missing placeholders (Name, Street, City, Phone) | Resolved |
 | `PROP-03` & `PROF-01` | Property / Profile | `src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx` | Standard phone number validation and formatting | Resolved |
 | `PROP-05` | Property | `src/app/admin/properties/[id]/page.tsx`, `src/lib/actions/properties.ts` | Green success toast after creating / editing property | Resolved |
-| `PROP-06` | Property | `src/app/admin/properties/page.tsx` | Fix misleading empty-state message on property search | Pending |
+| `PROP-06` | Property | `src/app/admin/properties/page.tsx` | Fix misleading empty-state message on property search | Resolved |
 | `INSP-04` | Inspections | `src/components/ActiveInspectionChecklist.tsx` | Expand checklist layout to eliminate excessive empty space on the right | Pending |
 | `INSP-05` | Inspections | `src/components/ChecklistItemCard.tsx` | Add Remove / Delete Photo option before submitting checklist | Pending |
 | `RESP-02` | Inspections | `src/components/ChecklistItemCard.tsx` | Fix mobile camera capture closing prematurely | Pending |
@@ -126,6 +126,15 @@
   - Appended `?notice=created` and `?notice=updated` query parameters to redirects in `createProperty` and `updateProperty` server actions.
   - Implemented green success confirmation banners with `CheckCircle2` icon in `PropertyDetailPage` for both actions matching exact QA text.
 - **Verification:** Verified clean diff and type checks.
+
+### Task 12: `PROP-06` — Misleading Empty-State Message When Searching for a Property That Does Not Exist
+- **Target File:** `src/app/admin/properties/page.tsx`
+- **Root Cause:** Empty-state message hardcoded "No properties in this area. Try clearing the location filter.", which was misleading when keyword searches returned no results.
+- **Changes Applied:**
+  - Updated title to `"No properties found"`.
+  - Updated description to `"Try changing your search criteria or adjusting the filters."` when filters or queries are active.
+- **Verification:** Verified in diff and component rendering.
+
 
 
 
