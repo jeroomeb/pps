@@ -164,6 +164,16 @@
   - Updated empty-state message to `"No reports found with this name"` when queries yield zero matches.
 - **Verification:** Verified clean diff and static typing.
 
+### Task 17: `RESP-01` — Overlapping Inspection Cards on Mobile Viewports in Property Details
+- **Target File:** `src/app/admin/properties/[id]/page.tsx`
+- **Root Cause:** In the property details view, inspection items used a single row flex layout (`flex items-center justify-between gap-3`). On mobile viewports under 640px, long template/specialist names collided with status badges and edit/cancel buttons, resulting in cramped, truncated, or overlapping elements.
+- **Changes Applied:**
+  - Converted inspection card layout to a responsive direction: `flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-4`.
+  - Allowed titles and specialist assignment metadata to display with clean line wrapping and vertical rhythm.
+  - Separated status badges and action buttons into a dedicated bottom bar on mobile (`pt-2 border-t border-outline-variant/40 sm:border-t-0 sm:pt-0 shrink-0`) that aligns cleanly to the right on desktop while maintaining full touch target spacing on mobile.
+- **Verification:** Verified clean responsive layout, zero overflow, and successful TypeScript check.
+
+
 
 
 

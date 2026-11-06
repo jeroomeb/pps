@@ -340,16 +340,16 @@ export default async function PropertyDetailPage({
                   return (
                     <div
                       key={inspection.id}
-                      className="group flex items-center justify-between gap-3 transition hover:bg-surface-container-low"
+                      className="group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 p-4 transition hover:bg-surface-container-low"
                     >
-                      <Link href={href} className="min-w-0 flex-1 py-4 pl-4">
-                        <p className="truncate font-semibold">{template?.name ?? 'Checklist'}</p>
-                        <p className="truncate text-sm text-on-surface-variant">
+                      <Link href={href} className="min-w-0 flex-1">
+                        <p className="font-semibold text-base sm:text-sm text-on-surface leading-snug">{template?.name ?? 'Checklist'}</p>
+                        <p className="text-sm text-on-surface-variant mt-0.5">
                           {inspector?.full_name ?? 'Unassigned'} · {dateKind} {dateLabel}
                         </p>
                         {due && (
                           <p
-                            className={`truncate text-xs font-semibold ${
+                            className={`text-xs font-semibold mt-0.5 ${
                               due.tone === 'overdue'
                                 ? 'text-error'
                                 : due.tone === 'today'
@@ -361,27 +361,31 @@ export default async function PropertyDetailPage({
                           </p>
                         )}
                       </Link>
-                      <div className="flex shrink-0 items-center gap-2 py-4 pr-4">
-                        <StatusBadge status={inspection.status} />
-                        {/* Completed and cancelled inspections are frozen — no
-                            edit path. Cancel is offered on open rows only. */}
-                        {!isCompleted && !isCancelled && (
-                          <>
-                            <Link
-                              href={`/admin/inspections/${inspection.id}/edit`}
-                              aria-label="Edit inspection"
-                              title="Edit schedule or specialist"
-                              className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
-                            >
-                              <PencilIcon size={14} />
-                            </Link>
-                            <CancelInspectionButton inspectionId={inspection.id} iconOnly />
-                          </>
-                        )}
-                        <ChevronRight
-                          size={16}
-                          className="text-on-surface-variant transition group-hover:translate-x-0.5"
-                        />
+                      <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t border-outline-variant/40 sm:border-t-0 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={inspection.status} />
+                          {/* Completed and cancelled inspections are frozen — no
+                              edit path. Cancel is offered on open rows only. */}
+                          {!isCompleted && !isCancelled && (
+                            <>
+                              <Link
+                                href={`/admin/inspections/${inspection.id}/edit`}
+                                aria-label="Edit inspection"
+                                title="Edit schedule or specialist"
+                                className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+                              >
+                                <PencilIcon size={14} />
+                              </Link>
+                              <CancelInspectionButton inspectionId={inspection.id} iconOnly />
+                            </>
+                          )}
+                        </div>
+                        <Link href={href} aria-label="View details">
+                          <ChevronRight
+                            size={16}
+                            className="text-on-surface-variant transition group-hover:translate-x-0.5"
+                          />
+                        </Link>
                       </div>
                     </div>
                   )
