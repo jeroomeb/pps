@@ -19,7 +19,7 @@
 | `ONB-13` & `ONB-14` | Onboarding / Nav | `src/components/AppShell.tsx`, `src/components/Header.tsx` | Logout confirmation modal, toast feedback, and top-right profile dropdown | Resolved |
 | `PROP-01` | Property | `src/app/admin/properties/new/page.tsx` | Expand New Property form from `max-w-2xl` to full container width | Resolved |
 | `PROP-02` | Property | `src/components/PropertyForm.tsx`, `src/components/AddressFields.tsx` | Add missing placeholders (Name, Street, City, Phone) | Resolved |
-| `PROP-03` & `PROF-01` | Property / Profile | `src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx` | Standard phone number validation and formatting | Pending |
+| `PROP-03` & `PROF-01` | Property / Profile | `src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx` | Standard phone number validation and formatting | Resolved |
 | `PROP-05` | Property | `src/app/admin/properties/[id]/page.tsx`, `src/lib/actions/properties.ts` | Green success toast after creating / editing property | Pending |
 | `PROP-06` | Property | `src/app/admin/properties/page.tsx` | Fix misleading empty-state message on property search | Pending |
 | `INSP-04` | Inspections | `src/components/ActiveInspectionChecklist.tsx` | Expand checklist layout to eliminate excessive empty space on the right | Pending |
@@ -109,6 +109,16 @@
   - Added `placeholder="Enter city"` to City in `AddressFields.tsx`.
   - Added `placeholder="Enter property phone number"` to Property Phone in `PropertyForm.tsx`.
 - **Verification:** Verified in diff and component rendering.
+
+### Task 10: `PROP-03` & `PROF-01` — Missing Phone Number Validation in Property and Profile Forms
+- **Target Files:** `src/lib/phone.ts`, `src/lib/actions/properties.ts`, `src/lib/actions/team.ts`, `src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx`
+- **Root Cause:** Phone inputs allowed arbitrary text/alphabets without length constraints or formatting, causing invalid phone values to be stored in the database.
+- **Changes Applied:**
+  - Created standardized phone validator in `src/lib/phone.ts` (`isValidPhoneNumber`, `formatPhoneNumber`, `PHONE_ERROR_MESSAGE`) adhering to ITU-T E.164 and North American Numbering Plan standards (10 to 15 digits, digits, optional `+`, spaces, dashes, parentheses).
+  - Integrated server-side Zod validation refines in `propertySchema` (`properties.ts`) and `ownProfileSchema` (`team.ts`).
+  - Added dynamic inline error warnings and blur auto-formatting (`(XXX) XXX-XXXX`) in both `PropertyForm.tsx` and `InspectorProfileForm.tsx`.
+- **Verification:** TypeScript compilation verified clean (`npx tsc --noEmit` exited with code 0).
+
 
 
 

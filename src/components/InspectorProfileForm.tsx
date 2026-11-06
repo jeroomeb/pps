@@ -7,6 +7,7 @@ import { updateOwnProfile } from '@/lib/actions/team'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
 import { ZoomableImage } from '@/components/ZoomableImage'
+import { isValidPhoneNumber, formatPhoneNumber, PHONE_ERROR_MESSAGE } from '@/lib/phone'
 
 const INPUT =
   'min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none'
@@ -52,6 +53,9 @@ export function InspectorProfileForm({
 }) {
   const showToast = useToast()
   const [phone, setPhone] = useState(defaults.phone ?? '')
+  const [phoneTouched, setPhoneTouched] = useState(false)
+  const isPhoneValid = isValidPhoneNumber(phone)
+  const hasPhoneError = phoneTouched && phone.trim() !== '' && !isPhoneValid
   const [street, setStreet] = useState(defaults.street ?? '')
   const [city, setCity] = useState(defaults.city ?? '')
   const [state, setState] = useState(defaults.state ?? '')
@@ -136,6 +140,12 @@ export function InspectorProfileForm({
   }
 
   function handleSave() {
+    if (!isPhoneValid) {
+      setPhoneTouched(true)
+      showToast('error', PHONE_ERROR_MESSAGE)
+      return
+    }
+
     startTransition(async () => {
       const result = await updateOwnProfile({
         phone,
@@ -184,9 +194,24 @@ export function InspectorProfileForm({
             id="phone"
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className={INPUT}
+            onChange={(e) => {
+              setPhone(e.target.value)
+              setPhoneTouched(true)
+            }}
+            onBlur={() => {
+              setPhoneTouched(true)
+              setPhone(formatPhoneNumber(phone))
+            }}
+            placeholder="Enter phone number"
+            className={`${INPUT} ${
+              hasPhoneError ? 'border-error/80 focus:border-error ring-1 ring-error/30' : ''
+            }`}
           />
+          {hasPhoneError && (
+            <span className="text-xs text-error font-medium">
+              {PHONE_ERROR_MESSAGE}
+            </span>
+          )}
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="street" className={LABEL}>

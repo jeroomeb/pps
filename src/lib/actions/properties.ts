@@ -19,6 +19,7 @@ import {
   templateIdsFromForm,
 } from '@/lib/checklist-access'
 import { ensureOpenInspectionsForProperty } from '@/lib/standing-inspections'
+import { isValidPhoneNumber, PHONE_ERROR_MESSAGE } from '@/lib/phone'
 
 const propertySchema = z.object({
   name: z.string().trim().min(1, 'Property name is required'),
@@ -28,7 +29,13 @@ const propertySchema = z.object({
   zip: z.string().trim().optional(),
   county: z.string().trim().optional(),
   email: z.string().trim().email('Enter a valid email'),
-  phone: z.string().trim().optional(),
+  phone: z
+    .string()
+    .trim()
+    .refine((val) => isValidPhoneNumber(val), {
+      message: PHONE_ERROR_MESSAGE,
+    })
+    .optional(),
   notes: z.string().trim().optional(),
   require_id_photo: z.coerce.boolean().default(true),
   enable_gps_geofencing: z.coerce.boolean().default(true),

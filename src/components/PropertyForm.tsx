@@ -17,6 +17,7 @@ import {
   PROPERTY_TIMEZONE_LABELS,
   propertyTimezoneOrDefault,
 } from '@/lib/property-timezones'
+import { isValidPhoneNumber, formatPhoneNumber, PHONE_ERROR_MESSAGE } from '@/lib/phone'
 
 const INPUT =
   'min-h-12 rounded border border-outline-variant px-3 focus:border-primary-container focus:outline-none'
@@ -64,6 +65,8 @@ export function PropertyForm({
   const [enableGps, setEnableGps] = useState<boolean>(defaultValues?.enableGpsGeofencing ?? true)
   const [lat, setLat] = useState<string>(defaultValues?.latitude?.toString() ?? '')
   const [lon, setLon] = useState<string>(defaultValues?.longitude?.toString() ?? '')
+  const [phone, setPhone] = useState<string>(defaultValues?.phone ?? '')
+  const [phoneTouched, setPhoneTouched] = useState(false)
   const [payoutTier, setPayoutTier] = useState<PayoutTier>(defaultValues?.payoutTier ?? 'tier_2')
   const [buildingCategory, setBuildingCategory] = useState<BuildingCategory>(defaultValues?.buildingCategory ?? 'luxury')
   const [timezone, setTimezone] = useState(propertyTimezoneOrDefault(defaultValues?.timezone))
@@ -88,7 +91,9 @@ export function PropertyForm({
   const isLonValid = lon.trim() !== '' && !isNaN(parsedLon) && parsedLon >= -180 && parsedLon <= 180
   const isGpsValid = !enableGps || (isLatValid && isLonValid)
   const isScheduleValid = !enableSchedule || selectedDays.size > 0
-  const canSubmit = isGpsValid && isScheduleValid
+  const isPhoneValid = isValidPhoneNumber(phone)
+  const hasPhoneError = phoneTouched && phone.trim() !== '' && !isPhoneValid
+  const canSubmit = isGpsValid && isScheduleValid && isPhoneValid
 
   function handleDetectCurrentLocation() {
     if (typeof window === 'undefined' || !('geolocation' in navigator)) {
@@ -191,10 +196,27 @@ export function PropertyForm({
             id="phone"
             name="phone"
             type="tel"
-            defaultValue={defaultValues?.phone ?? ''}
+            value={phone}
+            onChange={(e) => {
+              setPhone(e.target.value)
+              setPhoneTouched(true)
+            }}
+            onBlur={() => {
+              setPhoneTouched(true)
+              setPhone(formatPhoneNumber(phone))
+            }}
             placeholder="Enter property phone number"
-            className={`${INPUT} lg:max-w-xs`}
+            className={`${INPUT} lg:max-w-xs ${
+              hasPhoneError
+                ? 'border-error/80 focus:border-error ring-1 ring-error/30'
+                : ''
+            }`}
           />
+          {hasPhoneError && (
+            <span className="text-xs text-error font-medium">
+              {PHONE_ERROR_MESSAGE}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col gap-1">

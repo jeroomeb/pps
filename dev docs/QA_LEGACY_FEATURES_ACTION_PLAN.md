@@ -32,7 +32,7 @@ Following the 100% completion, testing, and deployment of **Phase 1** (31 QA bug
   - Street Address: `Enter street address` in `src/components/AddressFields.tsx`
   - City: `Enter city` in `src/components/AddressFields.tsx`
   - Property Phone: `Enter property phone number` in `src/components/PropertyForm.tsx`
-- [ ] **Task 10 (`PROP-03` & `PROF-01`):** Implement standard phone number formatting and validation (allowing optional `+` and 10–15 digits) on property forms and user profile edit forms (`src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx`, `src/lib/actions/properties.ts`).
+- [x] **Task 10 (`PROP-03` & `PROF-01`):** Implement standard phone number formatting and validation (allowing optional `+` and 10–15 digits) on property forms and user profile edit forms (`src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx`, `src/lib/actions/properties.ts`, `src/lib/actions/team.ts`).
 - [ ] **Task 11 (`PROP-05`):** Add green success toast notifications after creating or editing a property (`Property has been created successfully.` / `Property has been updated successfully.`) in `src/app/admin/properties/[id]/page.tsx`.
 - [ ] **Task 12 (`PROP-06`):** Replace misleading empty-state message in Property search (`No properties in this area. Try clearing the location filter.` -> `No properties found. Try changing your search criteria or adjusting the filters.`) in `src/app/admin/properties/page.tsx`.
 

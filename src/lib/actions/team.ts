@@ -10,6 +10,7 @@ import { isSafeObjectPath } from '@/lib/storage-paths'
 import { generateSecureTemporaryPassword } from '@/lib/security'
 import { getPasswordValidationError } from '@/lib/password'
 import { sendWelcomeCredentialsEmail } from '@/lib/email/sendWelcomeCredentialsEmail'
+import { isValidPhoneNumber, PHONE_ERROR_MESSAGE } from '@/lib/phone'
 import type { Database } from '@/lib/database.types'
 
 const teamMemberSchema = z.object({
@@ -153,7 +154,13 @@ const addressPartsSchema = {
 }
 
 const ownProfileSchema = z.object({
-  phone: z.string().trim().optional(),
+  phone: z
+    .string()
+    .trim()
+    .refine((val) => isValidPhoneNumber(val), {
+      message: PHONE_ERROR_MESSAGE,
+    })
+    .optional(),
   ...addressPartsSchema,
   id_front_path: z.string().trim().nullable().optional(),
   id_back_path: z.string().trim().nullable().optional(),
