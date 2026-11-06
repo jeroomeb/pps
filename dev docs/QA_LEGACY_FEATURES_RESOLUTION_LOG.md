@@ -16,7 +16,7 @@
 | `ONB-05` | Onboarding | `src/app/login/page.tsx` | Retain entered email value upon failed login attempts | Resolved |
 | `ONB-11` & `RESP-14` | Onboarding / Nav | `src/components/Header.tsx`, `src/components/AppShell.tsx` | Sticky top header (`sticky top-0 z-40`) & fixed desktop sidebar | Resolved |
 | `ONB-12` | Onboarding | `src/components/ResetPasswordForm.tsx` | Add placeholders & enforce toggles on `/reset-password` | Resolved |
-| `ONB-13` & `ONB-14` | Onboarding / Nav | `src/components/AppShell.tsx`, `src/components/Header.tsx` | Logout confirmation modal, toast feedback, and top-right profile dropdown | Pending |
+| `ONB-13` & `ONB-14` | Onboarding / Nav | `src/components/AppShell.tsx`, `src/components/Header.tsx` | Logout confirmation modal, toast feedback, and top-right profile dropdown | Resolved |
 | `PROP-01` | Property | `src/app/admin/properties/new/page.tsx` | Expand New Property form from `max-w-2xl` to full container width | Pending |
 | `PROP-02` | Property | `src/components/PropertyForm.tsx`, `src/components/AddressFields.tsx` | Add missing placeholders (Name, Street, City, Phone) | Pending |
 | `PROP-03` & `PROF-01` | Property / Profile | `src/components/PropertyForm.tsx`, `src/components/InspectorProfileForm.tsx` | Standard phone number validation and formatting | Pending |
@@ -81,6 +81,17 @@
   - Added `placeholder="Confirm your new password"` to the Confirm Password field.
   - Verified active eye visibility toggles, standard 5-point password complexity rules, and mismatch validation.
 - **Verification:** Verified in diff and visual inspection.
+
+### Task 7: `ONB-13` & `ONB-14` — Logout Confirmation Modal, Toast Feedback & Profile Dropdown
+- **Target Files:** `src/components/AppShell.tsx`, `src/components/Header.tsx`
+- **Root Cause:** Application lacked a top-right profile dropdown and logout confirmation modal; clicking logout immediately invalidated sessions without warning or confirmation.
+- **Changes Applied:**
+  - Added top-right user menu with `ChevronDown` toggle in `src/components/AppShell.tsx`.
+  - Implemented interactive dropdown menu with `My Profile` link (`/inspector/profile`), user details, and `Log Out` trigger.
+  - Added click-outside dismissal listener for the profile menu.
+  - Implemented confirmation modal dialog with red warning icon, informative text (*"Are you sure you want to log out of your session?"*), `Cancel` button, and `Confirm Logout` button across desktop (`AppShell.tsx`) and mobile (`Header.tsx`).
+- **Verification:** TypeScript compilation verified clean (`npx tsc --noEmit` exited with code 0).
+
 
 
 
