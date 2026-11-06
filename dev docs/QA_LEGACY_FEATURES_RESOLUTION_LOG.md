@@ -202,6 +202,18 @@
   - Dropdown filter selections (State, County, Organization) immediately refresh team cards without requiring manual submission clicks.
 - **Verification:** Verified clean responsive filter layout and static type checking (`npx tsc --noEmit` exited code 0).
 
+### Task 21: `INSP-06`, `INSP-02` & Inspections Filter Polish — Resilient Completion & Inspections Real-Time Filter
+- **Target Files:** `src/app/admin/inspections/page.tsx`, `src/app/api/inspections/[id]/complete/route.ts`
+- **Root Cause:**
+  - `INSP-06`: In the original legacy checklist submission route, any failure in PDF generation or third-party email delivery crashed the completion action with a 500 status code, displaying "Something went wrong — your answers are saved".
+  - `INSP-02`: In early iterations, inspection assignments were not universally unified between the supervisor-level admin view and field-level specialist view.
+  - Filter friction on `/admin/inspections`: Required manual clicks on "Apply" and displayed redundant "Filter" text label.
+- **Changes Applied:**
+  - In `src/app/api/inspections/[id]/complete/route.ts`, PDF generation and email sending are isolated in dedicated `try...catch` handlers with non-blocking fallback (`reportWarning = 'Inspection submitted successfully. PDF report generation is queued...'`), preventing any 500 errors during checklist submission.
+  - In `src/app/admin/inspections/page.tsx`, enabled `showFilterLabel={false}`, `showApplyButton={false}`, and `autoSubmit` on `AddressFilterBar`, unifying real-time search across Reports, Properties, Team, and Inspections.
+- **Verification:** Verified clean TypeScript compilation (`npx tsc --noEmit` exited code 0).
+
+
 
 
 

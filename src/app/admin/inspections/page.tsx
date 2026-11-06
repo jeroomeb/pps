@@ -88,6 +88,9 @@ export default async function AdminInspectionsPage({
         states={distinctValues(allProperties ?? [], 'state')}
         counties={distinctValues(allProperties ?? [], 'county')}
         hidden={{ status }}
+        showFilterLabel={false}
+        showApplyButton={false}
+        autoSubmit
       />
 
       {inspections?.length ? (
