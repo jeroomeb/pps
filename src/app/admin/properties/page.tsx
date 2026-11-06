@@ -173,6 +173,9 @@ export default async function PropertiesPage({
         zips={distinctValues(locationDataSource, 'zip')}
         organizations={isHQ ? (allTenants ?? []).map((t) => ({ id: t.id, name: t.name })) : undefined}
         searchPlaceholder="Search by name, address, or ID…"
+        showFilterLabel={false}
+        showApplyButton={false}
+        autoSubmit
       />
 
       {properties?.length ? (

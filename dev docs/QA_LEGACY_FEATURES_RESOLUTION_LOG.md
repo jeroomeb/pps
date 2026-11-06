@@ -184,6 +184,16 @@
   - Added safe error interception in `AppShell.tsx` and `Header.tsx` logout form actions to gracefully redirect to `/login` via `window.location.href = '/login'` without presenting false failure modals.
 - **Verification:** Verified TypeScript compilation clean (`npx tsc --noEmit` exited code 0).
 
+### Task 19: `RESP-08` — Enable Real-Time Filtering & Clean Filter Bar Layout on Properties Page
+- **Target File:** `src/app/admin/properties/page.tsx`
+- **Root Cause:** The Properties overview page required clicking a manual "Apply" button and displayed a redundant "Filter" label, creating friction during search and filter operations.
+- **Changes Applied:**
+  - Configured `AddressFilterBar` on `/admin/properties` with `showFilterLabel={false}`, `showApplyButton={false}`, and `autoSubmit`.
+  - Input field searches automatically execute debounced queries (350ms) as the user types without requiring manual form submission.
+  - Selecting State, County, ZIP, or Organization filter dropdowns triggers instantaneous client-side navigation and table re-filtering.
+- **Verification:** Verified clean responsive filter layout and static type checking (`npx tsc --noEmit` exited code 0).
+
+
 
 
 
