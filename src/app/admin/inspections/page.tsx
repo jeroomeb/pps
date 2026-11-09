@@ -6,7 +6,8 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatusBadge } from '@/components/StatusBadge'
-import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
+import { AddressFilterBar } from '@/components/AddressFilterBar'
+import { distinctValues } from '@/lib/distinct-values'
 import { dueLabel } from '@/lib/schedule'
 import { zonedDate, formatDate } from '@/lib/timezone'
 import { getAdminScope } from '@/lib/auth/tenant-view'
@@ -38,9 +39,9 @@ function parseFilter(value: string | undefined): Filter {
 export default async function AdminInspectionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; state?: string; county?: string }>
+  searchParams?: Promise<{ status?: string; state?: string; county?: string }>
 }) {
-  const { status, state, county } = await searchParams
+  const { status, state, county } = (await searchParams) ?? {}
   const filter = parseFilter(status)
   const supabase = await createClient()
   const scope = await getAdminScope()

@@ -23,9 +23,9 @@ export default async function NewInspectionPage({
 }: {
   // The dashboard's "Schedule" action deep-links here with the due property
   // and date already chosen.
-  searchParams: Promise<{ property?: string; date?: string }>
+  searchParams?: Promise<{ property?: string; date?: string }>
 }) {
-  const { property, date } = await searchParams
+  const { property, date } = (await searchParams) ?? {}
   const supabase = await createClient()
 
   const [{ data: properties }, { data: templates }, { data: inspectors }, { data: allAssignments }] = await Promise.all([

@@ -9,16 +9,17 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DeactivateMemberModal } from '@/components/DeactivateMemberModal'
-import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
+import { AddressFilterBar } from '@/components/AddressFilterBar'
+import { distinctValues } from '@/lib/distinct-values'
 
 import { US_STATES } from '@/lib/constants/states'
 
 export default async function TeamPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; state?: string; county?: string; tenant?: string }>
+  searchParams?: Promise<{ q?: string; state?: string; county?: string; tenant?: string }>
 }) {
-  const { q, state, county, tenant } = await searchParams
+  const { q, state, county, tenant } = (await searchParams) ?? {}
   const currentProfile = await getProfile()
   const scope = await getAdminScope()
   const supabase = await createClient()

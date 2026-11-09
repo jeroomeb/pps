@@ -6,7 +6,8 @@ import { getAdminScope } from '@/lib/auth/tenant-view'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { AddressFilterBar, distinctValues } from '@/components/AddressFilterBar'
+import { AddressFilterBar } from '@/components/AddressFilterBar'
+import { distinctValues } from '@/lib/distinct-values'
 
 type PropertyRow = {
   id: string
@@ -26,9 +27,9 @@ type PropertyRow = {
 export default async function PropertiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; state?: string; county?: string; zip?: string; tenant?: string }>
+  searchParams?: Promise<{ q?: string; state?: string; county?: string; zip?: string; tenant?: string }>
 }) {
-  const { q, state, county, zip, tenant } = await searchParams
+  const { q, state, county, zip, tenant } = (await searchParams) ?? {}
   const supabase = await createClient()
   const [profile, scope] = await Promise.all([getProfile(), getAdminScope()])
   const isHQ = profile.is_global_admin && !scope.isViewingTenant && !scope.tenantId
@@ -51,7 +52,7 @@ export default async function PropertiesPage({
     filteredQuery = filteredQuery.eq('tenant_id', tenant)
   } else {
     // Default for HQ: isolate provisional tenants from HQ count
-    query: filteredQuery = filteredQuery.is('tenant_id', null)
+    filteredQuery = filteredQuery.is('tenant_id', null)
   }
 
   if (q) {
