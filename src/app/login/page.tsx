@@ -3,13 +3,14 @@
 import { useActionState, useState, Suspense } from 'react'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
-import { CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import { CheckCircle2, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { signIn, type SignInState } from '@/lib/actions/auth'
 import { SubmitButton } from '@/components/SubmitButton'
 
 function LoginNotice() {
   const searchParams = useSearchParams()
   const notice = searchParams.get('notice')
+  const error = searchParams.get('error')
 
   if (notice === 'password_updated') {
     return (
@@ -22,6 +23,24 @@ function LoginNotice() {
       </div>
     )
   }
+
+  if (error === 'recovery' || error === 'expired') {
+    return (
+      <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/40 bg-amber-950/30 p-3.5 text-xs text-amber-200 shadow-sm animate-in fade-in duration-300">
+        <AlertCircle size={18} className="shrink-0 text-amber-400 mt-0.5" />
+        <div className="flex flex-col gap-0.5">
+          <span className="font-semibold text-amber-300">Reset Link Expired or Invalid</span>
+          <span>
+            Your reset link has expired or was already used.{' '}
+            <a href="/forgot-password" className="font-semibold underline hover:text-amber-100">
+              Request a new link
+            </a>
+          </span>
+        </div>
+      </div>
+    )
+  }
+
   return null
 }
 

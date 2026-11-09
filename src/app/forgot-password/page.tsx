@@ -1,9 +1,33 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, Suspense } from 'react'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
+import { AlertCircle } from 'lucide-react'
 import { requestPasswordReset, type ResetState } from '@/lib/actions/auth'
 import { SubmitButton } from '@/components/SubmitButton'
+
+function ForgotPasswordNotice() {
+  const searchParams = useSearchParams()
+  const error = searchParams.get('error')
+
+  if (!error) return null
+
+  let message = 'Your password reset link is invalid or has expired. Please enter your email below to request a fresh link.'
+  if (error === 'network') {
+    message = 'A network issue occurred while verifying your link. Please enter your email below to try again.'
+  }
+
+  return (
+    <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/40 bg-amber-950/30 p-3.5 text-xs text-amber-200 shadow-sm animate-in fade-in duration-300">
+      <AlertCircle size={18} className="shrink-0 text-amber-400 mt-0.5" />
+      <div className="flex flex-col gap-0.5">
+        <span className="font-semibold text-amber-300">Reset Link Expired or Invalid</span>
+        <span>{message}</span>
+      </div>
+    </div>
+  )
+}
 
 export default function ForgotPasswordPage() {
   const [state, formAction] = useActionState<ResetState, FormData>(requestPasswordReset, undefined)
@@ -18,6 +42,12 @@ export default function ForgotPasswordPage() {
             Enter your email and we&apos;ll send a reset link.
           </p>
         </div>
+
+        <Suspense fallback={null}>
+          <div className="mb-4">
+            <ForgotPasswordNotice />
+          </div>
+        </Suspense>
 
         {state?.sent ? (
           <div className="rounded border border-outline-variant bg-surface-container-lowest p-6 text-center">

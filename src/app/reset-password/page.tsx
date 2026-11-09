@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { ResetPasswordForm } from '@/components/ResetPasswordForm'
+import { ResetPasswordFallback } from '@/components/ResetPasswordFallback'
 import { isRecoverySession } from '@/lib/auth/session'
 
 export default async function ResetPasswordPage() {
@@ -21,15 +22,7 @@ export default async function ResetPasswordPage() {
             requireCurrentPassword={!isRecoverySession(session!.access_token)}
           />
         ) : (
-          <div className="rounded border border-outline-variant bg-surface-container-lowest p-6 text-center text-sm">
-            <p>This reset link is invalid or has expired.</p>
-            <a
-              href="/forgot-password"
-              className="mt-4 inline-block font-semibold text-primary hover:underline"
-            >
-              Request a new link
-            </a>
-          </div>
+          <ResetPasswordFallback />
         )}
       </div>
     </div>
