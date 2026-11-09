@@ -81,3 +81,4 @@ If a user is routed directly to `/reset-password` before session cookies are set
 1. **Type Checking:** Ran `npx tsc --noEmit` — 0 errors.
 2. **Production Build:** Ran `npx next build --webpack` — All 26 static and dynamic routes compiled and generated with exit code 0.
 3. **Git Commit:** Committed locally as `efcf25c` (`fix(auth): support hash fragment tokens and handle expired links in password reset flow`).
+
