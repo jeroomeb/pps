@@ -7,3 +7,4 @@ export function distinctValues(rows: ({ [k: string]: unknown } | null)[], key: s
   }
   return [...set].sort((a, b) => a.localeCompare(b))
 }
+
