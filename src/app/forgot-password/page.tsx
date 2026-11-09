@@ -55,6 +55,12 @@ export default function ForgotPasswordPage() {
               If an account exists for that email, a password reset link is on its way. Check your
               inbox (and spam folder).
             </p>
+            <p className="mt-3 text-xs text-on-surface-variant">
+              Received a numeric code?{' '}
+              <a href="/reset-password/confirm" className="font-semibold text-primary underline">
+                Enter code here
+              </a>
+            </p>
             <a
               href="/login"
               className="mt-4 inline-block text-sm font-semibold text-primary hover:underline"
@@ -92,12 +98,20 @@ export default function ForgotPasswordPage() {
               Send Reset Link
             </SubmitButton>
 
-            <a
-              href="/login"
-              className="text-center text-sm font-semibold text-primary hover:underline"
-            >
-              Back to sign in
-            </a>
+            <div className="mt-2 flex flex-col items-center gap-2">
+              <a
+                href="/login"
+                className="text-center text-sm font-semibold text-primary hover:underline"
+              >
+                Back to sign in
+              </a>
+              <a
+                href="/reset-password/confirm"
+                className="text-center text-xs text-on-surface-variant hover:text-on-surface hover:underline"
+              >
+                Have a verification code?
+              </a>
+            </div>
           </form>
         )}
       </div>

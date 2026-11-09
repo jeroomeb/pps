@@ -82,3 +82,25 @@ If a user is routed directly to `/reset-password` before session cookies are set
 2. **Production Build:** Ran `npx next build --webpack` — All 26 static and dynamic routes compiled and generated with exit code 0.
 3. **Git Commit:** Committed locally as `efcf25c` (`fix(auth): support hash fragment tokens and handle expired links in password reset flow`).
 
+
+
+---
+
+## 5. Anti-Scanner Architecture & Resend Dispatch (Permanent Fix for Immediate "Expired" Error)
+
+### The Underlying Issue:
+When Supabase Auth delivers an email containing a direct link to `https://<project>.supabase.co/auth/v1/verify?token=pkce_...`, email security scanners (Google Safe Browsing, Microsoft Defender, corporate email gateways) crawl and issue an automated HTTP GET to every link the moment the email hits the inbox. Because Supabase OTP tokens are strictly single-use, the scanner consumes the token before the user ever opens their inbox. When the user clicks the link even seconds later, Supabase responds with `error_code=otp_expired`.
+
+### The Resolution:
+1. **Direct Resend Email Dispatch (`src/lib/email/sendPasswordResetEmail.ts`):**
+   - In `requestPasswordReset`, we generate a recovery link using `createAdminClient().auth.admin.generateLink({ type: 'recovery', email })`.
+   - We send a custom branded email via Resend pointing to our intermediate landing page: `/reset-password/confirm?token_hash=<hashed_token>`.
+   - The email also displays a numeric one-time verification code as a fallback.
+2. **Scanner-Proof Intermediate Confirmation Page (`src/app/reset-password/confirm/page.tsx`):**
+   - When an email scanner visits the page via GET, it simply loads the static confirmation card and exits without consuming the single-use token.
+   - When the human user clicks "Continue to Reset Password", client JavaScript issues `POST /auth/callback` with `{ token_hash, type: 'recovery' }`.
+   - The server calls `supabase.auth.verifyOtp()`, establishes SSR cookies, and navigates the user to `/reset-password`.
+3. **Session AMR Support (`src/lib/auth/session.ts`):**
+   - Updated `isRecoverySession()` to accept both `recovery` and `otp` AMR methods so `updatePassword` does not require the user's old password when authenticated via OTP.
+4. **Allowed Public Route (`src/lib/supabase/proxy.ts`):**
+   - Added `/reset-password/confirm` to `ALLOW_LOGGED_OUT`.

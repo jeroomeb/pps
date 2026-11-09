@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { isRecoverySession } from '@/lib/auth/session'
 import { getPasswordValidationError } from '@/lib/password'
+import { sendPasswordResetEmail } from '@/lib/email/sendPasswordResetEmail'
 
 export type SignInState = { error?: string } | undefined
 export type ResetState = { error?: string; sent?: boolean } | undefined
@@ -55,10 +56,10 @@ export async function signOut() {
   redirect('/login')
 }
 
-// Sends a password-recovery email. The link lands on /auth/callback, which
-// exchanges the code for a session and forwards to /reset-password.
-// NOTE: delivery depends on Supabase Auth SMTP being configured in the
-// Supabase dashboard (the built-in email has very low sending limits).
+// Sends a password-recovery email. Uses admin.generateLink + Resend to route
+// through a secure confirmation landing page (/reset-password/confirm?token_hash=...)
+// which prevents automated email security scanners from consuming the single-use token.
+// Falls back to Supabase auth built-in email if Resend is unavailable.
 export async function requestPasswordReset(
   _prevState: ResetState,
   formData: FormData
@@ -78,12 +79,42 @@ export async function requestPasswordReset(
     (h.get('host') ? `https://${h.get('host')}` : '')
   const origin = rawOrigin.replace(/\/+$/, '')
 
+  try {
+    const admin = createAdminClient()
+    const { data, error: genError } = await admin.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: {
+        redirectTo: `${origin}/auth/callback?next=/reset-password`,
+      },
+    })
+
+    if (!genError && data?.properties?.hashed_token) {
+      const resetUrl = `${origin}/reset-password/confirm?token_hash=${data.properties.hashed_token}`
+      const otpCode = data.properties.email_otp
+
+      const sent = await sendPasswordResetEmail({
+        email,
+        resetUrl,
+        otpCode,
+      })
+
+      if (sent) {
+        return { sent: true }
+      }
+    } else if (genError) {
+      console.warn('[requestPasswordReset] generateLink warning:', genError.message)
+    }
+  } catch (err) {
+    console.warn('[requestPasswordReset] generateLink or Resend dispatch failed; falling back to Supabase auth email:', err)
+  }
+
+  // Fallback to Supabase Auth built-in email trigger
   const supabase = await createClient()
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/callback?next=/reset-password`,
   })
 
-  // Don't reveal whether an account exists — always report "sent".
   if (error) {
     console.error('resetPasswordForEmail error:', error.message)
   }

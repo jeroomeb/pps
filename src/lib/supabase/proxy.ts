@@ -7,6 +7,7 @@ const ALLOW_LOGGED_OUT = [
   '/login',
   '/forgot-password',
   '/reset-password',
+  '/reset-password/confirm',
   '/auth/callback',
 ]
 // Of those, the ones a logged-in user should be bounced away from. NOT

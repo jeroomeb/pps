@@ -176,30 +176,61 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Sets session cookies from client-extracted access/refresh tokens.
- * Used when authentication tokens arrive in the URL hash fragment (#access_token=...).
+ * Securely establishes session cookies from client requests:
+ * - Direct token_hash verification (bypasses email scanners)
+ * - Numeric OTP code verification (email + token)
+ * - Hash fragment token extraction (access_token + refresh_token)
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { access_token, refresh_token } = body || {}
-
-    if (!access_token || typeof access_token !== 'string') {
-      return NextResponse.json({ ok: false, error: 'Missing access_token' }, { status: 400 })
-    }
+    const { access_token, refresh_token, token_hash, email, token, type } = body || {}
 
     const supabase = await createClient()
-    const { error } = await supabase.auth.setSession({
-      access_token,
-      refresh_token: typeof refresh_token === 'string' ? refresh_token : '',
-    })
 
-    if (error) {
-      console.warn('[auth/callback] setSession failed:', error.message)
-      return NextResponse.json({ ok: false, error: error.message }, { status: 400 })
+    // 1. Verify via token_hash (from intermediate confirmation page)
+    if (token_hash && typeof token_hash === 'string') {
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash,
+        type: (type || 'recovery') as EmailOtpType,
+      })
+      if (error) {
+        console.warn('[auth/callback] token_hash verifyOtp error:', error.message)
+        return NextResponse.json({ ok: false, error: error.message }, { status: 400 })
+      }
+      return NextResponse.json({ ok: true })
     }
 
-    return NextResponse.json({ ok: true })
+    // 2. Verify via manual OTP code (email + numeric code)
+    if (email && token) {
+      const { error } = await supabase.auth.verifyOtp({
+        email: String(email).trim(),
+        token: String(token).trim(),
+        type: (type || 'recovery') as EmailOtpType,
+      })
+      if (error) {
+        console.warn('[auth/callback] email+token verifyOtp error:', error.message)
+        return NextResponse.json({ ok: false, error: error.message }, { status: 400 })
+      }
+      return NextResponse.json({ ok: true })
+    }
+
+    // 3. Set session from access_token
+    if (access_token && typeof access_token === 'string') {
+      const { error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token: typeof refresh_token === 'string' ? refresh_token : '',
+      })
+
+      if (error) {
+        console.warn('[auth/callback] setSession failed:', error.message)
+        return NextResponse.json({ ok: false, error: error.message }, { status: 400 })
+      }
+
+      return NextResponse.json({ ok: true })
+    }
+
+    return NextResponse.json({ ok: false, error: 'Missing credentials' }, { status: 400 })
   } catch (err) {
     console.error('[auth/callback] POST error:', err)
     return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 })
