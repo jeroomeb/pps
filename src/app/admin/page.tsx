@@ -156,7 +156,7 @@ export default async function AdminDashboardPage({
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
-            <Link key={stat.label} href={stat.href} className="rounded-lg transition hover:brightness-95">
+            <Link key={stat.label} href={stat.href} className="block rounded-lg transition hover:brightness-95">
               <Card className="flex items-center justify-between">
                 <div>
                   <p className="label-tracked text-on-surface-variant">{stat.label}</p>
@@ -221,8 +221,8 @@ export default async function AdminDashboardPage({
                 ))}
                 {upcoming.length > 6 && (
                   <Link
-                    href="/admin/inspections"
-                    className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-primary hover:bg-surface-container-low"
+                    href={`/admin/inspections${propTenantParam}`}
+                    className="block px-4 py-3 text-xs font-semibold uppercase tracking-wide text-primary hover:bg-surface-container-low"
                   >
                     View all {upcoming.length}
                   </Link>
@@ -317,8 +317,8 @@ export default async function AdminDashboardPage({
                   })}
                   {inProgress.length > 5 && (
                     <Link
-                      href="/admin/inspections?status=in_progress"
-                      className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-primary hover:bg-surface-container-low"
+                      href={`/admin/inspections?status=in_progress${tenantParam}`}
+                      className="block px-4 py-3 text-xs font-semibold uppercase tracking-wide text-primary hover:bg-surface-container-low"
                     >
                       View all {inProgress.length}
                     </Link>
