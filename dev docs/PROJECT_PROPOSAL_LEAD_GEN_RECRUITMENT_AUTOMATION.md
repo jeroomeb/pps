@@ -124,40 +124,13 @@ Accelerates response times to warm inbound responses while keeping human operato
 
 ## 6. Project Implementation Phases
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Phase 1: Infrastructure, Domains & Mailbox Warm-Up (Wk 1-3)  │
-│ - Secondary domain setup (SPF, DKIM, DMARC)                │
-│ - 8-10 inboxes provisioned & 14-21 day warm-up started      │
-│ - Lead database schema & Excel/CSV export engine built       │
-└──────────────────────────────┬──────────────────────────────┘
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Phase 2: Scraper, Enrichment & Property Profile (Wk 2-4)    │
-│ - Multi-source scraper (Commercial, Luxury, 55+, Motels,     │
-│   Student Housing)                                          │
-│ - Intent scoring engine & verified contact enrichment        │
-│ - Excel (.xlsx) / CSV export verified                       │
-└──────────────────────────────┬──────────────────────────────┘
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Phase 3: Outbound Sequencer & Recruiting Pipeline (Wk 4-5)  │
-│ - 4-step B2B sales sequence & 2-step recruitment cadence    │
-│ - Sequence pause triggers & domain-distribution logic        │
-└──────────────────────────────┬──────────────────────────────┘
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Phase 4: AI Reply Assistant & Mailbox Integration (Wk 5-6)  │
-│ - Intent classification, draft generator, sequence breaker   │
-│ - Human review dashboard / mailbox draft testing             │
-└──────────────────────────────┬──────────────────────────────┘
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Phase 5: Calibration, Live Ramp & Hand-Off (Wk 6-7)         │
-│ - Controlled ramp (10 -> 25 -> 50/day per inbox)            │
-│ - Quality assurance audits & client operational playbook     │
-└─────────────────────────────────────────────────────────────┘
-```
+| Phase & Timeline | Focus Area | Key Deliverables & Action Items |
+| :--- | :--- | :--- |
+| **Phase 1**<br>*(Weeks 1–3)* | **Infrastructure, Domains & Inbox Warm-Up** | • Acquire and configure DNS (SPF, DKIM, DMARC) for 4–5 lookalike secondary domains.<br>• Provision 8–10 sending inboxes and initiate 14–21 day automated deliverability warm-up.<br>• Set up dedicated isolated lead database and 1-click Excel (`.xlsx`) / CSV export engine. |
+| **Phase 2**<br>*(Weeks 2–4)* | **Scraper, Enrichment & Property Profile** | • Deploy automated multi-source scrapers across Commercial, Luxury, 55+, Motels & Student Housing.<br>• Build intent scoring engine (hiring triggers, municipal code violations, reviews).<br>• Integrate verified decision-maker contact discovery (Email & Phone enrichment).<br>• Verify end-to-end data export to `.xlsx` and `.csv`. |
+| **Phase 3**<br>*(Weeks 4–5)* | **Outbound Sequencer & Recruiting Pipeline** | • Build the automated 4-step B2B sales sequence (Tue–Thu mid-morning delivery).<br>• Build the 2-step Operations Specialist recruitment cadence.<br>• Implement inbox round-robin rotation, 50/day throttling, and auto-halt triggers on reply/opt-out. |
+| **Phase 4**<br>*(Weeks 5–6)* | **AI Reply Assistant & Mailbox Integration** | • Connect AI monitoring to marketing inboxes to filter bounces, OOO, and spam.<br>• Implement thread-aware intent classifier and draft-only generator (never auto-sends).<br>• Set up instant sequence pause on inbound replies and human notification workflow. |
+| **Phase 5**<br>*(Weeks 6–7)* | **Calibration, Live Ramp & Hand-Off** | • Conduct end-to-end dry-run audits and calibrate intent scoring thresholds.<br>• Execute controlled outbound ramp-up (scaling safely from 10 to 25 to 50/day per inbox).<br>• Deliver operational hand-off playbook and client training. |
 
 ---
 
