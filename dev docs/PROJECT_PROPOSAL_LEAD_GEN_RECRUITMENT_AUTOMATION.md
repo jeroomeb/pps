@@ -2,145 +2,172 @@
 ## Amenity Op's — Lead Generation, Recruitment & Outreach Automation Engine
 
 **Prepared for:** Client Review & Scope Alignment  
-**Project Status:** Proposed Next Phase (Separate from Core `amenityops.app` SaaS Platform)  
+**Project Status:** Scope Updated with Client Feedback (Ready for Execution Alignment)  
 **Date:** November 2026  
 
 ---
 
 ## 1. Executive Summary
 
-This document outlines the updated project scope and operational blueprint for the **Amenity Op's Lead Generation, Specialist Recruitment, and Outreach Automation Engine**.
+This document defines the project scope, technical specifications, data schemas, and operational architecture for the **Amenity Op's Lead Generation, Specialist Recruitment, and Outreach Automation Engine**.
 
-The system is designed as an independent, automated growth platform consisting of three integrated modules:
-1. **B2B Customer Lead Generation & Cold Outreach Engine** — Identifies qualifying properties and decision-makers showing active overnight operational pain, then runs a targeted 4-step email sequence.
-2. **Specialist Field Recruitment Engine** — Sources, scores, and contacts qualified overnight operations and compliance candidates via a separate 2-step recruiting sequence.
-3. **Human-in-the-Loop AI Reply Assistant** — Monitors the marketing mailbox, classifies incoming replies, cancels follow-up sequences automatically, and prepares human-reviewed response drafts.
+The system is engineered as an autonomous growth engine consisting of three core modules:
+1. **B2B Customer Lead Discovery & Cold Outreach Engine** — Identifies qualifying commercial, residential, and hospitality properties displaying active overnight operational pain, enriches verified decision-maker records, and runs a targeted 4-touch email sequence.
+2. **Specialist Field Recruitment Engine** — Sources, evaluates, and contacts qualified overnight operations, inspection, and compliance candidates via a separate 2-touch recruiting pipeline.
+3. **Human-in-the-Loop AI Reply Assistant** — Monitors outreach inboxes, classifies replies by intent, cancels follow-up cadences immediately upon response, and drafts tailored responses for human review and 1-click dispatch.
 
-> **Core Architecture Rule:** This outreach engine operates completely separate from the live `amenityops.app` application. Inspection reports, password resets, and operational alerts on `amenityops.app` will never share domains, mailboxes, or databases with cold outreach or recruiting campaigns.
+> **Production Isolation Rule:** This outreach engine operates completely independent of the core `amenityops.app` platform. Production inspection reports, client checklists, and password-reset workflows will never share sending domains, mailboxes, or IP addresses with outbound campaigns.
 
 ---
 
-## 2. Infrastructure & Deliverability Safeguards
+## 2. Infrastructure, Data Storage & Export Architecture
 
-To send outbound campaigns at scale without triggering spam filters or damaging the primary `amenityops.app` domain reputation, the outreach infrastructure follows strict isolation rules:
+### 2.1 Dedicated Data Store (Completely Isolated from Production)
+All raw scraped property data, contact enrichment, outreach status, and logs will be housed in an **independent lead database**:
+- Isolated schema to guarantee zero impact on live inspection app performance.
+- Full relational integrity tracking lead origin, scrape timestamp, intent triggers, outreach stage, and communication history.
 
-- **Dedicated Secondary Domains:** Acquire **4 to 5 lookalike domains** strictly for outreach (e.g., `getamenityops.com`, `amenityopshq.com`, `amenityops.co`, `useamenityops.com`, `tryamenityops.com`, `amenityopslabs.com`).
-- **Distributed Mailboxes:** Provision **2 inboxes per domain** (8–10 active sending inboxes total).
-- **Mandatory Warm-Up Period:** All new domains and inboxes undergo automated deliverability warm-up for **14 to 21 days** prior to launching any live sequence.
-- **Strict Sending Caps:** Each inbox is capped at **50 total emails per day** (combining initial touches and follow-ups).
-- **Zero List Crossover:** Customer prospects and specialist job candidates are stored in separate pipelines. A property manager is never routed to recruitment, and a job candidate is never placed on a B2B sales list.
+### 2.2 Direct Data Export to Excel (`.xlsx`) & CSV (`.csv`)
+To ensure full data ownership, mobility, and review flexibility:
+- **Instant 1-Click Export:** The engine provides on-demand data export into both Microsoft Excel (`.xlsx`) and standard comma-separated (`.csv`) formats.
+- **Segmented / Filtered Exports:** Ability to export by date range, property type (e.g., Motels, Student Housing, 55+), geographical region, or outreach status (e.g., *Enriched, In Sequence, Responded, Demo Requested*).
+- **Clean Field Formatting:** Pre-formatted column widths, sanitized phone numbers, standard ISO dates, and clean multiline amenity notes.
+
+### 2.3 Deliverability & Domain Protection
+- **Dedicated Lookalike Domains:** Outbound sequences run across **4 to 5 secondary domains** (e.g., `getamenityops.com`, `amenityopshq.com`, `amenityops.co`, `useamenityops.com`, `tryamenityops.com`).
+- **Distributed Sending:** 2 inboxes per domain (**8 to 10 inboxes total**).
+- **Mandatory Warm-Up:** Automated deliverability warm-up for **14 to 21 days** before sending live outreach.
+- **Strict Throttling:** Capped at **50 emails/day per inbox** (including initial messages and follow-ups).
+- **Zero List Crossover:** Property management prospects and specialist job applicants remain in strictly segregated pipelines.
 
 ---
 
 ## 3. Module 1: B2B Customer Lead Generation & Outreach
 
-### 3.1 Target Property Profile (Qualification Filters)
-The automation targets property managers who already employ overnight or evening staff and want to standardize operations with a digital checklist and automated morning hand-off report (without replacing their existing team).
+### 3.1 Target Property Profile (Expanded Scope)
+The engine identifies properties that already utilize evening/overnight staff and need standardized digital checklists and automated morning hand-off reports.
 
-**A property is only retained if it meets at least one of these structural criteria:**
-- **Commercial Multi-Tenant:** 3+ distinct corporate tenants or larger than 50,000 sq. ft.
-- **Luxury Multi-Family / High-Rise:** Properties featuring premium amenities (concierge, fitness center, clubhouse, underground parking, controlled/smart access).
-- **55+ Active Adult & Independent Living:** Communities with heightened overnight safety, compliance, and morning-readiness liabilities.
-- **Multi-Asset Regional Portfolios:** Management companies overseeing clusters of qualifying properties.
+**A property is retained if it matches any of the following categories:**
+1. **Commercial Multi-Tenant:** Office complexes or multi-use assets with 3+ distinct corporate tenants or over 50,000 sq. ft.
+2. **Luxury Multi-Family & High-Rises:** Premium residential towers featuring amenities requiring strict asset protection (concierge desks, fitness facilities, pools, underground garages, smart/controlled access).
+3. **55+ Active Adult & Independent Living Communities:** Senior living assets with high overnight safety, compliance, and morning-readiness liabilities.
+4. **Motels & Boutique Hospitality:** Extended-stay and independent motel assets experiencing overnight front-desk turnover, unmonitored night hours, and exterior property/safety audit needs.
+5. **Off-Campus Student Housing Complexes:** High-density, high-liability communities subject to after-hours amenity abuse, noise/trash issues, security gate failures, and rigorous room/common area turnover audits.
+6. **Multi-Asset Regional Portfolios:** Corporate management firms overseeing clusters of any of the above asset categories.
 
-*All properties failing these criteria are automatically discarded before enrichment or outreach.*
+> **Extensible Architecture:** The property profile taxonomy is built with a flexible classification engine, allowing rapid addition of new target asset classes (e.g., self-storage, mixed-use retail, industrial parks) as Amenity Op's expands its reach.
 
-### 3.2 Five-Tier Lead Discovery & Signal Scoring
-Instead of blasting static property directories, leads are prioritized by **live operational pain and intent triggers**:
+### 3.2 Standard Scraped Lead Data Schema
+For every qualifying asset, the scraper and enrichment engine extracts and normalizes the following standardized schema:
 
-| Tier | Priority | Sources | Target Signals & Buying Triggers |
+| Column / Field | Data Description & Source |
+| :--- | :--- |
+| **Property Name** | Official legal or operating name of the asset. |
+| **Community / Property Type** | Specific asset classification (*Motel, Off-Campus Student Housing, Luxury Multi-Family, 55+ Active Adult, Commercial Multi-Tenant*). |
+| **Address** | Physical street address of the building/complex. |
+| **Municipality / Town** | City, town, or incorporated municipality. |
+| **County** | County jurisdiction (critical for tax, deed, and municipal court violation lookups). |
+| **Key Amenities / Notes** | Physical features requiring overnight audit (e.g., *concierge, gated parking, pool/clubhouse, fitness center, fire exits, exterior corridors*), plus any detected pain signals (e.g., recent municipal fines, hiring posts, or negative night-shift reviews). |
+| **Target Gatekeeper / Contact** | Full name and title of the primary local or regional decision-maker (e.g., *Property Manager, General Manager, Community Director, Facilities Lead*). |
+| **Phone** | Verified direct line, leasing office phone, or executive desk number. |
+| **Email** | Validated corporate or direct business email address for the identified decision-maker. |
+
+### 3.3 Five-Tier Discovery & Intent Scoring
+Leads are surfaced and scored by **active operational pain**, ensuring outreach is timely and relevant:
+
+| Tier | Priority | Core Sources | Specific Signals Scraped |
 | :--- | :--- | :--- | :--- |
-| **Tier 1** | Highest (Active Pain) | Indeed, ZipRecruiter, LinkedIn Sales Navigator, Google Maps Reviews, Glassdoor | Active hiring for *Night Manager / Overnight Operations / Front Desk Closer*; corporate clusters of night-shift listings; resident complaints (*unattended desk, broken gates, morning mess*); employee reviews citing *short staffing, burnout, manual paperwork*. |
-| **Tier 2** | High (Risk & Compliance) | Municipal Building Departments, Apollo.io, ZoomInfo | City code violations or fines within the last 90 days (*trash logistics, lighting failures, blocked exits*), paired with verified executive contact enrichment. |
-| **Tier 3** | Targeted Niche | SeniorHousingNet, Yardi Matrix, Apartments.com, 55places, After55, RentCafe | Isolates luxury high-rises, Class A portfolios, and 55+ active-adult communities. |
-| **Tier 4** | Portfolio Scale | Greystar, Lincoln Property Co., CBRE, JLL, Cushman & Wakefield, Colliers portals | Enterprise property networks where one partnership unlocks dozens of buildings. |
-| **Tier 5** | Background Verification Only | CoStar, LoopNet, Crexi, County GIS, State Registries (SOS), Attom Data | Used strictly to verify square footage, tenant count, ownership changes (last 6 months), and LLC officer names. *Never emailed directly without Tier 1–4 qualification.* |
+| **Tier 1** | **Highest (Active Pain)** | Indeed, ZipRecruiter, LinkedIn Sales Navigator, Google Maps Reviews, Glassdoor | Active job openings for *Night Manager, Overnight Operations, Front Desk Closer, Night Auditor*; repeated night postings across regional assets; reviews citing *broken gates, unattended desks, morning trash*; employee complaints regarding *short staffing or manual paperwork*. |
+| **Tier 2** | **High (Risk & Violations)** | Municipal Building Depts, Code Enforcement Records, Apollo.io, ZoomInfo | Citations or fines within the last 90 days (*trash logistics, lighting failures, fire door obstructions*), mapped to verified executive contacts. |
+| **Tier 3** | **Targeted Portals** | Apartments.com, RentCafe, CollegeStudentHousing, SeniorHousingNet, Hospitality registries | Targeted scraping across student housing directories, motel listings, 55places, and Class A multi-family aggregators. |
+| **Tier 4** | **Enterprise Portals** | Greystar, Lincoln Property Co., CBRE, JLL, Cushman & Wakefield, Colliers | Enterprise portfolios where a single relationship standardizes operations across dozens of buildings. |
+| **Tier 5** | **CRE Verification** | CoStar, LoopNet, Crexi, County GIS, State Registries (SOS) | Cross-checks structural square footage, ownership transitions (last 6 months), and legal entity officer filings. |
 
-### 3.3 Target Decision-Maker Personas
-Each qualified company receives one primary contact matched to the person experiencing the morning hand-off friction first:
-- **Property Level:** Property Manager, Senior Community Manager, General Manager / Resident Experience Director, Assistant Property Manager.
-- **Regional / Portfolio Level:** Regional Operations Director, VP of Property Management, Director of Asset Management.
-- **Risk & Facilities Level:** Facilities Director / Chief Engineer, Head of Security & Compliance / Risk Manager, Director of PropTech (enterprise), VP of HR (when night-shift turnover is the trigger).
-
-### 3.4 Automated 4-Step Sales Sequence
-Outbound emails are sent **Tuesday through Thursday mid-morning** (local time). If a prospect replies, requests the demo, or asks to stop, all remaining steps cancel immediately.
-
-| Step | Timing | Core Messaging & Call to Action |
-| :--- | :--- | :--- |
-| **Email 1** | Day 1 | **Introduction & Hook:** Addresses after-hours uncertainty; introduces Amenity Op's as a standalone tool empowering existing in-house staff; asks permission to send a 5-minute self-paced demo video. |
-| **Email 2** | Day 4 | **The Morning Surprise:** Eliminating morning catch-up and guesswork with automated morning hand-off reports; invites prospect to reply *"demo"* for the video link. |
-| **Email 3** | Day 8 | **Self-Sufficiency:** Contrasts memory/paper logs with digital compliance checklists without hiring outside contractors; re-offers the self-paced video. |
-| **Email 4** | Day 14 | **Polite Break-Up:** Closes the loop respectfully, stops further outreach, and leaves the self-paced demo link for future reference. |
-
-### 3.5 Monthly Pipeline Math & Volume Targets (At Full Scale)
-Based on a 20-working-day month and a conservative 0.2% cold-to-close conversion benchmark:
-- **New Companies Added:** ~125 targeted companies per working day (**2,500 companies/month**).
-- **Daily Sending Volume:** ~125 first-touch emails + ~375–500 follow-ups = **500–625 total emails/day** (safely distributed across 8–10 warmed inboxes).
-- **Monthly Total Volume:** **10,000–12,500 emails/month**.
-- **Expected Funnel Output:** ~90 total replies -> 15–25 discovery/sales calls -> **~5 new signed clients/month**.
+### 3.4 Automated 4-Touch Sales Cadence
+Outbound emails deploy **Tuesday through Thursday mid-morning** (prospect local time). Any prospect reply, demo request, or opt-out automatically and permanently halts further sequence steps:
+- **Email 1 (Day 1):** Addresses the stress of overnight uncertainty; introduces Amenity Op's as an in-house software upgrade; requests permission to share a 5-minute self-paced demo video.
+- **Email 2 (Day 4):** Focuses on eliminating the "morning surprise" via automated hand-off reports delivered before morning coffee; invites prospect to reply *"demo"*.
+- **Email 3 (Day 8):** Highlights self-sufficiency—empowering existing staff with digital checklists without hiring expensive outside third parties; re-offers demo video link.
+- **Email 4 (Day 14):** Polite break-up message; concludes proactive outreach and leaves the self-paced demo link for future reference.
 
 ---
 
 ## 4. Module 2: Specialist Recruitment Automation
 
-This pipeline sources qualified field personnel (Operations Continuity Specialists) completely independently from software sales.
+Runs completely independent of customer outreach to build and maintain the on-demand roster of Operations Continuity Specialists.
 
-### 4.1 Candidate Scoring Profile
-Resumes and profiles are filtered and scored against three competency pillars:
-1. **Autonomous Night/Off-Hours Experience:** Proven reliability in evening, overnight, or early-morning shifts without direct on-site supervision.
-2. **Operations, Compliance & PropTech Fluency:** Familiarity with building continuity hand-offs, multi-point compliance checklists (fire safety, building condition audits), asset protection, and property software (e.g., Yardi, RealPage, AppFolio, or mobile ticketing/audit apps).
-3. **Work Ethic Indicators:** Long tenures in high-responsibility roles and measurable accuracy/compliance track records.
+### 4.1 Candidate Evaluation Criteria
+Profiles are filtered against three operational competencies:
+1. **Autonomous Off-Hours Track Record:** Documented success in evening, graveyard, or early morning shifts without direct on-site supervision.
+2. **Operations & Checklist Literacy:** Background in facilities walkthroughs, asset protection, building lockups, compliance audits, or familiarity with property technology apps.
+3. **Reliability & Consistency:** Steady tenure in high-trust roles with demonstrable attention to detail.
 
-### 4.2 Candidate Sourcing Platforms
-- **LinkedIn:** Boolean searches combining property operations, asset protection, and night-shift management.
-- **Indeed & Resume-Library:** Active resume mining for facility operations and risk mitigation backgrounds.
-- **ZipRecruiter:** Localized hourly/salaried operations coordinators and vendor hand-off leads.
-- **Niche Tech & Operations Communities:** PropTech user forums and security-adjacent operations job boards (e.g., ClearanceJobs / local operations registries).
-
-### 4.3 Recruiting Outreach Cadence
-- **2-Email Sequence:** Qualified candidates receive a maximum of **2 emails**, stopping automatically upon any reply or opt-out.
-- **Messaging Positioning:** Explicitly frames the opportunity as an **operations and digital checklist role** using mobile technology—never framed as a traditional "security guard" post.
+### 4.2 Sourcing Channels & 2-Touch Sequence
+- **Sources:** LinkedIn Boolean mining, Indeed Resume database, ZipRecruiter operations pools, and security/facilities-adjacent boards.
+- **Cadence:** Maximum of **2 personalized outreach emails**, stopping immediately upon any reply or opt-out request.
+- **Role Positioning:** Explicitly framed as a **technology-enabled operations inspection role**—never positioned as a traditional security guard post.
 
 ---
 
 ## 5. Module 3: AI Lead Reply Assistant (Human-in-the-Loop)
 
-When prospects or candidates write back to the marketing inbox, the **Reply Assistant** accelerates response time while keeping humans 100% in control of outbound communication.
+Accelerates response times to warm inbound responses while keeping human operators 100% in control of outgoing messages.
 
-### 5.1 How the Assistant Operates
-1. **Noise Filtering:** Automatically skips bounces, delivery failures, out-of-office auto-responders, newsletters, and spam. (Flags misrouted billing/support/inspection emails for manual review).
-2. **Thread Context & Classification:** Reads the full email thread and categorizes the reply (e.g., *Wants Demo*, *How It Works*, *Pricing/Pilot Inquiry*, *Referral to Colleague*, *Not Interested*, *Unsubscribe/Stop*, or *Specialist Candidate Reply*).
-3. **Draft Generation (Drafts Only):** Writes a reply matching Amenity Op's exact voice and rules—never inventing pricing, discounts, fake customer metrics, or unauthorized claims—and saves it as a **Draft** in the thread.
-4. **Sequence Pause Notification:** Records that a live reply occurred so the outbound sequencer immediately cancels Day 4/8/14 follow-ups.
-5. **Human Review & Send:** A team member reviews, edits if needed, and manually clicks **Send** (or deletes the draft). The assistant has **no automated send capability**.
-
-### 5.2 Built-In Guardrails
-- Never sends an email automatically.
-- Never invents pricing, contract terms, or case studies.
-- Never contacts a third-party address mentioned in a referral without human execution.
-- Immediately drafts a polite stop confirmation for any "unsubscribe" or "do not contact" reply and flags the contact for suppression.
-- Strictly separates customer sales drafts from specialist recruiting drafts.
+### 5.1 Operating Workflow
+1. **Noise Filtering:** Discards out-of-office autoreplies, bounces, newsletters, and vendor spam. Flags misdirected tenant/support emails for manual escalation.
+2. **Intent Classification:** Categorizes incoming messages (*Wants Demo, Request for Pricing/Terms, How It Works, Referral to Colleague, Not Interested, Stop/Opt-Out, Specialist Applicant*).
+3. **Draft-Only Generation:** Generates a thread-contextual draft adhering strictly to Amenity Op's voice and policies. Never fabricates pricing, terms, or unverified claims.
+4. **Sequence Suppression:** Immediately flags the prospect in the sequencing tool so subsequent automated campaign emails are canceled.
+5. **Human Dispatch:** A team member reviews the draft, adjusts if needed, and manually clicks **Send**. The assistant has **zero auto-send authority**.
 
 ---
 
-## 6. Project Deliverables & Implementation Phases
+## 6. Project Implementation Phases
 
-| Phase | Scope & Deliverables |
-| :--- | :--- |
-| **Phase 1: Infrastructure & Deliverability** | Acquisition and DNS setup (SPF, DKIM, DMARC) of 4–5 secondary domains, configuration of 8–10 outreach inboxes, and initiation of the 14–21 day automated inbox warm-up cycle. |
-| **Phase 2: Scraping & Enrichment Engine** | Automated data collectors across Tier 1–4 sources, firmographic filtering (50k+ sq. ft., 3+ tenants, luxury/55+), pain-signal scoring, decision-maker email verification, and separate candidate resume scoring pipeline. |
-| **Phase 3: Multi-Channel Sequencer** | Setup of the 4-step B2B sales cadence (Tue–Thu scheduling, reply/opt-out auto-halt) and the 2-step specialist recruitment cadence. |
-| **Phase 4: AI Reply Assistant** | Deployment of the marketing mailbox monitor, intent classifier, thread-aware draft generator, and human notification workflow. |
-| **Phase 5: Launch, QA & Hand-Off** | Dry-run verification, calibration of scoring thresholds, live campaign ramp-up (scaling safely to 50/day per inbox), and operational playbook hand-off. |
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Phase 1: Infrastructure, Domains & Mailbox Warm-Up (Wk 1-3)  │
+│ - Secondary domain setup (SPF, DKIM, DMARC)                │
+│ - 8-10 inboxes provisioned & 14-21 day warm-up started      │
+│ - Lead database schema & Excel/CSV export engine built       │
+└──────────────────────────────┬──────────────────────────────┘
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Phase 2: Scraper, Enrichment & Property Profile (Wk 2-4)    │
+│ - Multi-source scraper (Commercial, Luxury, 55+, Motels,     │
+│   Student Housing)                                          │
+│ - Intent scoring engine & verified contact enrichment        │
+│ - Excel (.xlsx) / CSV export verified                       │
+└──────────────────────────────┬──────────────────────────────┘
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Phase 3: Outbound Sequencer & Recruiting Pipeline (Wk 4-5)  │
+│ - 4-step B2B sales sequence & 2-step recruitment cadence    │
+│ - Sequence pause triggers & domain-distribution logic        │
+└──────────────────────────────┬──────────────────────────────┘
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Phase 4: AI Reply Assistant & Mailbox Integration (Wk 5-6)  │
+│ - Intent classification, draft generator, sequence breaker   │
+│ - Human review dashboard / mailbox draft testing             │
+└──────────────────────────────┬──────────────────────────────┘
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Phase 5: Calibration, Live Ramp & Hand-Off (Wk 6-7)         │
+│ - Controlled ramp (10 -> 25 -> 50/day per inbox)            │
+│ - Quality assurance audits & client operational playbook     │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 7. Items Required for Client Alignment Before Kickoff
+## 7. Client Alignment Checklist
 
-To finalize configuration and begin Phase 1, please review and confirm the following items:
-1. **Secondary Domains:** Approval of 4–5 lookalike domain names to purchase for outreach isolation.
-2. **Self-Paced Demo Video Link:** Final URL for the 5-minute demo video referenced in Emails 1–4 and the Reply Assistant.
-3. **Target Geography:** Confirmation of priority metro markets/states for initial customer scraping and specialist sourcing.
-4. **Recruitment Email Copy:** Approval of the 2-step outreach email templates for specialist candidates (aligned with the operations/checklist positioning).
-5. **Commercial Handoff:** Confirmation of which team inbox/person receives notifications when a prospect asks pricing/contract questions or requests a call.
-
+To proceed with Phase 1 kickoff, please confirm:
+- [x] **Target Fields to Pull:** Locked to the 9 standard fields defined in Section 3.2.
+- [x] **Data Storage & Export:** Dedicated isolated database with on-demand `.xlsx` and `.csv` export.
+- [x] **Expanded Property Scope:** Motels and Off-Campus Student Housing incorporated with an extensible category model.
+- [ ] **Secondary Domain Approval:** Approval of the 4–5 lookalike domain names to purchase.
+- [ ] **Demo Video URL:** Destination link for the 5-minute self-paced demo video.
+- [ ] **Priority Target Geography:** Confirmation of primary initial metro areas or states.
+- [ ] **Commercial Lead Contact:** Email address of the team member receiving hot sales/pricing handoffs.
