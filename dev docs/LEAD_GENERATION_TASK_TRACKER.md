@@ -31,12 +31,12 @@
 
 | Phase | Module / Milestone | Status | Target Deliverables |
 | :--- | :--- | :--- | :--- |
-| **Phase 1** | **Database Schema & Isolated Models** | 🟡 IN PROGRESS | Migration `0021_lead_generation_engine.sql`, RLS policies, indexing on 9 standard fields, foreign keys. |
-| **Phase 1** | **TypeScript Domain & Validation Types** | 🟡 IN PROGRESS | `src/types/growth-leads.ts`, Zod schemas for all 9 fields + intent tiers. |
-| **Phase 1** | **Server-Side Data Access & Actions** | 🟡 IN PROGRESS | `src/lib/actions/leads.ts` (CRUD, pagination, filters, stats, bulk actions). |
-| **Phase 1** | **High-Fidelity Export Engine (.xlsx & .csv)** | 🟡 IN PROGRESS | `src/lib/export/leads-export.ts` + `/api/admin/leads/export` streaming endpoint. |
-| **Phase 1** | **Admin Navigation & Shell Integration** | 🟡 IN PROGRESS | `/admin/leads` route, `src/lib/nav-items.ts` tab with shield/target icon. |
-| **Phase 1** | **Admin Leads Portal UI/UX (Tabs 1–4)** | 🟡 IN PROGRESS | Responsive table, stats cards, search/filter bar, lead detail drawer, manual creation & CSV import modals. |
+| **Phase 1** | **Database Schema & Isolated Models** | 🟢 COMPLETED | Migration `0021_lead_generation_engine.sql`, RLS policies, indexing on 9 standard fields, foreign keys. |
+| **Phase 1** | **TypeScript Domain & Validation Types** | 🟢 COMPLETED | `src/types/growth-leads.ts`, Zod schemas for all 9 fields + intent tiers. |
+| **Phase 1** | **Server-Side Data Access & Actions** | 🟢 COMPLETED | `src/lib/actions/leads.ts` (CRUD, pagination, filters, stats, bulk actions). |
+| **Phase 1** | **High-Fidelity Export Engine (.xlsx & .csv)** | 🟢 COMPLETED | `src/lib/export/leads-export.ts` + `/api/admin/leads/export` streaming endpoint. |
+| **Phase 1** | **Admin Navigation & Shell Integration** | 🟢 COMPLETED | `/admin/leads` route, `src/lib/nav-items.ts` tab with shield/target icon. |
+| **Phase 1** | **Admin Leads Portal UI/UX (Tabs 1–4)** | 🟢 COMPLETED | Responsive table, stats cards, search/filter bar, lead detail drawer, manual creation modal. |
 | **Phase 2** | **Multi-Source Scraping & Ingestion Engine** | ⚪ QUEUED | Scraper pipelines for Motels, Student Housing, 55+, Luxury, Commercial. |
 | **Phase 2** | **5-Tier Intent Scoring & Enrichment Parser** | ⚪ QUEUED | Automated scoring on hiring triggers, municipal code violations, negative reviews. |
 | **Phase 3** | **4-Touch B2B Sales Sequence Sequencer** | ⚪ QUEUED | Day 1, Day 4, Day 8, Day 14 cadence, 50/day throttling, auto-stop on reply. |
@@ -94,7 +94,5 @@
 
 | Commit SHA | Phase | Description |
 | :--- | :--- | :--- |
-| `[PENDING]` | Phase 1 | `feat(leads): add isolated growth database schema migration 0021` |
-| `[PENDING]` | Phase 1 | `feat(leads): create lead domain types, zod schemas, and export utilities` |
-| `[PENDING]` | Phase 1 | `feat(admin): integrate lead engine navigation and interactive portal at /admin/leads` |
+| `b5c5e78` | Phase 1 | `feat(leads): implement Phase 1 Lead Engine schema, export utilities, and /admin/leads portal` |
 
