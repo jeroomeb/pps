@@ -11,6 +11,7 @@ import {
   CircleDollarSign,
   BarChart3,
   Award,
+  Target,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -27,6 +28,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/inspector', label: 'My Inspections', shortLabel: 'My Work', icon: ClipboardCheck },
   { href: '/admin/properties', label: 'Properties', icon: Building2 },
+  { href: '/admin/leads', label: 'Lead Engine', shortLabel: 'Leads', icon: Target },
   { href: '/admin/analytics', label: 'Analytics', shortLabel: 'Metrics', icon: BarChart3 },
   { href: '/admin/reports', label: 'Reports', icon: FileText },
   { href: '/admin/payouts', label: 'Payouts', icon: CircleDollarSign },
@@ -40,6 +42,7 @@ export const GLOBAL_ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/inspector', label: 'My Inspections', shortLabel: 'My Work', icon: ClipboardCheck },
   { href: '/admin/properties', label: 'Properties', icon: Building2 },
   { href: '/admin/tenants', label: 'Tenants & Licenses', shortLabel: 'Tenants', icon: ShieldCheck },
+  { href: '/admin/leads', label: 'Lead Engine', shortLabel: 'Leads', icon: Target },
   { href: '/admin/analytics', label: 'Analytics', shortLabel: 'Metrics', icon: BarChart3 },
   { href: '/admin/reports', label: 'Reports', icon: FileText },
   { href: '/admin/payouts', label: 'Payouts', icon: CircleDollarSign },

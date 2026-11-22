@@ -29,6 +29,159 @@ export type PayoutMatrix = {
 export interface Database {
   public: {
     Tables: {
+      growth_leads: {
+        Row: {
+          id: string
+          property_name: string
+          community_type: string
+          address: string
+          municipality_town: string
+          county: string
+          key_amenities_notes: string | null
+          target_gatekeeper_name: string | null
+          target_gatekeeper_title: string | null
+          phone: string | null
+          email: string | null
+          intent_tier: number
+          intent_signals: unknown
+          outreach_status: string
+          current_sequence_step: number
+          last_contacted_at: string | null
+          next_touch_due_at: string | null
+          source: string
+          metadata: unknown
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          property_name: string
+          community_type: string
+          address: string
+          municipality_town: string
+          county: string
+          key_amenities_notes?: string | null
+          target_gatekeeper_name?: string | null
+          target_gatekeeper_title?: string | null
+          phone?: string | null
+          email?: string | null
+          intent_tier?: number
+          intent_signals?: unknown
+          outreach_status?: string
+          current_sequence_step?: number
+          last_contacted_at?: string | null
+          next_touch_due_at?: string | null
+          source?: string
+          metadata?: unknown
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          property_name?: string
+          community_type?: string
+          address?: string
+          municipality_town?: string
+          county?: string
+          key_amenities_notes?: string | null
+          target_gatekeeper_name?: string | null
+          target_gatekeeper_title?: string | null
+          phone?: string | null
+          email?: string | null
+          intent_tier?: number
+          intent_signals?: unknown
+          outreach_status?: string
+          current_sequence_step?: number
+          last_contacted_at?: string | null
+          next_touch_due_at?: string | null
+          source?: string
+          metadata?: unknown
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      growth_outreach_logs: {
+        Row: {
+          id: string
+          lead_id: string
+          sequence_step: number
+          channel: string
+          sender_inbox: string
+          recipient_email: string
+          subject: string
+          message_preview: string | null
+          status: string
+          sent_at: string
+        }
+        Insert: {
+          id?: string
+          lead_id: string
+          sequence_step: number
+          channel?: string
+          sender_inbox: string
+          recipient_email: string
+          subject: string
+          message_preview?: string | null
+          status?: string
+          sent_at?: string
+        }
+        Update: {
+          id?: string
+          lead_id?: string
+          sequence_step?: number
+          channel?: string
+          sender_inbox?: string
+          recipient_email?: string
+          subject?: string
+          message_preview?: string | null
+          status?: string
+          sent_at?: string
+        }
+        Relationships: []
+      }
+      growth_ai_drafts: {
+        Row: {
+          id: string
+          lead_id: string
+          inbound_email: string
+          inbound_subject: string
+          inbound_body: string
+          classified_intent: string
+          suggested_draft_reply: string
+          status: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lead_id: string
+          inbound_email: string
+          inbound_subject: string
+          inbound_body: string
+          classified_intent?: string
+          suggested_draft_reply: string
+          status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lead_id?: string
+          inbound_email?: string
+          inbound_subject?: string
+          inbound_body?: string
+          classified_intent?: string
+          suggested_draft_reply?: string
+          status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       property_types: {
         Row: {
           id: string
