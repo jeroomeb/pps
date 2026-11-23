@@ -45,7 +45,8 @@
 | **Phase 3** | **4-Touch B2B Sales Sequence Sequencer** | 🟢 COMPLETED | Day 1, 4, 8, 14 personalized cadence, Tue–Thu mid-morning window, 50/day cap, auto-stop on reply (`outreach-sequencer.ts`). |
 | **Phase 3** | **2-Touch Specialist Recruitment Cadence** | 🟢 COMPLETED | Operations Continuity Specialist candidate roster, competency scoring, 2-touch recruitment cadence. |
 | **Phase 3** | **Sequence Inspection & Simulation Modal** | 🟢 COMPLETED | `SequencePreviewModal.tsx` rendering dynamic variables (`{{propertyName}}`, `{{contactName}}`) and advance triggers. |
-| **Phase 4** | **Human-in-the-Loop AI Reply Assistant** | ⚪ QUEUED | Inbound email listener, intent classifier, draft-only generator, 1-click human dispatch. |
+| **Phase 4** | **Human-in-the-Loop AI Reply Assistant** | 🟢 COMPLETED | Inbound email listener, intent classifier, noise/bounce filter, draft-only generator (`ai-reply-assistant.ts`). |
+| **Phase 4** | **Review Queue & QA Simulator UI** | 🟢 COMPLETED | `AiDraftReviewCard.tsx` with draft editor, 1-click dispatch, and 5-scenario QA simulation runner. |
 | **Phase 5** | **Live Deliverability Ramp & Hand-Off Playbook**| ⚪ QUEUED | Domain warm-up monitoring, dry-run delivery tests, operator documentation. |
 
 ---
@@ -101,5 +102,8 @@
 | `b5c5e78` | Phase 1 | `feat(leads): implement Phase 1 Lead Engine schema, export utilities, and /admin/leads portal` |
 | `8443c72` | Phase 1 | `docs: update lead generation task tracker with Phase 1 completion` |
 | `69509b2` | Phase 2 | `feat(leads): implement Phase 2 scraper pipeline, 5-tier intent scorer, and batch importer` |
+| `bdbacd0` | Phase 2 | `docs: document Phase 2 scraper pipeline and intent scoring engine in specs and task tracker` |
 | `b7a75cb` | Phase 3 | `feat(leads): implement Phase 3 4-touch B2B cadence and specialist recruitment pipeline` |
+| `8d6625e` | Phase 3 | `docs: document Phase 3 B2B sequencer and specialist recruiting pipeline in specs and tracker` |
+| `5ad5585` | Phase 4 | `feat(leads): implement Phase 4 AI reply assistant, review queue, and inbound simulator` |
 

@@ -226,5 +226,27 @@ Generates a downloadable buffer in Excel (`.xlsx`) or Comma-Separated (`.csv`) f
 * Positioned strictly as **Technology-Enabled Operations Inspections** (never as stationary security guards).
 * 2-touch recruitment sequence evaluating off-hours tenure and checklist literacy.
 
+---
+
+## 8. Phase 4 Human-in-the-Loop AI Reply Assistant & Review Queue
+
+### 8.1 Intent Classification Engine (`analyzeInboundEmail`)
+* **Noise Filter:** Immediately strips out-of-office autoreplies, bounce notices, and vendor spam.
+* **Intent Taxonomies:**
+  * `wants_demo`: Supplies 5-minute self-paced demo video link (`https://getamenityops.com/demo`).
+  * `pricing_request`: Explains per-property monthly pricing without outside hardware markups; suggests a 10-minute scope alignment.
+  * `how_it_works`: Explains standard mobile app audits (iOS/Android), photo proof, and GPS telemetry.
+  * `referral`: Polite thank-you acknowledging colleague handoff.
+  * `not_interested` & `opt_out`: Gracefully closes communication and guarantees suppression.
+
+### 8.2 Zero Auto-Send Authority Rule
+* AI models **only generate proposed drafts**.
+* An authorized human operator must review, optionally edit, and click **"Approve & Send"** to dispatch.
+
+### 8.3 Inbound Simulation & Verification API (`simulateInboundReply`)
+* Injects simulated prospect responses across all 5 test scenarios (`demo`, `pricing`, `referral`, `not_interested`, `opt_out`).
+* Automatically triggers the real-time sequence halt and populates the review queue for QA verification.
+
+
 
 
