@@ -206,4 +206,25 @@ Generates a downloadable buffer in Excel (`.xlsx`) or Comma-Separated (`.csv`) f
 * Simulates automated multi-source scraping for target counties and classes.
 * Enriches candidates and inserts newly qualified assets into the lead database.
 
+---
+
+## 7. Phase 3 Outbound Sequencer & Recruitment Pipeline
+
+### 7.1 Cadence Schedule & Auto-Halt Architecture
+* **Sending Window:** Strictly enforced Tuesday through Thursday between 9:30 AM and 11:30 AM local time.
+* **Volume Throttling:** 50 emails/day maximum per sending inbox across 5 isolated secondary domains (`getamenityops.com`, `amenityopshq.com`, etc.).
+* **Auto-Halt Guarantee:** Inbound replies, demo requests, or unsubscribe requests immediately and irreversibly transition the lead to `replied` or `opt_out`, halting all subsequent cadence steps.
+
+### 7.2 4-Touch B2B Email Cadence
+* **Touch 1 (Day 1):** *Overnight Uncertainty* — Asks permission to share a 5-minute self-paced demo video.
+* **Touch 2 (Day 4):** *Morning Handoff Reports* — Focuses on eliminating the "morning surprise" via morning reports before coffee; invites reply "demo".
+* **Touch 3 (Day 8):** *In-House Staff Empowerment* — Explains mobile checklists for existing on-site staff without contracting expensive third-party security vendors.
+* **Touch 4 (Day 14):** *Polite Break-Up* — Closes the proactive sequence gracefully, leaving the demo video link for future reference.
+
+### 7.3 Operations Specialist Recruitment Pipeline
+* Sourced from LinkedIn Boolean and Indeed Operations pools.
+* Positioned strictly as **Technology-Enabled Operations Inspections** (never as stationary security guards).
+* 2-touch recruitment sequence evaluating off-hours tenure and checklist literacy.
+
+
 

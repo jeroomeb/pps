@@ -42,8 +42,9 @@
 | **Phase 2** | **Contact Sanitizer & Title Enrichment Engine**| 🟢 COMPLETED | Phone standardization `(XXX) XXX-XXXX`, email corporate domain check, gatekeeper title mapping (`contact-enricher.ts`). |
 | **Phase 2** | **Batch CSV / Excel Importer & Ingestion UI** | 🟢 COMPLETED | Drag-and-drop CSV parser with auto column mapping, validation flags, deduplication (`BatchImportModal.tsx`). |
 | **Phase 2** | **Live Multi-Source Scraper Simulation Modal** | 🟢 COMPLETED | Interactive discovery runner with progress animations and county/class filters (`RunScraperModal.tsx`). |
-| **Phase 3** | **4-Touch B2B Sales Sequence Sequencer** | ⚪ QUEUED | Day 1, Day 4, Day 8, Day 14 cadence, 50/day throttling, auto-stop on reply. |
-| **Phase 3** | **2-Touch Specialist Recruitment Cadence** | ⚪ QUEUED | Operations Specialist sourcing, personalized template delivery, resume ingestion. |
+| **Phase 3** | **4-Touch B2B Sales Sequence Sequencer** | 🟢 COMPLETED | Day 1, 4, 8, 14 personalized cadence, Tue–Thu mid-morning window, 50/day cap, auto-stop on reply (`outreach-sequencer.ts`). |
+| **Phase 3** | **2-Touch Specialist Recruitment Cadence** | 🟢 COMPLETED | Operations Continuity Specialist candidate roster, competency scoring, 2-touch recruitment cadence. |
+| **Phase 3** | **Sequence Inspection & Simulation Modal** | 🟢 COMPLETED | `SequencePreviewModal.tsx` rendering dynamic variables (`{{propertyName}}`, `{{contactName}}`) and advance triggers. |
 | **Phase 4** | **Human-in-the-Loop AI Reply Assistant** | ⚪ QUEUED | Inbound email listener, intent classifier, draft-only generator, 1-click human dispatch. |
 | **Phase 5** | **Live Deliverability Ramp & Hand-Off Playbook**| ⚪ QUEUED | Domain warm-up monitoring, dry-run delivery tests, operator documentation. |
 
@@ -100,4 +101,5 @@
 | `b5c5e78` | Phase 1 | `feat(leads): implement Phase 1 Lead Engine schema, export utilities, and /admin/leads portal` |
 | `8443c72` | Phase 1 | `docs: update lead generation task tracker with Phase 1 completion` |
 | `69509b2` | Phase 2 | `feat(leads): implement Phase 2 scraper pipeline, 5-tier intent scorer, and batch importer` |
+| `b7a75cb` | Phase 3 | `feat(leads): implement Phase 3 4-touch B2B cadence and specialist recruitment pipeline` |
 
