@@ -107,5 +107,5 @@
 | `8d6625e` | Phase 3 | `docs: document Phase 3 B2B sequencer and specialist recruiting pipeline in specs and tracker` |
 | `5ad5585` | Phase 4 | `feat(leads): implement Phase 4 AI reply assistant, review queue, and inbound simulator` |
 | `3e777f9` | Phase 4 | `docs: document Phase 4 AI reply assistant and review queue in specs and task tracker` |
-| `[PENDING]` | Phase 5 | `docs: complete Phase 5 operational playbook, deliverability ramp, and QA handoff` |
+| `d1fe7e3` | Phase 5 | `docs: complete Phase 5 operational playbook, deliverability ramp, and QA handoff` |
 
