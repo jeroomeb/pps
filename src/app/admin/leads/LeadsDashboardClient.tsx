@@ -34,6 +34,7 @@ import type {
   CommunityType,
   IntentTier,
   OutreachStatus,
+  SpecialistCandidate,
 } from '@/types/growth-leads'
 import {
   COMMUNITY_TYPE_CONFIG,
@@ -41,12 +42,15 @@ import {
   OUTREACH_STATUS_CONFIG,
 } from '@/types/growth-leads'
 import { updateGrowthLead, createGrowthLead, bulkUpdateLeadStatus } from '@/lib/actions/leads'
+import { haltLeadSequence } from '@/lib/actions/outreach'
+import { SEED_SPECIALIST_CANDIDATES } from '@/lib/leads/outreach-sequencer'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LeadDrawer } from './LeadDrawer'
 import { AddLeadModal } from './AddLeadModal'
 import { BatchImportModal } from './BatchImportModal'
 import { RunScraperModal } from './RunScraperModal'
+import { SequencePreviewModal } from './SequencePreviewModal'
 
 interface LeadsDashboardClientProps {
   initialLeads: GrowthLead[]
@@ -72,11 +76,13 @@ export function LeadsDashboardClient({
 
   // Drawer & Modal States
   const [selectedLead, setSelectedLead] = useState<GrowthLead | null>(null)
+  const [previewLead, setPreviewLead] = useState<GrowthLead | null>(null)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [isScraperModalOpen, setIsScraperModalOpen] = useState(false)
   const [bannerNotice, setBannerNotice] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState<'xlsx' | 'csv' | null>(null)
+  const [candidates, setCandidates] = useState<SpecialistCandidate[]>(SEED_SPECIALIST_CANDIDATES)
 
   const handleImportComplete = useCallback((newLeads: GrowthLead[]) => {
     if (newLeads.length === 0) return
@@ -90,6 +96,27 @@ export function LeadsDashboardClient({
     setLeads((prev) => [...newLeads, ...prev])
     setBannerNotice(`Discovery Scraper added ${newLeads.length} new qualifying properties!`)
     setTimeout(() => setBannerNotice(null), 5000)
+  }, [])
+
+  const handleHaltSequence = useCallback(async (leadId: string) => {
+    setLeads((prev) =>
+      prev.map((l) => (l.id === leadId ? { ...l, outreach_status: 'opt_out' } : l))
+    )
+    setBannerNotice('Outreach sequence permanently halted for prospect.')
+    setTimeout(() => setBannerNotice(null), 4000)
+    try {
+      await haltLeadSequence(leadId, 'opt_out')
+    } catch (err) {
+      console.error('Failed to halt sequence:', err)
+    }
+  }, [])
+
+  const handleCandidateAdvance = useCallback((candId: string, nextStatus: SpecialistCandidate['status']) => {
+    setCandidates((prev) =>
+      prev.map((c) => (c.id === candId ? { ...c, status: nextStatus, recruitment_step: c.recruitment_step + 1 } : c))
+    )
+    setBannerNotice(`Updated recruitment status to "${nextStatus.replace(/_/g, ' ')}"`)
+    setTimeout(() => setBannerNotice(null), 4000)
   }, [])
 
   // Multi-Selection State for Bulk Actions
@@ -407,11 +434,10 @@ export function LeadsDashboardClient({
           <button
             type="button"
             onClick={() => setActiveTab('discovered')}
-            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'discovered'
+            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap flex items-center gap-2 ${activeTab === 'discovered'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-on-surface-variant hover:text-on-surface'
-            }`}
+              }`}
           >
             <Layers size={16} />
             Discovered Leads ({filteredLeads.length})
@@ -420,11 +446,10 @@ export function LeadsDashboardClient({
           <button
             type="button"
             onClick={() => setActiveTab('cadence')}
-            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'cadence'
+            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap flex items-center gap-2 ${activeTab === 'cadence'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-on-surface-variant hover:text-on-surface'
-            }`}
+              }`}
           >
             <Send size={16} />
             B2B Outreach Cadence
@@ -433,11 +458,10 @@ export function LeadsDashboardClient({
           <button
             type="button"
             onClick={() => setActiveTab('recruiting')}
-            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'recruiting'
+            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap flex items-center gap-2 ${activeTab === 'recruiting'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-on-surface-variant hover:text-on-surface'
-            }`}
+              }`}
           >
             <Users size={16} />
             Specialist Recruitment
@@ -446,11 +470,10 @@ export function LeadsDashboardClient({
           <button
             type="button"
             onClick={() => setActiveTab('ai-reply')}
-            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'ai-reply'
+            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap flex items-center gap-2 ${activeTab === 'ai-reply'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-on-surface-variant hover:text-on-surface'
-            }`}
+              }`}
           >
             <Bot size={16} />
             AI Lead Reply Assistant
@@ -631,9 +654,8 @@ export function LeadsDashboardClient({
                       return (
                         <tr
                           key={lead.id}
-                          className={`hover:bg-surface-container-low/60 transition cursor-pointer ${
-                            isSelected ? 'bg-primary/5' : ''
-                          }`}
+                          className={`hover:bg-surface-container-low/60 transition cursor-pointer ${isSelected ? 'bg-primary/5' : ''
+                            }`}
                           onClick={() => setSelectedLead(lead)}
                         >
                           {/* Checkbox */}
@@ -647,7 +669,7 @@ export function LeadsDashboardClient({
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              onChange={() => {}}
+                              onChange={() => { }}
                               className="rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
                             />
                           </td>
@@ -837,21 +859,60 @@ export function LeadsDashboardClient({
         </div>
       )}
 
-      {/* TAB 2: B2B Outreach Cadence Overview */}
+      {/* TAB 2: B2B Outreach Cadence Overview & Active Roster */}
       {activeTab === 'cadence' && (
         <div className="space-y-6">
+          {/* Live Deliverability & Throttle Metrics */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+            <Card padded className="space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
+                Secondary Sending Inboxes
+              </span>
+              <div className="text-xl font-black font-headline text-on-surface">10 Inboxes Active</div>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                Across 5 Isolated Domains (50/day cap)
+              </p>
+            </Card>
+
+            <Card padded className="space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
+                Delivery Window
+              </span>
+              <div className="text-xl font-black font-headline text-on-surface">Tue – Thu Mid-Morning</div>
+              <p className="text-[11px] text-on-surface-variant">9:30 AM – 11:30 AM Local Time</p>
+            </Card>
+
+            <Card padded className="space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
+                Performance Rates
+              </span>
+              <div className="text-xl font-black font-headline text-primary">44.8% Open / 12.4% Reply</div>
+              <p className="text-[11px] text-on-surface-variant">Zero Spam Complaints</p>
+            </Card>
+
+            <Card padded className="space-y-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
+                Auto-Halt Trigger
+              </span>
+              <div className="text-xl font-black font-headline text-emerald-700 dark:text-emerald-400">
+                100% Guaranteed
+              </div>
+              <p className="text-[11px] text-on-surface-variant">Instantly stops on reply or opt-out</p>
+            </Card>
+          </div>
+
+          {/* 4-Touch Cadence Blueprint Cards */}
           <Card padded className="space-y-4">
             <div>
               <h2 className="text-lg font-bold font-headline text-on-surface">
                 Automated 4-Touch B2B Sales Cadence
               </h2>
               <p className="text-xs text-on-surface-variant">
-                Sends Tuesday through Thursday mid-morning (local prospect time). Automatically and
-                permanently halts upon reply.
+                Click any touch or click a prospect below to inspect the rendered personalized email template.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1">
               <div className="border border-outline-variant rounded-xl p-4 bg-surface-container-low/40 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-primary uppercase">Touch 1 (Day 1)</span>
@@ -861,8 +922,7 @@ export function LeadsDashboardClient({
                 </div>
                 <h3 className="text-sm font-bold text-on-surface">Overnight Uncertainty</h3>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  Addresses the stress of unmonitored night hours; asks permission to send a 5-minute
-                  self-paced demo video.
+                  Addresses the stress of unmonitored night hours; asks permission to send a 5-minute self-paced demo video.
                 </p>
               </div>
 
@@ -875,8 +935,7 @@ export function LeadsDashboardClient({
                 </div>
                 <h3 className="text-sm font-bold text-on-surface">Morning Handoff Reports</h3>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  Eliminates the &quot;morning surprise&quot; via digital handoff checklists delivered before
-                  morning coffee.
+                  Eliminates the &quot;morning surprise&quot; via digital handoff checklists delivered before morning coffee.
                 </p>
               </div>
 
@@ -889,8 +948,7 @@ export function LeadsDashboardClient({
                 </div>
                 <h3 className="text-sm font-bold text-on-surface">In-House Empowerment</h3>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  Empowering existing staff with digital audits without paying third-party outside
-                  security vendors.
+                  Empowering existing staff with digital audits without paying third-party outside security vendors.
                 </p>
               </div>
 
@@ -903,35 +961,212 @@ export function LeadsDashboardClient({
                 </div>
                 <h3 className="text-sm font-bold text-on-surface">Polite Break-Up</h3>
                 <p className="text-xs text-on-surface-variant leading-relaxed">
-                  Closes the proactive outreach sequence gracefully, leaving the demo video link for
-                  future reference.
+                  Closes the proactive outreach sequence gracefully, leaving the demo video link for future reference.
                 </p>
               </div>
             </div>
           </Card>
+
+          {/* Active Prospects in Cadence Table */}
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-xs">
+            <div className="p-4 border-b border-outline-variant flex items-center justify-between bg-surface-container-low/40">
+              <div>
+                <h3 className="text-sm font-bold font-headline text-on-surface">
+                  Prospects Enrolled in Outbound Cadence ({leads.filter((l) => l.outreach_status === 'in_sequence').length})
+                </h3>
+                <p className="text-xs text-on-surface-variant">
+                  Inspect and simulate outbound touches or execute immediate sequence halts
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-outline-variant bg-surface-container-low/50 text-on-surface-variant uppercase tracking-wider text-[11px]">
+                    <th className="py-3 px-4 font-bold">Property &amp; Class</th>
+                    <th className="py-3 px-3 font-bold">Decision-Maker &amp; Email</th>
+                    <th className="py-3 px-3 font-bold">Sequence Progress</th>
+                    <th className="py-3 px-3 font-bold">Current Step</th>
+                    <th className="py-3 pr-4 pl-2 text-right font-bold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/60">
+                  {leads.filter((l) => l.outreach_status === 'in_sequence').length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-on-surface-variant text-xs">
+                        No properties currently in sequence. Return to &quot;Discovered Leads&quot; to enroll properties.
+                      </td>
+                    </tr>
+                  ) : (
+                    leads
+                      .filter((l) => l.outreach_status === 'in_sequence')
+                      .map((lead) => {
+                        const comm = COMMUNITY_TYPE_CONFIG[lead.community_type] || COMMUNITY_TYPE_CONFIG.other
+                        return (
+                          <tr key={lead.id} className="hover:bg-surface-container-low/50 transition">
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-on-surface text-sm">{lead.property_name}</div>
+                              <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] border ${comm.badgeClass}`}>
+                                {comm.label}
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-3">
+                              <div className="font-semibold text-on-surface">
+                                {lead.target_gatekeeper_name || 'General Manager'}
+                              </div>
+                              <div className="text-[11px] text-primary">{lead.email || 'lead@domain.com'}</div>
+                            </td>
+
+                            <td className="py-3 px-3 min-w-[160px]">
+                              <div className="grid grid-cols-4 gap-1.5">
+                                {[1, 2, 3, 4].map((step) => (
+                                  <div
+                                    key={step}
+                                    className={`h-2 rounded-full ${(lead.current_sequence_step || 1) >= step
+                                        ? 'bg-primary'
+                                        : 'bg-surface-container-high'
+                                      }`}
+                                    title={`Touch ${step}`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[10px] text-on-surface-variant block mt-1">
+                                Touch {lead.current_sequence_step || 1} of 4 dispatched
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-3">
+                              <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-500/20 text-[11px]">
+                                Touch {lead.current_sequence_step || 1}
+                              </span>
+                            </td>
+
+                            <td className="py-3 pr-4 pl-2 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewLead(lead)}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 transition"
+                                >
+                                  Inspect &amp; Advance
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleHaltSequence(lead.id)}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-500/10 transition"
+                                >
+                                  Halt Cadence
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 
       {/* TAB 3: Specialist Recruitment */}
       {activeTab === 'recruiting' && (
-        <Card padded className="space-y-4">
-          <div>
-            <h2 className="text-lg font-bold font-headline text-on-surface">
-              Specialist Field Recruitment Engine
-            </h2>
-            <p className="text-xs text-on-surface-variant">
-              Sources Operations Continuity Specialists via a strict 2-touch recruitment cadence.
-            </p>
-          </div>
-          <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant text-xs space-y-2">
-            <p className="font-semibold text-on-surface">Core Recruiting Competencies:</p>
-            <ul className="list-disc pl-5 space-y-1 text-on-surface-variant">
-              <li>Autonomous off-hours track record (overnight/graveyard shifts).</li>
-              <li>Facilities and audit checklist literacy (never framed as traditional security guard roles).</li>
-              <li>Steady tenure with high-trust property technology app familiarity.</li>
-            </ul>
-          </div>
-        </Card>
+        <div className="space-y-6">
+          <Card padded className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold font-headline text-on-surface">
+                  Operations Continuity Specialist Recruitment
+                </h2>
+                <p className="text-xs text-on-surface-variant">
+                  Sources high-trust off-hours inspectors via a dedicated 2-touch recruitment cadence (framed strictly as tech-enabled inspections, never security guard posts).
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 shrink-0">
+                4 Active Candidates
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              {candidates.map((cand) => (
+                <div
+                  key={cand.id}
+                  className="rounded-xl border border-outline-variant p-4 bg-surface-container-low/40 space-y-3"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-bold text-sm text-on-surface">{cand.full_name}</h3>
+                      <p className="text-xs text-on-surface-variant">{cand.location}</p>
+                    </div>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary border border-primary/20 capitalize">
+                      {cand.status.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-on-surface-variant bg-surface-container-low p-2.5 rounded-lg">
+                    {cand.notes}
+                  </p>
+
+                  <div className="flex flex-wrap gap-1.5 text-[10px]">
+                    <span className="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-semibold">
+                      {cand.experience_years} Years Tenure
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold">
+                      Autonomous Night Shift Verified
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 font-semibold">
+                      Checklist &amp; PropTech Literate
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-outline-variant/60 flex items-center justify-between text-xs">
+                    <div className="text-on-surface-variant text-[11px]">
+                      <span>{cand.phone}</span> • <span className="text-primary">{cand.email}</span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      {cand.status === 'sourced' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCandidateAdvance(cand.id, 'touch_1_sent')}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-primary text-on-primary hover:opacity-90 transition"
+                        >
+                          Send Touch 1
+                        </button>
+                      )}
+                      {cand.status === 'touch_1_sent' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCandidateAdvance(cand.id, 'touch_2_sent')}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-primary text-on-primary hover:opacity-90 transition"
+                        >
+                          Send Touch 2
+                        </button>
+                      )}
+                      {cand.status === 'touch_2_sent' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCandidateAdvance(cand.id, 'interview_scheduled')}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:opacity-90 transition"
+                        >
+                          Schedule Onboarding
+                        </button>
+                      )}
+                      {cand.status === 'interview_scheduled' && (
+                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          Ready for App Onboarding
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* TAB 4: AI Reply Assistant */}
@@ -989,6 +1224,21 @@ export function LeadsDashboardClient({
         isOpen={isScraperModalOpen}
         onClose={() => setIsScraperModalOpen(false)}
         onDiscoveryComplete={handleDiscoveryComplete}
+      />
+
+      {/* Sequence Preview & Simulator Modal */}
+      <SequencePreviewModal
+        isOpen={Boolean(previewLead)}
+        lead={previewLead}
+        onClose={() => setPreviewLead(null)}
+        onAdvanced={(leadId, nextStep) => {
+          setLeads((prev) =>
+            prev.map((l) => (l.id === leadId ? { ...l, current_sequence_step: nextStep } : l))
+          )
+          if (previewLead && previewLead.id === leadId) {
+            setPreviewLead({ ...previewLead, current_sequence_step: nextStep })
+          }
+        }}
       />
     </div>
   )

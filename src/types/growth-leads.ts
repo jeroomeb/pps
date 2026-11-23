@@ -240,3 +240,37 @@ export const growthLeadSchema = z.object({
 
 export type GrowthLeadInput = z.infer<typeof growthLeadSchema>
 
+// Phase 3: Outbound Sequence & Candidate Models
+export interface EmailTemplateStep {
+  step: number
+  dayInterval: number
+  focus: string
+  subjectTemplate: string
+  bodyTemplate: string
+}
+
+export interface OutreachPerformanceMetrics {
+  activeInboxes: number
+  dailyQuotaPerInbox: number
+  dailyTotalSent: number
+  openRatePercent: number
+  replyRatePercent: number
+  autoHaltsCount: number
+  secondaryDomains: string[]
+}
+
+export interface SpecialistCandidate {
+  id: string
+  full_name: string
+  location: string
+  target_role: string
+  experience_years: number
+  autonomous_off_hours_tenure: boolean
+  checklist_literacy: boolean
+  recruitment_step: number // 0: sourced, 1: touch 1, 2: touch 2
+  status: 'sourced' | 'touch_1_sent' | 'touch_2_sent' | 'interview_scheduled' | 'opt_out'
+  email: string
+  phone: string
+  notes: string
+}
+
