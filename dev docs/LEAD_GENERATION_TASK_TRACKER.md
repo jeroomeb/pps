@@ -47,14 +47,14 @@
 | **Phase 3** | **Sequence Inspection & Simulation Modal** | 🟢 COMPLETED | `SequencePreviewModal.tsx` rendering dynamic variables (`{{propertyName}}`, `{{contactName}}`) and advance triggers. |
 | **Phase 4** | **Human-in-the-Loop AI Reply Assistant** | 🟢 COMPLETED | Inbound email listener, intent classifier, noise/bounce filter, draft-only generator (`ai-reply-assistant.ts`). |
 | **Phase 4** | **Review Queue & QA Simulator UI** | 🟢 COMPLETED | `AiDraftReviewCard.tsx` with draft editor, 1-click dispatch, and 5-scenario QA simulation runner. |
-| **Phase 5** | **Live Deliverability Ramp & Hand-Off Playbook**| ⚪ QUEUED | Domain warm-up monitoring, dry-run delivery tests, operator documentation. |
+| **Phase 5** | **Live Deliverability Ramp & Hand-Off Playbook**| 🟢 COMPLETED | `LEAD_GENERATION_OPERATIONAL_PLAYBOOK.md` with DNS setup, 4-week ramp schedule, daily operator SOP, and QA matrix. |
 
 ---
 
 ## 3. QA Acceptance Criteria Checklist (For USA Client QA Team)
 
 ### Module 1: Data Presentation & 9 Standard Fields
-- [ ] **Field Integrity:** All 9 fields render accurately without data truncation:
+- [x] **Field Integrity:** All 9 fields render accurately without data truncation:
   1. Property Name
   2. Community / Property Type (Motel, Student Housing, Luxury, 55+, Commercial)
   3. Address
@@ -64,32 +64,32 @@
   7. Target Gatekeeper (Name & Title)
   8. Phone (Click-to-call link with format validation)
   9. Email (Mailto link with format validation)
-- [ ] **Empty States:** Graceful handling when optional fields (e.g. gatekeeper name or phone) are missing, displaying subtle placeholder badges instead of broken layouts.
+- [x] **Empty States:** Graceful handling when optional fields (e.g. gatekeeper name or phone) are missing, displaying subtle placeholder badges instead of broken layouts.
 
 ### Module 2: Filtering, Search & Real-Time Responsiveness
-- [ ] **Search:** Case-insensitive search querying Property Name, Address, Contact Name, and Email simultaneously.
-- [ ] **Type Filter:** Filtering by Motels, Student Housing, Luxury, 55+, Commercial returns exact subsets.
-- [ ] **Tier Filter:** Filtering by Tier 1 (Active Pain) through Tier 5 accurately narrows rows.
-- [ ] **Status Filter:** Filtering by New, Enriched, In Cadence, Responded, Demo Scheduled, Opt-Out.
-- [ ] **Multi-Screen Responsiveness:**
+- [x] **Search:** Case-insensitive search querying Property Name, Address, Contact Name, and Email simultaneously.
+- [x] **Type Filter:** Filtering by Motels, Student Housing, Luxury, 55+, Commercial returns exact subsets.
+- [x] **Tier Filter:** Filtering by Tier 1 (Active Pain) through Tier 5 accurately narrows rows.
+- [x] **Status Filter:** Filtering by New, Enriched, In Cadence, Responded, Demo Scheduled, Opt-Out.
+- [x] **Multi-Screen Responsiveness:**
   - Desktop (>1280px): Full table view with high-density data spacing.
   - Tablet (768px–1024px): Responsive horizontally scrolling table with sticky action column.
   - Mobile (<768px): Card-based stacked view optimized for touch and vertical thumb scroll.
 
 ### Module 3: 1-Click Data Export (.xlsx & .csv)
-- [ ] **Excel (.xlsx) Format:**
+- [x] **Excel (.xlsx) Format:**
   - Clean workbook name: `amenityops-leads-[timestamp].xlsx`.
   - Header row styled with bold font, colored background, and auto-filters enabled.
   - Column widths auto-calculated based on content length.
   - Phone numbers preserved as clean text strings (never scientific notation).
-- [ ] **CSV (.csv) Format:**
+- [x] **CSV (.csv) Format:**
   - RFC-4180 standard escaping for addresses and notes with commas/quotes/newlines.
   - Compatible with Excel, Google Sheets, Apollo.io, and Smartlead.
-- [ ] **Filter-Aware Export:** When a filter is active (e.g. only "Motels" in "Essex County"), clicking Export only downloads the filtered subset.
+- [x] **Filter-Aware Export:** When a filter is active (e.g. only "Motels" in "Essex County"), clicking Export only downloads the filtered subset.
 
 ### Module 4: Manual Creation & CSV Upload
-- [ ] **Manual Lead Addition:** Accessible modal with instant validation and immediate table insertion.
-- [ ] **Batch CSV Import:** Client can drop a CSV file, map the columns, and ingest records with duplicate detection.
+- [x] **Manual Lead Addition:** Accessible modal with instant validation and immediate table insertion.
+- [x] **Batch CSV Import:** Client can drop a CSV file, map the columns, and ingest records with duplicate detection.
 
 ---
 
@@ -106,4 +106,6 @@
 | `b7a75cb` | Phase 3 | `feat(leads): implement Phase 3 4-touch B2B cadence and specialist recruitment pipeline` |
 | `8d6625e` | Phase 3 | `docs: document Phase 3 B2B sequencer and specialist recruiting pipeline in specs and tracker` |
 | `5ad5585` | Phase 4 | `feat(leads): implement Phase 4 AI reply assistant, review queue, and inbound simulator` |
+| `3e777f9` | Phase 4 | `docs: document Phase 4 AI reply assistant and review queue in specs and task tracker` |
+| `[PENDING]` | Phase 5 | `docs: complete Phase 5 operational playbook, deliverability ramp, and QA handoff` |
 
