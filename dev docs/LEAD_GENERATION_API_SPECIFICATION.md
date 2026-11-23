@@ -175,3 +175,35 @@ Generates a downloadable buffer in Excel (`.xlsx`) or Comma-Separated (`.csv`) f
 | 8 | `phone` | Phone Number | Phone | "(201) 555-0199" |
 | 9 | `email` | Email Address | Email | "mvance@grandviewnj.com" |
 
+---
+
+## 6. Phase 2 Scraper Ingestion & Intent Engine Modules
+
+### 6.1 `calculateIntentTier(propertyType, notes, rawSignals): ScoredIntentResult`
+* Evaluates keyword dictionaries for active hiring (`Night Manager`, `Auditor`, `Closer`), negative review pain triggers (`broken gate`, `morning trash`, `unattended desk`), and municipal code violations.
+* Assigns Intent Priority Tier 1 through 5, generates structured `intent_signals: IntentSignal[]`, and calculates normalized `intentScore` (100–500).
+
+### 6.2 `sanitizePhoneNumber(phone: string): string | null`
+* Normalizes US phone numbers into clean `(XXX) XXX-XXXX` format, stripping extraneous characters and leading trunk prefixes.
+
+### 6.3 `validateEmail(email: string): { isValid, isCorporate, domain }`
+* Validates RFC regex syntax and checks domain against free consumer webmail providers (`gmail`, `yahoo`, `hotmail`, `outlook`, etc.) to flag corporate decision-maker domains.
+
+### 6.4 `suggestGatekeeperTitle(communityType: CommunityType, currentTitle?: string): string`
+* Maps standard operational decision-maker titles matching the asset class:
+  * Student Housing $\rightarrow$ *Community Director*
+  * Motel $\rightarrow$ *Owner & Managing Operator*
+  * Luxury Multi-Family $\rightarrow$ *Director of Property Management*
+  * 55+ Active Adult $\rightarrow$ *HOA General Manager*
+  * Commercial Multi-Tenant $\rightarrow$ *Facilities & Asset Director*
+
+### 6.5 `batchImportLeads(records: RawLeadCsvRow[]): Promise<{ importedCount, duplicateCount, leads }>`
+* Deduplicates against existing leads using composite key `normalizePropertyKey(property_name, address)`.
+* Runs Intent Scorer and contact sanitizers on incoming rows.
+* Persists to `growth_leads` and revalidates `/admin/leads`.
+
+### 6.6 `runScraperPipeline(params: { communityType?, county?, limit? }): Promise<{ newLeads, duplicateCount }>`
+* Simulates automated multi-source scraping for target counties and classes.
+* Enriches candidates and inserts newly qualified assets into the lead database.
+
+

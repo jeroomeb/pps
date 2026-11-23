@@ -37,8 +37,11 @@
 | **Phase 1** | **High-Fidelity Export Engine (.xlsx & .csv)** | 🟢 COMPLETED | `src/lib/export/leads-export.ts` + `/api/admin/leads/export` streaming endpoint. |
 | **Phase 1** | **Admin Navigation & Shell Integration** | 🟢 COMPLETED | `/admin/leads` route, `src/lib/nav-items.ts` tab with shield/target icon. |
 | **Phase 1** | **Admin Leads Portal UI/UX (Tabs 1–4)** | 🟢 COMPLETED | Responsive table, stats cards, search/filter bar, lead detail drawer, manual creation modal. |
-| **Phase 2** | **Multi-Source Scraping & Ingestion Engine** | ⚪ QUEUED | Scraper pipelines for Motels, Student Housing, 55+, Luxury, Commercial. |
-| **Phase 2** | **5-Tier Intent Scoring & Enrichment Parser** | ⚪ QUEUED | Automated scoring on hiring triggers, municipal code violations, negative reviews. |
+| **Phase 2** | **Multi-Source Scraping & Ingestion Engine** | 🟢 COMPLETED | Scraper pipelines across Motels, Student Housing, 55+, Luxury, and Commercial assets. |
+| **Phase 2** | **5-Tier Intent Scoring & Enrichment Parser** | 🟢 COMPLETED | Automated scoring on hiring triggers, municipal code violations, negative reviews (`intent-scorer.ts`). |
+| **Phase 2** | **Contact Sanitizer & Title Enrichment Engine**| 🟢 COMPLETED | Phone standardization `(XXX) XXX-XXXX`, email corporate domain check, gatekeeper title mapping (`contact-enricher.ts`). |
+| **Phase 2** | **Batch CSV / Excel Importer & Ingestion UI** | 🟢 COMPLETED | Drag-and-drop CSV parser with auto column mapping, validation flags, deduplication (`BatchImportModal.tsx`). |
+| **Phase 2** | **Live Multi-Source Scraper Simulation Modal** | 🟢 COMPLETED | Interactive discovery runner with progress animations and county/class filters (`RunScraperModal.tsx`). |
 | **Phase 3** | **4-Touch B2B Sales Sequence Sequencer** | ⚪ QUEUED | Day 1, Day 4, Day 8, Day 14 cadence, 50/day throttling, auto-stop on reply. |
 | **Phase 3** | **2-Touch Specialist Recruitment Cadence** | ⚪ QUEUED | Operations Specialist sourcing, personalized template delivery, resume ingestion. |
 | **Phase 4** | **Human-in-the-Loop AI Reply Assistant** | ⚪ QUEUED | Inbound email listener, intent classifier, draft-only generator, 1-click human dispatch. |
@@ -95,4 +98,6 @@
 | Commit SHA | Phase | Description |
 | :--- | :--- | :--- |
 | `b5c5e78` | Phase 1 | `feat(leads): implement Phase 1 Lead Engine schema, export utilities, and /admin/leads portal` |
+| `8443c72` | Phase 1 | `docs: update lead generation task tracker with Phase 1 completion` |
+| `69509b2` | Phase 2 | `feat(leads): implement Phase 2 scraper pipeline, 5-tier intent scorer, and batch importer` |
 
