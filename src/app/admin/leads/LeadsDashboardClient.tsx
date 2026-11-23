@@ -24,6 +24,8 @@ import {
   ExternalLink,
   SlidersHorizontal,
   X,
+  Upload,
+  Sparkles,
 } from 'lucide-react'
 import type {
   GrowthLead,
@@ -43,6 +45,8 @@ import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LeadDrawer } from './LeadDrawer'
 import { AddLeadModal } from './AddLeadModal'
+import { BatchImportModal } from './BatchImportModal'
+import { RunScraperModal } from './RunScraperModal'
 
 interface LeadsDashboardClientProps {
   initialLeads: GrowthLead[]
@@ -69,7 +73,24 @@ export function LeadsDashboardClient({
   // Drawer & Modal States
   const [selectedLead, setSelectedLead] = useState<GrowthLead | null>(null)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [isScraperModalOpen, setIsScraperModalOpen] = useState(false)
+  const [bannerNotice, setBannerNotice] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState<'xlsx' | 'csv' | null>(null)
+
+  const handleImportComplete = useCallback((newLeads: GrowthLead[]) => {
+    if (newLeads.length === 0) return
+    setLeads((prev) => [...newLeads, ...prev])
+    setBannerNotice(`Successfully imported and intent-scored ${newLeads.length} new leads!`)
+    setTimeout(() => setBannerNotice(null), 5000)
+  }, [])
+
+  const handleDiscoveryComplete = useCallback((newLeads: GrowthLead[]) => {
+    if (newLeads.length === 0) return
+    setLeads((prev) => [...newLeads, ...prev])
+    setBannerNotice(`Discovery Scraper added ${newLeads.length} new qualifying properties!`)
+    setTimeout(() => setBannerNotice(null), 5000)
+  }, [])
 
   // Multi-Selection State for Bulk Actions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -234,6 +255,28 @@ export function LeadsDashboardClient({
         subtitle="Discover off-hours commercial & hospitality properties, score intent pain signals, and run isolated sequences."
         action={
           <div className="flex flex-wrap items-center gap-2">
+            {/* Run Discovery Scraper */}
+            <button
+              type="button"
+              onClick={() => setIsScraperModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition shadow-xs"
+              title="Launch automated multi-source scraper for target counties and classes"
+            >
+              <Sparkles size={14} />
+              Run Scraper
+            </button>
+
+            {/* Batch Import CSV */}
+            <button
+              type="button"
+              onClick={() => setIsImportModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border border-outline-variant bg-surface-container-low text-on-surface hover:bg-surface-container-high transition"
+              title="Upload CSV or Excel file of scraped properties"
+            >
+              <Upload size={14} />
+              Import CSV
+            </button>
+
             {/* 1-Click Excel Export */}
             <button
               type="button"
@@ -270,6 +313,23 @@ export function LeadsDashboardClient({
           </div>
         }
       />
+
+      {/* Dismissible Success Banner */}
+      {bannerNotice && (
+        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold flex items-center justify-between animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={16} />
+            <span>{bannerNotice}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBannerNotice(null)}
+            className="text-emerald-700 dark:text-emerald-300 hover:opacity-75"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* KPI Stats Overview Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
@@ -915,6 +975,20 @@ export function LeadsDashboardClient({
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleCreateLead}
+      />
+
+      {/* Batch CSV Import Modal */}
+      <BatchImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportComplete={handleImportComplete}
+      />
+
+      {/* Run Discovery Scraper Modal */}
+      <RunScraperModal
+        isOpen={isScraperModalOpen}
+        onClose={() => setIsScraperModalOpen(false)}
+        onDiscoveryComplete={handleDiscoveryComplete}
       />
     </div>
   )

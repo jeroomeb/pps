@@ -9,8 +9,16 @@ import type {
   LeadFilterState,
   GrowthLeadInput,
   OutreachStatus,
+  CommunityType,
 } from '@/types/growth-leads'
 import { growthLeadSchema } from '@/types/growth-leads'
+import { discoverPropertiesFromCatalog } from '@/lib/leads/scraper-pipeline'
+import { calculateIntentTier } from '@/lib/leads/intent-scorer'
+import {
+  sanitizePhoneNumber,
+  suggestGatekeeperTitle,
+  normalizePropertyKey,
+} from '@/lib/leads/contact-enricher'
 
 /**
  * Rich seed fallback data ensuring the UI never fails even if local DB migrations
@@ -393,4 +401,162 @@ export async function bulkUpdateLeadStatus(ids: string[], status: OutreachStatus
   revalidatePath('/admin/leads')
   return { success: true, count: ids.length }
 }
+
+/**
+ * Executes the multi-source scraper discovery simulation, calculates intent tiers,
+ * deduplicates against current leads, and saves new discoveries to the database.
+ */
+export async function runScraperPipeline(params?: {
+  communityType?: CommunityType
+  county?: string
+  limit?: number
+}): Promise<{ newLeads: GrowthLead[]; duplicateCount: number }> {
+  await requireRole('admin')
+
+  const { leads: existingLeads } = await getGrowthLeads({ pageSize: 5000 })
+  const { newLeads, duplicateCount } = discoverPropertiesFromCatalog(existingLeads, params)
+
+  if (newLeads.length > 0) {
+    try {
+      const admin = createAdminClient()
+      const insertRows = newLeads.map((l) => ({
+        property_name: l.property_name,
+        community_type: l.community_type,
+        address: l.address,
+        municipality_town: l.municipality_town,
+        county: l.county,
+        key_amenities_notes: l.key_amenities_notes,
+        target_gatekeeper_name: l.target_gatekeeper_name,
+        target_gatekeeper_title: l.target_gatekeeper_title,
+        phone: l.phone,
+        email: l.email,
+        intent_tier: l.intent_tier,
+        intent_signals: l.intent_signals,
+        outreach_status: l.outreach_status,
+        current_sequence_step: 0,
+        source: l.source,
+        metadata: l.metadata,
+      }))
+
+      await admin.from('growth_leads').insert(insertRows)
+    } catch (dbErr) {
+      console.warn('[runScraperPipeline] DB insert fallback in dev mode:', dbErr)
+    }
+  }
+
+  revalidatePath('/admin/leads')
+  return { newLeads, duplicateCount }
+}
+
+export interface RawLeadCsvRow {
+  property_name: string
+  community_type?: string
+  address: string
+  municipality_town: string
+  county: string
+  key_amenities_notes?: string
+  target_gatekeeper_name?: string
+  target_gatekeeper_title?: string
+  phone?: string
+  email?: string
+}
+
+/**
+ * Batch imports raw lead rows from CSV / JSON, sanitizes phone/email,
+ * runs 5-tier intent scoring, prevents duplicates, and saves to database.
+ */
+export async function batchImportLeads(records: RawLeadCsvRow[]): Promise<{
+  importedCount: number
+  duplicateCount: number
+  leads: GrowthLead[]
+}> {
+  await requireRole('admin')
+  const { leads: existingLeads } = await getGrowthLeads({ pageSize: 5000 })
+
+  const existingKeys = new Set(
+    existingLeads.map((l) => normalizePropertyKey(l.property_name, l.address))
+  )
+
+  const toInsert: GrowthLead[] = []
+  let duplicateCount = 0
+
+  for (const row of records) {
+    if (!row.property_name || !row.address) continue
+
+    const key = normalizePropertyKey(row.property_name, row.address)
+    if (existingKeys.has(key)) {
+      duplicateCount++
+      continue
+    }
+
+    const type: CommunityType = (row.community_type?.toLowerCase() as CommunityType) || 'other'
+    const scored = calculateIntentTier(type, row.key_amenities_notes || '')
+    const cleanPhone = sanitizePhoneNumber(row.phone)
+    const cleanTitle = suggestGatekeeperTitle(type, row.target_gatekeeper_title)
+
+    const nowIso = new Date().toISOString()
+    const lead: GrowthLead = {
+      id: `imported-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      property_name: row.property_name.trim(),
+      community_type: type,
+      address: row.address.trim(),
+      municipality_town: row.municipality_town ? row.municipality_town.trim() : 'Unknown',
+      county: row.county ? row.county.trim() : 'Unknown',
+      key_amenities_notes: row.key_amenities_notes ? row.key_amenities_notes.trim() : null,
+      target_gatekeeper_name: row.target_gatekeeper_name ? row.target_gatekeeper_name.trim() : null,
+      target_gatekeeper_title: cleanTitle,
+      phone: cleanPhone,
+      email: row.email ? row.email.trim() : null,
+      intent_tier: scored.tier,
+      intent_signals: scored.signals,
+      outreach_status: 'new',
+      current_sequence_step: 0,
+      last_contacted_at: null,
+      next_touch_due_at: null,
+      source: 'csv_import',
+      metadata: { intentScore: scored.intentScore },
+      created_at: nowIso,
+      updated_at: nowIso,
+    }
+
+    toInsert.push(lead)
+    existingKeys.add(key)
+  }
+
+  if (toInsert.length > 0) {
+    try {
+      const admin = createAdminClient()
+      const insertRows = toInsert.map((l) => ({
+        property_name: l.property_name,
+        community_type: l.community_type,
+        address: l.address,
+        municipality_town: l.municipality_town,
+        county: l.county,
+        key_amenities_notes: l.key_amenities_notes,
+        target_gatekeeper_name: l.target_gatekeeper_name,
+        target_gatekeeper_title: l.target_gatekeeper_title,
+        phone: l.phone,
+        email: l.email,
+        intent_tier: l.intent_tier,
+        intent_signals: l.intent_signals,
+        outreach_status: l.outreach_status,
+        current_sequence_step: 0,
+        source: l.source,
+        metadata: l.metadata,
+      }))
+
+      await admin.from('growth_leads').insert(insertRows)
+    } catch (dbErr) {
+      console.warn('[batchImportLeads] DB insert fallback in dev mode:', dbErr)
+    }
+  }
+
+  revalidatePath('/admin/leads')
+  return {
+    importedCount: toInsert.length,
+    duplicateCount,
+    leads: toInsert,
+  }
+}
+
 
