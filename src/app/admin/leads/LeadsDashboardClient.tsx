@@ -35,6 +35,7 @@ import type {
   IntentTier,
   OutreachStatus,
   SpecialistCandidate,
+  GrowthAiDraft,
 } from '@/types/growth-leads'
 import {
   COMMUNITY_TYPE_CONFIG,
@@ -44,6 +45,12 @@ import {
 import { updateGrowthLead, createGrowthLead, bulkUpdateLeadStatus } from '@/lib/actions/leads'
 import { haltLeadSequence } from '@/lib/actions/outreach'
 import { SEED_SPECIALIST_CANDIDATES } from '@/lib/leads/outreach-sequencer'
+import { SEED_AI_DRAFTS } from '@/lib/leads/ai-reply-assistant'
+import {
+  simulateInboundReply,
+  approveAndDispatchDraft,
+  rejectDraft,
+} from '@/lib/actions/ai-reply'
 import { Card } from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { LeadDrawer } from './LeadDrawer'
@@ -51,6 +58,7 @@ import { AddLeadModal } from './AddLeadModal'
 import { BatchImportModal } from './BatchImportModal'
 import { RunScraperModal } from './RunScraperModal'
 import { SequencePreviewModal } from './SequencePreviewModal'
+import { AiDraftReviewCard } from './AiDraftReviewCard'
 
 interface LeadsDashboardClientProps {
   initialLeads: GrowthLead[]
@@ -83,6 +91,55 @@ export function LeadsDashboardClient({
   const [bannerNotice, setBannerNotice] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState<'xlsx' | 'csv' | null>(null)
   const [candidates, setCandidates] = useState<SpecialistCandidate[]>(SEED_SPECIALIST_CANDIDATES)
+  const [drafts, setDrafts] = useState<GrowthAiDraft[]>(SEED_AI_DRAFTS)
+
+  const handleApproveDraft = useCallback(async (draftId: string, finalBody: string) => {
+    setDrafts((prev) => prev.filter((d) => d.id !== draftId))
+    setBannerNotice('AI response approved and dispatched successfully!')
+    setTimeout(() => setBannerNotice(null), 4000)
+    try {
+      await approveAndDispatchDraft(draftId, finalBody)
+    } catch (err) {
+      console.error('Failed to approve draft:', err)
+    }
+  }, [])
+
+  const handleRejectDraft = useCallback(async (draftId: string) => {
+    setDrafts((prev) => prev.filter((d) => d.id !== draftId))
+    setBannerNotice('Draft dismissed from review queue.')
+    setTimeout(() => setBannerNotice(null), 3000)
+    try {
+      await rejectDraft(draftId)
+    } catch (err) {
+      console.error('Failed to reject draft:', err)
+    }
+  }, [])
+
+  const handleSimulateReply = useCallback(
+    async (scenario: 'demo' | 'pricing' | 'referral' | 'not_interested' | 'opt_out') => {
+      const targetLead = leads[0]
+      if (!targetLead) return
+
+      try {
+        const res = await simulateInboundReply(targetLead.id, scenario)
+        setDrafts((prev) => [res.draft, ...prev])
+        setLeads((prev) =>
+          prev.map((l) =>
+            l.id === targetLead.id
+              ? { ...l, outreach_status: scenario === 'opt_out' ? 'opt_out' : 'replied' }
+              : l
+          )
+        )
+        setBannerNotice(
+          `Simulated "${scenario}" response from ${targetLead.property_name}! Sequence halted & AI draft generated.`
+        )
+        setTimeout(() => setBannerNotice(null), 6000)
+      } catch (err) {
+        console.error('Simulation failed:', err)
+      }
+    },
+    [leads]
+  )
 
   const handleImportComplete = useCallback((newLeads: GrowthLead[]) => {
     if (newLeads.length === 0) return
@@ -470,16 +527,23 @@ export function LeadsDashboardClient({
           <button
             type="button"
             onClick={() => setActiveTab('ai-reply')}
-            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap flex items-center gap-2 ${activeTab === 'ai-reply'
+            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'ai-reply'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-on-surface-variant hover:text-on-surface'
-              }`}
+            }`}
           >
             <Bot size={16} />
             AI Lead Reply Assistant
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-primary/10 text-primary font-bold">
-              Draft-Only
-            </span>
+            {drafts.length > 0 ? (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500 text-white font-black animate-pulse">
+                {drafts.length}
+              </span>
+            ) : (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-primary/10 text-primary font-bold">
+                Draft-Only
+              </span>
+            )}
           </button>
         </nav>
       </div>
@@ -1169,33 +1233,103 @@ export function LeadsDashboardClient({
         </div>
       )}
 
-      {/* TAB 4: AI Reply Assistant */}
+      {/* TAB 4: AI Reply Assistant & Review Queue */}
       {activeTab === 'ai-reply' && (
-        <Card padded className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold font-headline text-on-surface flex items-center gap-2">
-                <Bot size={20} className="text-primary" />
-                Human-in-the-Loop AI Lead Reply Assistant
-              </h2>
-              <p className="text-xs text-on-surface-variant">
-                Categorizes prospect intent, cancels further sequence cadences, and prepares draft replies for human review.
-              </p>
+        <div className="space-y-6">
+          <Card padded className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold font-headline text-on-surface flex items-center gap-2">
+                  <Bot size={20} className="text-primary" />
+                  Human-in-the-Loop AI Lead Reply Assistant
+                </h2>
+                <p className="text-xs text-on-surface-variant">
+                  Monitors marketing inboxes, classifies prospect intent, auto-halts sequences, and drafts replies for 1-click human review.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                  Zero Auto-Send Authority
+                </span>
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                  {drafts.length} Pending Review
+                </span>
+              </div>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
-              Zero Auto-Send Authority
-            </span>
-          </div>
 
-          <div className="p-6 border border-dashed border-outline-variant rounded-xl text-center space-y-2 bg-surface-container-low/20">
-            <CheckCircle2 size={32} className="mx-auto text-emerald-500 opacity-80" />
-            <h3 className="text-sm font-bold text-on-surface">No Pending Drafts to Review</h3>
-            <p className="text-xs text-on-surface-variant max-w-md mx-auto">
-              When an outbound prospect replies to an outreach email, the AI Assistant will classify
-              the response (*Wants Demo, Pricing, Not Interested*) and draft a response here for your 1-click approval.
-            </p>
-          </div>
-        </Card>
+            {/* QA Test Runner: Inbound Simulation Bar */}
+            <div className="p-3.5 rounded-xl border border-outline-variant bg-surface-container-low/40 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-primary" />
+                  Test Inbound Reply Simulation (QA Testing Runner)
+                </span>
+                <span className="text-[11px] text-on-surface-variant">
+                  Clicking triggers instant sequence halt + AI draft creation
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleSimulateReply('demo')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 transition"
+                >
+                  🧪 Wants Demo Video
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSimulateReply('pricing')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 transition"
+                >
+                  🧪 Pricing Inquiry
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSimulateReply('referral')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 hover:bg-purple-500/20 transition"
+                >
+                  🧪 Colleague Referral
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSimulateReply('not_interested')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20 hover:bg-slate-500/20 transition"
+                >
+                  🧪 Not Interested
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSimulateReply('opt_out')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition"
+                >
+                  🧪 Unsubscribe / Stop
+                </button>
+              </div>
+            </div>
+
+            {/* Draft Review Cards List */}
+            {drafts.length === 0 ? (
+              <div className="p-8 border border-dashed border-outline-variant rounded-xl text-center space-y-2 bg-surface-container-low/20">
+                <CheckCircle2 size={36} className="mx-auto text-emerald-500 opacity-90" />
+                <h3 className="text-sm font-bold text-on-surface">Inbox Zero: All Drafts Dispatched</h3>
+                <p className="text-xs text-on-surface-variant max-w-md mx-auto">
+                  There are no inbound messages awaiting operator review. Use the QA test simulator above to generate a new inbound response test.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4 pt-1">
+                {drafts.map((d) => (
+                  <AiDraftReviewCard
+                    key={d.id}
+                    draft={d}
+                    onApprove={handleApproveDraft}
+                    onReject={handleRejectDraft}
+                  />
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
       )}
 
       {/* Slide-Over Drawer for Lead Details */}
