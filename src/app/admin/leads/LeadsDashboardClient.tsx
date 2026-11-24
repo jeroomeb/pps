@@ -748,14 +748,14 @@ export function LeadsDashboardClient({
                         className="rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
                       />
                     </th>
-                    <th className="py-3.5 px-3 font-bold">Property Name &amp; Class</th>
-                    <th className="py-3.5 px-3 font-bold">Location &amp; County</th>
-                    <th className="py-3.5 px-3 font-bold">Key Amenities &amp; Pain Signals</th>
-                    <th className="py-3.5 px-3 font-bold">Gatekeeper / Contact</th>
-                    <th className="py-3.5 px-3 font-bold">Phone &amp; Email</th>
-                    <th className="py-3.5 px-3 font-bold">Intent Tier</th>
-                    <th className="py-3.5 px-3 font-bold">Status</th>
-                    <th className="py-3.5 pr-4 pl-2 text-right font-bold">Details</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[200px]">Property Name &amp; Class</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[170px]">Location &amp; County</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[220px]">Key Amenities &amp; Pain Signals</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[160px]">Gatekeeper / Contact</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[190px]">Phone &amp; Email</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[90px]">Intent Tier</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[130px]">Status</th>
+                    <th className="py-3.5 pr-4 pl-2 text-right font-bold w-16">Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/60">
@@ -801,8 +801,8 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* 1. Property Name & 2. Community Type */}
-                          <td className="py-3 px-3">
-                            <div className="font-bold text-on-surface max-w-[200px] truncate text-sm">
+                          <td className="py-3 px-3 min-w-[200px]">
+                            <div className="font-bold text-on-surface text-sm">
                               {lead.property_name}
                             </div>
                             <span
@@ -813,15 +813,15 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* 3. Address, 4. Municipality, 5. County */}
-                          <td className="py-3 px-3 max-w-[180px]">
-                            <div className="text-on-surface font-medium truncate">{lead.address}</div>
-                            <div className="text-[11px] text-on-surface-variant truncate">
+                          <td className="py-3 px-3 min-w-[170px]">
+                            <div className="text-on-surface font-medium">{lead.address}</div>
+                            <div className="text-[11px] text-on-surface-variant">
                               {lead.municipality_town}, {lead.county} Co.
                             </div>
                           </td>
 
                           {/* 6. Key Amenities & Pain Signals */}
-                          <td className="py-3 px-3 max-w-[240px]">
+                          <td className="py-3 px-3 min-w-[220px]">
                             <p
                               className="text-on-surface text-xs line-clamp-2 leading-relaxed"
                               title={lead.key_amenities_notes || ''}
@@ -831,17 +831,17 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* 7. Target Gatekeeper */}
-                          <td className="py-3 px-3 max-w-[160px]">
-                            <div className="font-semibold text-on-surface truncate">
+                          <td className="py-3 px-3 min-w-[160px]">
+                            <div className="font-semibold text-on-surface">
                               {lead.target_gatekeeper_name || 'Pending Name'}
                             </div>
-                            <div className="text-[11px] text-on-surface-variant truncate">
+                            <div className="text-[11px] text-on-surface-variant">
                               {lead.target_gatekeeper_title || '—'}
                             </div>
                           </td>
 
                           {/* 8. Phone & 9. Email */}
-                          <td className="py-3 px-3 whitespace-nowrap">
+                          <td className="py-3 px-3 min-w-[190px] whitespace-nowrap">
                             {lead.phone ? (
                               <div className="flex items-center gap-1.5 text-on-surface font-medium">
                                 <Phone size={12} className="text-primary" />
@@ -852,9 +852,9 @@ export function LeadsDashboardClient({
                             )}
 
                             {lead.email ? (
-                              <div className="flex items-center gap-1.5 text-primary text-[11px] mt-0.5 max-w-[150px] truncate">
+                              <div className="flex items-center gap-1.5 text-primary text-[11px] mt-0.5">
                                 <Mail size={12} className="shrink-0" />
-                                <span className="truncate">{lead.email}</span>
+                                <span className="font-medium">{lead.email}</span>
                               </div>
                             ) : (
                               <span className="text-[11px] text-on-surface-variant italic block mt-0.5">

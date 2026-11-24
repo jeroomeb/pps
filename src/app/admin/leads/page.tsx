@@ -13,9 +13,9 @@ export default async function LeadsPage() {
   ])
 
   return (
-    <main className="flex-1 p-4 lg:p-8">
+    <div className="w-full">
       <LeadsDashboardClient initialLeads={leads} initialTotal={total} initialStats={stats} />
-    </main>
+    </div>
   )
 }
 
