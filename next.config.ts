@@ -20,8 +20,22 @@ const csp = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  deploymentId:
+    process.env.COOLIFY_DEPLOYMENT_ID ||
+    process.env.COOLIFY_RESOURCE_UUID ||
+    process.env.GIT_SHA ||
+    process.env.SOURCE_COMMIT ||
+    undefined,
   async headers() {
     return [
+      {
+        source: '/(login|forgot-password|reset-password)(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Pragma', value: 'no-cache' },
+          { key: 'Expires', value: '0' },
+        ],
+      },
       {
         source: '/(.*)',
         headers: [

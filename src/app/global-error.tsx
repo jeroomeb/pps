@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+
 export default function GlobalError({
   error,
   reset,
@@ -7,6 +9,23 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const isActionSkew =
+    error?.name === 'UnrecognizedActionError' ||
+    error?.message?.includes('Server Action') ||
+    error?.message?.includes('was not found')
+
+  useEffect(() => {
+    console.error(error)
+    if (isActionSkew) {
+      const lastReload = sessionStorage.getItem('last_skew_reload_global')
+      const now = Date.now()
+      if (!lastReload || now - Number(lastReload) > 10000) {
+        sessionStorage.setItem('last_skew_reload_global', String(now))
+        window.location.reload()
+      }
+    }
+  }, [error, isActionSkew])
+
   // Root-layout failure: no app CSS is guaranteed here, so use inline styles.
   return (
     <html lang="en">
@@ -24,13 +43,23 @@ export default function GlobalError({
         }}
       >
         <div>
-          <h1 style={{ fontSize: 20, marginBottom: 8 }}>Something went wrong</h1>
+          <h1 style={{ fontSize: 20, marginBottom: 8 }}>
+            {isActionSkew ? 'App Updated — Reloading...' : 'Something went wrong'}
+          </h1>
           <p style={{ fontSize: 14, color: '#4d4635', marginBottom: 16 }}>
-            Please try again.{error.digest ? ` (Ref: ${error.digest})` : ''}
+            {isActionSkew
+              ? 'A newer version of the application was deployed. Reloading latest assets.'
+              : `Please try again.${error.digest ? ` (Ref: ${error.digest})` : ''}`}
           </p>
           <button
             type="button"
-            onClick={reset}
+            onClick={() => {
+              if (isActionSkew) {
+                window.location.reload()
+              } else {
+                reset()
+              }
+            }}
             style={{
               minHeight: 44,
               padding: '0 20px',
@@ -42,7 +71,7 @@ export default function GlobalError({
               cursor: 'pointer',
             }}
           >
-            Try Again
+            {isActionSkew ? 'Reload Page' : 'Try Again'}
           </button>
         </div>
       </body>
