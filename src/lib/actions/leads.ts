@@ -383,6 +383,22 @@ export async function deleteGrowthLead(id: string) {
 }
 
 /**
+ * Bulk delete multiple lead records
+ */
+export async function bulkDeleteGrowthLeads(ids: string[]) {
+  await requireRole('admin')
+  const admin = createAdminClient()
+
+  const { error } = await admin.from('growth_leads').delete().in('id', ids)
+  if (error) {
+    throw new Error(`Failed to bulk delete leads: ${error.message}`)
+  }
+
+  revalidatePath('/admin/leads')
+  return { success: true, count: ids.length }
+}
+
+/**
  * Bulk update outreach status for selected leads
  */
 export async function bulkUpdateLeadStatus(ids: string[], status: OutreachStatus) {

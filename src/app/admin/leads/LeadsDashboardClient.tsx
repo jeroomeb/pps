@@ -26,6 +26,7 @@ import {
   X,
   Upload,
   Sparkles,
+  Trash2,
 } from 'lucide-react'
 import type {
   GrowthLead,
@@ -42,7 +43,13 @@ import {
   INTENT_TIER_CONFIG,
   OUTREACH_STATUS_CONFIG,
 } from '@/types/growth-leads'
-import { updateGrowthLead, createGrowthLead, bulkUpdateLeadStatus } from '@/lib/actions/leads'
+import {
+  updateGrowthLead,
+  createGrowthLead,
+  bulkUpdateLeadStatus,
+  deleteGrowthLead,
+  bulkDeleteGrowthLeads,
+} from '@/lib/actions/leads'
 import { haltLeadSequence } from '@/lib/actions/outreach'
 import { SEED_SPECIALIST_CANDIDATES } from '@/lib/leads/outreach-sequencer'
 import { SEED_AI_DRAFTS } from '@/lib/leads/ai-reply-assistant'
@@ -329,6 +336,52 @@ export function LeadsDashboardClient({
     },
     [selectedIds]
   )
+
+  // Single Lead Delete
+  const handleDeleteLead = useCallback(
+    async (id: string) => {
+      // Optimistic update
+      setLeads((prev) => prev.filter((l) => l.id !== id))
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      if (selectedLead?.id === id) {
+        setSelectedLead(null)
+      }
+
+      try {
+        await deleteGrowthLead(id)
+      } catch (err) {
+        console.error('Failed to delete lead from database:', err)
+      }
+    },
+    [selectedLead]
+  )
+
+  // Bulk Delete
+  const handleBulkDelete = useCallback(async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+
+    if (!window.confirm(`Are you sure you want to permanently delete ${ids.length} selected lead(s)?`)) {
+      return
+    }
+
+    // Optimistic removal
+    setLeads((prev) => prev.filter((l) => !ids.includes(l.id)))
+    setSelectedIds(new Set())
+    if (selectedLead && ids.includes(selectedLead.id)) {
+      setSelectedLead(null)
+    }
+
+    try {
+      await bulkDeleteGrowthLeads(ids)
+    } catch (err) {
+      console.error('Failed to bulk delete leads from database:', err)
+    }
+  }, [selectedIds, selectedLead])
 
   return (
     <div className="space-y-6">
@@ -661,9 +714,18 @@ export function LeadsDashboardClient({
                   <button
                     type="button"
                     onClick={() => handleBulkStatus('disqualified')}
-                    className="px-2 py-1 rounded bg-rose-500/10 text-rose-600 text-[11px] font-bold hover:bg-rose-500/20 transition"
+                    className="px-2 py-1 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] font-bold hover:bg-amber-500/20 transition"
                   >
                     Disqualify
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkDelete}
+                    className="px-2 py-1 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[11px] font-bold hover:bg-rose-500/20 transition inline-flex items-center gap-1"
+                    title="Permanently delete selected leads"
+                  >
+                    <Trash2 size={12} />
+                    Delete ({selectedIds.size})
                   </button>
                 </div>
               )}
@@ -1337,6 +1399,7 @@ export function LeadsDashboardClient({
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
         onStatusChange={handleStatusChange}
+        onDelete={handleDeleteLead}
       />
 
       {/* Add Lead Modal */}

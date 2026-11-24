@@ -14,6 +14,7 @@ import {
   CheckCircle,
   Copy,
   ExternalLink,
+  Trash2,
 } from 'lucide-react'
 import type { GrowthLead, OutreachStatus } from '@/types/growth-leads'
 import {
@@ -26,10 +27,12 @@ interface LeadDrawerProps {
   lead: GrowthLead | null
   onClose: () => void
   onStatusChange: (id: string, status: OutreachStatus) => Promise<void>
+  onDelete?: (id: string) => Promise<void>
 }
 
-export function LeadDrawer({ lead, onClose, onStatusChange }: LeadDrawerProps) {
+export function LeadDrawer({ lead, onClose, onStatusChange, onDelete }: LeadDrawerProps) {
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
   if (!lead) return null
@@ -50,6 +53,22 @@ export function LeadDrawer({ lead, onClose, onStatusChange }: LeadDrawerProps) {
       await onStatusChange(lead.id, newStatus)
     } finally {
       setIsUpdating(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!onDelete) return
+    if (!window.confirm(`Are you sure you want to permanently delete "${lead.property_name}"?`)) {
+      return
+    }
+    try {
+      setIsDeleting(true)
+      await onDelete(lead.id)
+      onClose()
+    } catch (err) {
+      console.error('Failed to delete lead:', err)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -310,7 +329,18 @@ export function LeadDrawer({ lead, onClose, onStatusChange }: LeadDrawerProps) {
           </div>
 
           {/* Footer Actions */}
-          <div className="border-t border-outline-variant p-4 bg-surface-container-low/40 flex items-center justify-end gap-3">
+          <div className="border-t border-outline-variant p-4 bg-surface-container-low/40 flex items-center justify-between gap-3">
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition border border-rose-500/30 disabled:opacity-50"
+              >
+                <Trash2 size={14} />
+                {isDeleting ? 'Deleting...' : 'Delete Lead'}
+              </button>
+            ) : <div />}
             <button
               type="button"
               onClick={onClose}
