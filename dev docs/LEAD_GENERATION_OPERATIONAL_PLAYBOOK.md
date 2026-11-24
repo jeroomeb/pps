@@ -112,3 +112,4 @@ Before initiating cold outreach campaigns on live prospect mailboxes, confirm:
 - [ ] **Demo Video URL Confirmed:** Destination URL for the 5-minute self-paced video (e.g., `https://getamenityops.com/demo`).
 - [ ] **Primary Geographic Corridors:** Target initial metro areas confirmed (e.g., Middlesex, Hudson, Ocean, Essex, Mercer).
 - [ ] **Handoff Email Destination:** Client team email designated to receive hot demo and pricing inquiries.
+
