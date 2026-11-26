@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
-import { requireRole } from '@/lib/auth/dal'
+import { requireGlobalAdmin } from '@/lib/auth/dal'
 import type {
   GrowthLead,
   GrowthLeadStats,
@@ -217,7 +217,7 @@ export async function getGrowthLeads(
   filters: Partial<LeadFilterState> = {}
 ): Promise<{ leads: GrowthLead[]; total: number }> {
   try {
-    await requireRole('admin')
+    await requireGlobalAdmin()
     const admin = createAdminClient()
 
     let query = admin
@@ -320,7 +320,7 @@ export async function getGrowthLeadStats(): Promise<GrowthLeadStats> {
  * Add a new lead manually
  */
 export async function createGrowthLead(input: GrowthLeadInput) {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const validated = growthLeadSchema.parse(input)
   const admin = createAdminClient()
 
@@ -348,7 +348,7 @@ export async function createGrowthLead(input: GrowthLeadInput) {
  * Update an existing lead record
  */
 export async function updateGrowthLead(id: string, input: Partial<GrowthLeadInput>) {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
 
   const { data, error } = await admin
@@ -370,7 +370,7 @@ export async function updateGrowthLead(id: string, input: Partial<GrowthLeadInpu
  * Delete a lead record
  */
 export async function deleteGrowthLead(id: string) {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
 
   const { error } = await admin.from('growth_leads').delete().eq('id', id)
@@ -386,7 +386,7 @@ export async function deleteGrowthLead(id: string) {
  * Bulk delete multiple lead records
  */
 export async function bulkDeleteGrowthLeads(ids: string[]) {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
 
   const { error } = await admin.from('growth_leads').delete().in('id', ids)
@@ -402,7 +402,7 @@ export async function bulkDeleteGrowthLeads(ids: string[]) {
  * Bulk update outreach status for selected leads
  */
 export async function bulkUpdateLeadStatus(ids: string[], status: OutreachStatus) {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
 
   const { error } = await admin
@@ -427,7 +427,7 @@ export async function runScraperPipeline(params?: {
   county?: string
   limit?: number
 }): Promise<{ newLeads: GrowthLead[]; duplicateCount: number }> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
 
   const { leads: existingLeads } = await getGrowthLeads({ pageSize: 5000 })
   const { newLeads, duplicateCount } = discoverPropertiesFromCatalog(existingLeads, params)
@@ -486,7 +486,7 @@ export async function batchImportLeads(records: RawLeadCsvRow[]): Promise<{
   duplicateCount: number
   leads: GrowthLead[]
 }> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const { leads: existingLeads } = await getGrowthLeads({ pageSize: 5000 })
 
   const existingKeys = new Set(

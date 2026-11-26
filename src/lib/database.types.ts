@@ -36,6 +36,7 @@ export interface Database {
           community_type: string
           address: string
           municipality_town: string
+          state?: string | null
           county: string
           key_amenities_notes: string | null
           target_gatekeeper_name: string | null
@@ -59,6 +60,7 @@ export interface Database {
           community_type: string
           address: string
           municipality_town: string
+          state?: string | null
           county: string
           key_amenities_notes?: string | null
           target_gatekeeper_name?: string | null
@@ -82,6 +84,7 @@ export interface Database {
           community_type?: string
           address?: string
           municipality_town?: string
+          state?: string | null
           county?: string
           key_amenities_notes?: string | null
           target_gatekeeper_name?: string | null

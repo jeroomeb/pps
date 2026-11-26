@@ -247,6 +247,7 @@ export function discoverPropertiesFromCatalog(
       community_type: item.community_type,
       address: item.address,
       municipality_town: item.municipality_town,
+      state: 'NJ',
       county: item.county,
       key_amenities_notes: item.key_amenities_notes,
       target_gatekeeper_name: item.target_gatekeeper_name,

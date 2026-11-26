@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
-import { requireRole } from '@/lib/auth/dal'
+import { requireGlobalAdmin } from '@/lib/auth/dal'
 import type {
   GrowthLead,
   OutreachPerformanceMetrics,
@@ -23,7 +23,7 @@ import {
 export async function enrollLeadsInSequence(
   leadIds: string[]
 ): Promise<{ success: boolean; enrolledCount: number }> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
 
   const nextTouch = getNextTouchDate(2)
@@ -53,7 +53,7 @@ export async function enrollLeadsInSequence(
 export async function advanceOutreachSequence(
   leadId: string
 ): Promise<{ success: boolean; nextStep: number; messagePreview: string }> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
 
   // Fetch lead to get property & contact variables
@@ -122,7 +122,7 @@ export async function haltLeadSequence(
   leadId: string,
   reason: 'replied' | 'opt_out' | 'disqualified'
 ): Promise<{ success: boolean }> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
 
   try {
@@ -162,7 +162,7 @@ export async function advanceRecruitmentCandidate(
   candidateId: string,
   newStatus: SpecialistCandidate['status']
 ): Promise<{ success: boolean }> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   revalidatePath('/admin/leads')
   return { success: true }
 }

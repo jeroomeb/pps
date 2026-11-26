@@ -749,7 +749,7 @@ export function LeadsDashboardClient({
                       />
                     </th>
                     <th className="py-3.5 px-3 font-bold min-w-[200px]">Property Name &amp; Class</th>
-                    <th className="py-3.5 px-3 font-bold min-w-[170px]">Location &amp; County</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[190px]">Address</th>
                     <th className="py-3.5 px-3 font-bold min-w-[220px]">Key Amenities &amp; Pain Signals</th>
                     <th className="py-3.5 px-3 font-bold min-w-[160px]">Gatekeeper / Contact</th>
                     <th className="py-3.5 px-3 font-bold min-w-[190px]">Phone &amp; Email</th>
@@ -812,11 +812,11 @@ export function LeadsDashboardClient({
                             </span>
                           </td>
 
-                          {/* 3. Address, 4. Municipality, 5. County */}
-                          <td className="py-3 px-3 min-w-[170px]">
+                          {/* 3. Address, 4. Municipality, 5. State, 6. County */}
+                          <td className="py-3 px-3 min-w-[190px]">
                             <div className="text-on-surface font-medium">{lead.address}</div>
                             <div className="text-[11px] text-on-surface-variant">
-                              {lead.municipality_town}, {lead.county} Co.
+                              {lead.municipality_town}, {lead.state || 'NJ'} · {lead.county} Co.
                             </div>
                           </td>
 

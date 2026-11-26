@@ -239,6 +239,10 @@ export function LeadDrawer({ lead, onClose, onStatusChange, onDelete }: LeadDraw
                   <span className="font-semibold text-on-surface">{lead.municipality_town}</span>
                 </div>
                 <div>
+                  <span className="text-on-surface-variant block mb-0.5">State</span>
+                  <span className="font-semibold text-on-surface">{lead.state || 'NJ'}</span>
+                </div>
+                <div>
                   <span className="text-on-surface-variant block mb-0.5">County Jurisdiction</span>
                   <span className="font-semibold text-on-surface">{lead.county} County</span>
                 </div>

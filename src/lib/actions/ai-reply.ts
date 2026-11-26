@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/server'
-import { requireRole } from '@/lib/auth/dal'
+import { requireGlobalAdmin } from '@/lib/auth/dal'
 import type { GrowthAiDraft, GrowthLead } from '@/types/growth-leads'
 import {
   analyzeInboundEmail,
@@ -15,7 +15,7 @@ import { getGrowthLeads } from './leads'
  * Returns pending AI drafts awaiting human-in-the-loop review
  */
 export async function getPendingAiDrafts(): Promise<GrowthAiDraft[]> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
 
   try {
@@ -44,7 +44,7 @@ export async function approveAndDispatchDraft(
   draftId: string,
   finalBody: string
 ): Promise<{ success: boolean; dispatchedAt: string }> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
   const nowIso = new Date().toISOString()
 
@@ -98,7 +98,7 @@ export async function rejectDraft(
   draftId: string,
   reason: string = 'Manual dismissal'
 ): Promise<{ success: boolean }> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
 
   try {
@@ -124,7 +124,7 @@ export async function simulateInboundReply(
   leadId: string,
   scenario: 'demo' | 'pricing' | 'referral' | 'not_interested' | 'opt_out'
 ): Promise<{ draft: GrowthAiDraft; sequenceHalted: boolean }> {
-  await requireRole('admin')
+  await requireGlobalAdmin()
   const admin = createAdminClient()
 
   // 1. Fetch lead

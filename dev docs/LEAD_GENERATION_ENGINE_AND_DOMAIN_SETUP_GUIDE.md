@@ -166,15 +166,15 @@ Daily Outbound Emails per Inbox
 The Lead Generation Engine lives at `/admin/leads` and is composed of 4 core tabs:
 
 ### Module 1: Discovered Leads Hub (Tab 1)
-* **The 9 Standard Property Fields:**
+* **The Core Property Fields (with State Identified):**
   1. `property_name` (e.g., The Collegiate at Rutgers)
   2. `community_type` (Motel, Student Housing, 55+ Active Adult, Luxury Multifamily, Commercial)
-  3. `address` (Street address)
-  4. `municipality_town` (e.g., New Brunswick)
-  5. `county` (e.g., Middlesex)
-  6. `key_amenities_notes` (Overnight audit requirements, pool, gate access)
-  7. `target_gatekeeper_name` (Decision-maker name)
-  8. `target_gatekeeper_title` (e.g., HOA General Manager, Director of Operations)
+  3. `address` (Street address, e.g., 15 College Avenue)
+  4. `municipality_town` (City / Town, e.g., New Brunswick)
+  5. `state` (State, e.g., NJ, NY, PA)
+  6. `county` (e.g., Middlesex)
+  7. `key_amenities_notes` (Overnight audit requirements, pool, gate access)
+  8. `target_gatekeeper_name` & `target_gatekeeper_title` (Decision-maker name & title)
   9. `phone` & `email` (Direct desk phone and email)
 * **1-Click High-Performance Exports:**
   * **Excel (`.xlsx`):** Generates binary Microsoft Excel sheets with formatted headers and auto-sized column widths.
@@ -279,3 +279,4 @@ Before launching live cold email outreach to external property managers, complet
 - [ ] **14-Day Automated Warm-Up Active:** Connect mailboxes to Smartlead or Instantly warm-up network.
 - [ ] **5-Minute Demo Video Ready:** Confirm the URL for the self-paced walkthrough video (e.g., `https://getamenityops.com/demo`).
 - [ ] **Operator Notification Email:** Designate the team email address to receive notifications when prospects request a live phone call or demo.
+

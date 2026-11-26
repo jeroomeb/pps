@@ -17,6 +17,7 @@ export function AddLeadModal({ isOpen, onClose, onSubmit }: AddLeadModalProps) {
     community_type: 'motel',
     address: '',
     municipality_town: '',
+    state: 'NJ',
     county: '',
     key_amenities_notes: '',
     target_gatekeeper_name: '',
@@ -55,6 +56,7 @@ export function AddLeadModal({ isOpen, onClose, onSubmit }: AddLeadModalProps) {
         community_type: 'motel',
         address: '',
         municipality_town: '',
+        state: 'NJ',
         county: '',
         key_amenities_notes: '',
         target_gatekeeper_name: '',
@@ -179,22 +181,38 @@ export function AddLeadModal({ isOpen, onClose, onSubmit }: AddLeadModalProps) {
               {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
             </div>
 
-            {/* Municipality / Town */}
-            <div>
-              <label className="block text-xs font-semibold text-on-surface mb-1">
-                Municipality / City <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. New Brunswick"
-                value={formData.municipality_town}
-                onChange={(e) => setFormData({ ...formData, municipality_town: e.target.value })}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-outline-variant bg-surface-container-low text-on-surface focus:outline-hidden focus:border-primary transition"
-              />
-              {errors.municipality_town && (
-                <p className="text-red-500 text-xs mt-1">{errors.municipality_town}</p>
-              )}
+            {/* Municipality / Town & State */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="col-span-2">
+                <label className="block text-xs font-semibold text-on-surface mb-1">
+                  Municipality / City <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. New Brunswick"
+                  value={formData.municipality_town}
+                  onChange={(e) => setFormData({ ...formData, municipality_town: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-outline-variant bg-surface-container-low text-on-surface focus:outline-hidden focus:border-primary transition"
+                />
+                {errors.municipality_town && (
+                  <p className="text-red-500 text-xs mt-1">{errors.municipality_town}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-on-surface mb-1">
+                  State
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. NJ"
+                  maxLength={4}
+                  value={formData.state ?? 'NJ'}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-outline-variant bg-surface-container-low text-on-surface focus:outline-hidden focus:border-primary transition uppercase"
+                />
+              </div>
             </div>
 
             {/* County */}

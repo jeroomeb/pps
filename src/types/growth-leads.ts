@@ -34,6 +34,7 @@ export interface GrowthLead {
   community_type: CommunityType
   address: string
   municipality_town: string
+  state?: string | null
   county: string
   key_amenities_notes: string | null
   target_gatekeeper_name: string | null
@@ -226,6 +227,7 @@ export const growthLeadSchema = z.object({
   ]),
   address: z.string().min(3, 'Address is required'),
   municipality_town: z.string().min(2, 'City / Municipality is required'),
+  state: z.string().default('NJ').optional().nullable(),
   county: z.string().min(2, 'County is required'),
   key_amenities_notes: z.string().optional().nullable(),
   target_gatekeeper_name: z.string().optional().nullable(),

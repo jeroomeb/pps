@@ -11,13 +11,13 @@
 
 These 5 properties represent the primary market segments targeted by Amenity Op's off-hours auditing services:
 
-| # | Property Name | Class | Location & County | Gatekeeper & Title | Phone & Email | Intent Tier & Signals | Status |
+| # | Property Name | Class | Address | Gatekeeper & Title | Phone & Email | Intent Tier & Signals | Status |
 | :-: | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1** | **The Collegiate at Rutgers** | `student_housing` | 15 College Avenue, New Brunswick, Middlesex Co. | Jordan Matthews<br>*(Community Director)* | (732) 555-0142<br>`jmatthews@thecollegiatenb.com` | **Tier 1 (Critical)**<br>• Job ad: Hiring Night Closer<br>• Reviews: Fire door left ajar | `in_sequence`<br>*(Touch 1 Sent)* |
-| **2** | **Horizon Park Manor (55+)** | `active_adult_55_plus` | 4400 Horizon Blvd, Toms River, Ocean Co. | Eleanor Vance<br>*(HOA General Manager)* | (732) 555-0819<br>`evance@horizonparkhoa.org` | **Tier 2 (High)**<br>• Municipal exterior lighting notice (45 days ago) | `enriched`<br>*(Ready for Touch 1)* |
-| **3** | **Oceanview Motor Lodge & Suites** | `motel` | 910 Ocean Avenue, Asbury Park, Monmouth Co. | Rajiv Patel<br>*(Owner & Managing Operator)* | (732) 555-0311<br>`rpatel@oceanviewmotelnj.com` | **Tier 1 (Critical)**<br>• Job ad: Hiring Night Front Desk Auditor 11pm-7am | `new`<br>*(Newly Scraped)* |
-| **4** | **The Sovereign Luxury Tower** | `luxury_multifamily` | 77 Hudson Street, Jersey City, Hudson Co. | Christopher Sterling<br>*(Director of Property Mgmt)* | (201) 555-0988<br>`csterling@sovereignjc.com` | **Tier 3 (Medium)**<br>• High-rise common area walkthrough requirement | `replied`<br>*(Touch 2 Replied)* |
-| **5** | **Metropolitan Corporate Plaza** | `commercial_multitenant` | 200 Metro Center Blvd, Edison, Middlesex Co. | Sandra Jenkins<br>*(Facilities & Asset Director)* | (732) 555-0624<br>`sjenkins@metrocplaza.com` | **Tier 2 (High)**<br>• New facilities lead reviewing vendor SLAs | `demo_scheduled`<br>*(Touch 3 Call Booked)* |
+| **1** | **The Collegiate at Rutgers** | `student_housing` | 15 College Avenue, New Brunswick, NJ, Middlesex Co. | Jordan Matthews<br>*(Community Director)* | (732) 555-0142<br>`jmatthews@thecollegiatenb.com` | **Tier 1 (Critical)**<br>• Job ad: Hiring Night Closer<br>• Reviews: Fire door left ajar | `in_sequence`<br>*(Touch 1 Sent)* |
+| **2** | **Horizon Park Manor (55+)** | `active_adult_55_plus` | 4400 Horizon Blvd, Toms River, NJ, Ocean Co. | Eleanor Vance<br>*(HOA General Manager)* | (732) 555-0819<br>`evance@horizonparkhoa.org` | **Tier 2 (High)**<br>• Municipal exterior lighting notice (45 days ago) | `enriched`<br>*(Ready for Touch 1)* |
+| **3** | **Oceanview Motor Lodge & Suites** | `motel` | 910 Ocean Avenue, Asbury Park, NJ, Monmouth Co. | Rajiv Patel<br>*(Owner & Managing Operator)* | (732) 555-0311<br>`rpatel@oceanviewmotelnj.com` | **Tier 1 (Critical)**<br>• Job ad: Hiring Night Front Desk Auditor 11pm-7am | `new`<br>*(Newly Scraped)* |
+| **4** | **The Sovereign Luxury Tower** | `luxury_multifamily` | 77 Hudson Street, Jersey City, NJ, Hudson Co. | Christopher Sterling<br>*(Director of Property Mgmt)* | (201) 555-0988<br>`csterling@sovereignjc.com` | **Tier 3 (Medium)**<br>• High-rise common area walkthrough requirement | `replied`<br>*(Touch 2 Replied)* |
+| **5** | **Metropolitan Corporate Plaza** | `commercial_multitenant` | 200 Metro Center Blvd, Edison, NJ, Middlesex Co. | Sandra Jenkins<br>*(Facilities & Asset Director)* | (732) 555-0624<br>`sjenkins@metrocplaza.com` | **Tier 2 (High)**<br>• New facilities lead reviewing vendor SLAs | `demo_scheduled`<br>*(Touch 3 Call Booked)* |
 
 ---
 
@@ -77,3 +77,4 @@ To perform a clean 100% reset for live production:
 TRUNCATE TABLE public.growth_leads CASCADE;
 ```
 *(All related outreach logs and AI drafts are automatically removed via `ON DELETE CASCADE`).*
+
