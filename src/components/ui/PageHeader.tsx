@@ -35,7 +35,7 @@ export function PageHeader({
           <h1 className="font-headline text-2xl font-bold lg:text-3xl">{title}</h1>
           {subtitle && <div className="mt-1 text-sm text-on-surface-variant">{subtitle}</div>}
         </div>
-        {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
+        {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
       </div>
     </div>
   )

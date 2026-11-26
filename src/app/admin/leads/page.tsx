@@ -13,7 +13,7 @@ export default async function LeadsPage() {
   ])
 
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0">
       <LeadsDashboardClient initialLeads={leads} initialTotal={total} initialStats={stats} />
     </div>
   )

@@ -55,7 +55,7 @@ export function AppShell({
   }, [showProfileMenu])
 
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
+    <div className="flex min-h-screen flex-col lg:flex-row w-full max-w-full overflow-x-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:w-60 lg:shrink-0 lg:flex-col lg:border-r lg:border-outline-variant lg:bg-surface-container-lowest lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
         <div className="flex items-center gap-2 border-b border-outline-variant px-5 py-5">
@@ -132,7 +132,7 @@ export function AppShell({
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0 w-full overflow-x-hidden">
         {/* Desktop top bar */}
         <div className="hidden items-center justify-between border-b border-outline-variant bg-surface-container-lowest/95 backdrop-blur-sm px-6 py-3 lg:flex lg:sticky lg:top-0 lg:z-30">
           <div className="flex items-center gap-2">
@@ -208,9 +208,9 @@ export function AppShell({
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-surface pb-24 lg:pb-8">
+        <main className="flex-1 overflow-y-auto min-w-0 bg-surface pb-24 lg:pb-8">
           <div
-            className={`mx-auto w-full px-4 py-6 lg:px-8 lg:py-8 ${
+            className={`mx-auto w-full min-w-0 px-4 py-6 lg:px-8 lg:py-8 ${
               pathname?.startsWith('/admin/leads') ? 'max-w-none' : 'max-w-6xl'
             }`}
           >

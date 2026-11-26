@@ -384,7 +384,7 @@ export function LeadsDashboardClient({
   }, [selectedIds, selectedLead])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full min-w-0">
       {/* Page Header */}
       <PageHeader
         eyebrow="Amenity Op's Growth Subsystem"
@@ -733,8 +733,8 @@ export function LeadsDashboardClient({
           </Card>
 
           {/* Desktop & Tablet Table View */}
-          <div className="hidden md:block rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+          <div className="hidden md:block rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-xs w-full min-w-0">
+            <div className="overflow-x-auto w-full">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-outline-variant bg-surface-container-low/50 text-on-surface-variant uppercase tracking-wider text-[11px]">
@@ -748,14 +748,14 @@ export function LeadsDashboardClient({
                         className="rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
                       />
                     </th>
-                    <th className="py-3.5 px-3 font-bold min-w-[200px]">Property Name &amp; Class</th>
-                    <th className="py-3.5 px-3 font-bold min-w-[190px]">Address</th>
-                    <th className="py-3.5 px-3 font-bold min-w-[220px]">Key Amenities &amp; Pain Signals</th>
-                    <th className="py-3.5 px-3 font-bold min-w-[160px]">Gatekeeper / Contact</th>
-                    <th className="py-3.5 px-3 font-bold min-w-[190px]">Phone &amp; Email</th>
-                    <th className="py-3.5 px-3 font-bold min-w-[90px]">Intent Tier</th>
-                    <th className="py-3.5 px-3 font-bold min-w-[130px]">Status</th>
-                    <th className="py-3.5 pr-4 pl-2 text-right font-bold w-16">Details</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[170px]">Property Name &amp; Class</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[160px]">Address</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[180px]">Key Amenities &amp; Pain Signals</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[135px]">Gatekeeper / Contact</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[165px]">Phone &amp; Email</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[75px]">Intent Tier</th>
+                    <th className="py-3.5 px-3 font-bold min-w-[120px]">Status</th>
+                    <th className="py-3.5 pr-4 pl-2 text-right font-bold w-10"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/60">
@@ -786,7 +786,7 @@ export function LeadsDashboardClient({
                         >
                           {/* Checkbox */}
                           <td
-                            className="py-3 pl-4 pr-2"
+                            className="py-3 pl-4 pr-2 w-10"
                             onClick={(e) => {
                               e.stopPropagation()
                               toggleSelectOne(lead.id)
@@ -801,7 +801,7 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* 1. Property Name & 2. Community Type */}
-                          <td className="py-3 px-3 min-w-[200px]">
+                          <td className="py-3 px-3 min-w-[170px]">
                             <div className="font-bold text-on-surface text-sm">
                               {lead.property_name}
                             </div>
@@ -813,7 +813,7 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* 3. Address, 4. Municipality, 5. State, 6. County */}
-                          <td className="py-3 px-3 min-w-[190px]">
+                          <td className="py-3 px-3 min-w-[160px]">
                             <div className="text-on-surface font-medium">{lead.address}</div>
                             <div className="text-[11px] text-on-surface-variant">
                               {lead.municipality_town}, {lead.state || 'NJ'} · {lead.county} Co.
@@ -821,7 +821,7 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* 6. Key Amenities & Pain Signals */}
-                          <td className="py-3 px-3 min-w-[220px]">
+                          <td className="py-3 px-3 min-w-[180px]">
                             <p
                               className="text-on-surface text-xs line-clamp-2 leading-relaxed"
                               title={lead.key_amenities_notes || ''}
@@ -831,7 +831,7 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* 7. Target Gatekeeper */}
-                          <td className="py-3 px-3 min-w-[160px]">
+                          <td className="py-3 px-3 min-w-[135px]">
                             <div className="font-semibold text-on-surface">
                               {lead.target_gatekeeper_name || 'Pending Name'}
                             </div>
@@ -841,10 +841,10 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* 8. Phone & 9. Email */}
-                          <td className="py-3 px-3 min-w-[190px] whitespace-nowrap">
+                          <td className="py-3 px-3 min-w-[165px]">
                             {lead.phone ? (
-                              <div className="flex items-center gap-1.5 text-on-surface font-medium">
-                                <Phone size={12} className="text-primary" />
+                              <div className="flex items-center gap-1.5 text-on-surface font-medium whitespace-nowrap">
+                                <Phone size={12} className="text-primary shrink-0" />
                                 <span>{lead.phone}</span>
                               </div>
                             ) : (
@@ -852,9 +852,9 @@ export function LeadsDashboardClient({
                             )}
 
                             {lead.email ? (
-                              <div className="flex items-center gap-1.5 text-primary text-[11px] mt-0.5">
+                              <div className="flex items-center gap-1.5 text-primary text-[11px] mt-0.5 max-w-[165px]" title={lead.email}>
                                 <Mail size={12} className="shrink-0" />
-                                <span className="font-medium">{lead.email}</span>
+                                <span className="font-medium truncate">{lead.email}</span>
                               </div>
                             ) : (
                               <span className="text-[11px] text-on-surface-variant italic block mt-0.5">
@@ -864,7 +864,7 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* Intent Tier */}
-                          <td className="py-3 px-3 whitespace-nowrap">
+                          <td className="py-3 px-3 whitespace-nowrap min-w-[75px]">
                             <span
                               className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] border ${tier.badgeClass}`}
                             >
@@ -873,7 +873,7 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* Outreach Status */}
-                          <td className="py-3 px-3 whitespace-nowrap">
+                          <td className="py-3 px-3 whitespace-nowrap min-w-[120px]">
                             <span
                               className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] border font-medium ${st.badgeClass}`}
                             >
@@ -882,7 +882,7 @@ export function LeadsDashboardClient({
                           </td>
 
                           {/* Action */}
-                          <td className="py-3 pr-4 pl-2 text-right">
+                          <td className="py-3 pr-4 pl-2 text-right w-10">
                             <button
                               type="button"
                               onClick={(e) => {
@@ -1094,7 +1094,7 @@ export function LeadsDashboardClient({
           </Card>
 
           {/* Active Prospects in Cadence Table */}
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-xs">
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden shadow-xs w-full min-w-0">
             <div className="p-4 border-b border-outline-variant flex items-center justify-between bg-surface-container-low/40">
               <div>
                 <h3 className="text-sm font-bold font-headline text-on-surface">
@@ -1106,7 +1106,7 @@ export function LeadsDashboardClient({
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto w-full">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-outline-variant bg-surface-container-low/50 text-on-surface-variant uppercase tracking-wider text-[11px]">
