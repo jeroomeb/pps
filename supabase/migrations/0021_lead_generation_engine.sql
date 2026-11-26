@@ -41,6 +41,9 @@ create table if not exists public.growth_leads (
   updated_at timestamptz not null default now()
 );
 
+-- Safe patch for existing tables: ensure 'state' column exists
+alter table if exists public.growth_leads add column if not exists state text not null default 'NJ';
+
 -- High-performance query indexes
 create index if not exists growth_leads_intent_tier_idx on public.growth_leads (intent_tier);
 create index if not exists growth_leads_community_type_idx on public.growth_leads (community_type);
